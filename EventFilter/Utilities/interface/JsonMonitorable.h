@@ -188,8 +188,8 @@ private:
 	std::string theVar_;
 };
 
-//histograms filled at time intervals (later converted to full histograms)
-template<class T> class HistoJ: public JsonMonitorable {
+//vectors filled at time intervals
+template<class T> class VectorJ: public JsonMonitorable {
 
 public:
 	HistoJ( int expectedUpdates = 1 , unsigned int maxUpdates = 0 ){
@@ -197,9 +197,97 @@ public:
 		updates_ = 0;
 		maxUpdates_ = maxUpdates;
 		if (maxUpdates_ && maxUpdates_<expectedSize_) expectedSize_=maxUpdates_;
-		histo_.reserve(expectedSize_);
+		vec_.reserve(expectedSize_);
 	}
 	virtual ~HistoJ() {}
+
+	std::string toCSV() const {
+		std::stringstream ss;
+		for (unsigned int i=0;i<updates_;i++) {
+			ss << vec_[i];
+			if (i!=vec_.size()-1) ss<<",";
+		}
+		return ss.str();
+	}
+
+	virtual std::string toString() const {
+		std::stringstream ss;
+		ss << "[";
+		if (vec_.size())
+			for (unsigned int i = 0; i < vec_.size(); i++) {
+				ss << vec_[i];
+				if (i<vec_.size()-1) ss << ",";
+			}
+		ss << "]";
+		return ss.str();
+	}
+	virtual void resetValue() {
+		vec_.clear();
+		vec_.reserve(expectedSize_);
+		updates_=0;
+	}
+	void operator=(std::vector<T> & sth) {
+		vec_ = sth;
+	}
+
+	std::vector<T> & value() {
+		return vec_;
+	}
+
+	unsigned int getExpectedSize() {
+		return expectedSize_;
+	}
+
+	unsigned int getMaxUpdates() {
+		return maxUpdates_;
+	}
+
+	void setMaxUpdates(unsigned int maxUpdates) {
+		maxUpdates_=maxUpdates;
+		if (!maxUpdates_) return;
+		if (expectedSize_>maxUpdates_) expectedSize_=maxUpdates_;
+		//truncate what is over the limit
+		if (maxUpdates_ && vec_.size()>maxUpdates_) {
+			vec_.resize(maxUpdates_);
+		}
+		else vec_.reserve(expectedSize_);
+	}
+
+	unsigned int getSize() {
+		return vec_.size();
+	}
+
+	void update(T val) {
+		if (maxUpdates_ && updates_>=maxUpdates_) return;
+		vec_.push_back(val);
+		updates_++;
+	}
+
+private:
+	std::vector<T> vec_;
+	unsigned int expectedSize_;
+	unsigned int maxUpdates_;
+};
+
+
+//fixed size histogram
+template<class T> class HistoJ: public JsonMonitorable {
+
+public:
+	HistoJ( int length) {
+                len_=length;
+                histo_ = new std::vector<T>;
+                for (unsigned int i=0;i<len;i++) histo_.push_back(0)
+                allocated_=true;
+	}
+	HistoJ( std::vector<T>*histo) {
+                len_ = histo->size();
+                histo_ = histo;
+	}
+	virtual ~HistoJ() {
+                if (allocated_)
+                  delete histo_;
+        }
 
 	std::string toCSV() const {
 		std::stringstream ss;
@@ -221,17 +309,12 @@ public:
 		ss << "]";
 		return ss.str();
 	}
-	virtual void resetValue() {
-		histo_.clear();
-		histo_.reserve(expectedSize_);
-		updates_=0;
-	}
-	void operator=(std::vector<T> & sth) {
-		histo_ = sth;
+	virtual void clear() {
+                for (unsigned int i=0;i<len;i++) histo_[i]=0
 	}
 
 	std::vector<T> & value() {
-		return histo_;
+		return *histo_;
 	}
 
 	unsigned int getExpectedSize() {
@@ -247,27 +330,32 @@ public:
 		if (!maxUpdates_) return;
 		if (expectedSize_>maxUpdates_) expectedSize_=maxUpdates_;
 		//truncate what is over the limit
-		if (maxUpdates_ && histo_.size()>maxUpdates_) {
-			histo_.resize(maxUpdates_);
+		if (maxUpdates_ && vec_.size()>maxUpdates_) {
+			vec_.resize(maxUpdates_);
 		}
-		else histo_.reserve(expectedSize_);
+		else vec_.reserve(expectedSize_);
 	}
 
 	unsigned int getSize() {
-		return histo_.size();
+		return vec_.size();
 	}
 
 	void update(T val) {
 		if (maxUpdates_ && updates_>=maxUpdates_) return;
-		histo_.push_back(val);
+		vec_.push_back(val);
 		updates_++;
 	}
 
 private:
-	std::vector<T> histo_;
+	std::vector<T> * histo_ = nullptr;
+        allocated_ = false;
+        unsigned int len_=0;
 	unsigned int expectedSize_;
 	unsigned int maxUpdates_;
 };
+
+
+
 
 }
 

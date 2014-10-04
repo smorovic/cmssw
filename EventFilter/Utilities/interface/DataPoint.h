@@ -73,7 +73,7 @@ public:
 	void trackMonitorable(JsonMonitorable *monitorable,bool NAifZeroUpdates);
 
 	//set to track a vector of variables
-	void trackVectorUInt(std::string const& name, std::vector<unsigned int> *monvec, bool NAifZeroUpdates);
+	void trackVectorUInt(std::string const& name, std::vector<unsigned int> *monvec, bool NAifZeroUpdates, bool global=false);
 
 	//set to track a vector of atomic variables with guaranteed collection
 	void trackVectorUIntAtomic(std::string const& name, std::vector<AtomicMonUInt*> *monvec, bool NAifZeroUpdates);

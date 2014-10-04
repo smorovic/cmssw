@@ -142,7 +142,14 @@ void DataPoint::snap(unsigned int lumi)
 	auto itr =  streamDataMaps_[i].find(streamLumi_);
 	if (itr==streamDataMaps_[i].end())
 	{
-	  if (opType_==OPHISTO) {
+	  if (opType_==OPCAT) {
+            if (*nBinsPtr_) {
+              HistoJ<unsigned int> *nh = new HistoJ<unsigned int>(1,MAXUPDATES);
+              nh->update(monVal);
+              streamDataMaps_[i][streamLumi_] = nh;
+            }
+          }
+          else if (opType_==OPHISTO) {
             if (*nBinsPtr_) {
               HistoJ<unsigned int> *nh = new HistoJ<unsigned int>(1,MAXUPDATES);
               nh->update(monVal);
@@ -156,7 +163,12 @@ void DataPoint::snap(unsigned int lumi)
           }
         }
         else { 
-          if (opType_==OPHISTO) {
+          if (opType_==OPCAT) {
+            if (*nBinsPtr_) {
+              (static_cast<HistoJ<unsigned int> *>(itr->second.get()))->update(monVal);
+            }
+          }
+          else if (opType_==OPHISTO) {
             if (*nBinsPtr_) {
               (static_cast<HistoJ<unsigned int> *>(itr->second.get()))->update(monVal);
             }
@@ -319,23 +331,7 @@ void DataPoint::mergeAndSerialize(Json::Value & root,unsigned int lumi,bool init
       root[DATA].append(ss.str());
       return;
     }
-    if (opType_!=OPHISTO) {//sum is default
-      std::stringstream ss;
-      unsigned int updates=0;
-      unsigned int sum=0;
-      for (unsigned int i=0;i<streamDataMaps_.size();i++) {
-        auto itr = streamDataMaps_[i].find(lumi);
-        if (itr!=streamDataMaps_[i].end()) {
-          sum+=static_cast<IntJ*>(itr->second.get())->value();
-          updates++;
-        }
-      }
-      if (!updates && NAifZeroUpdates_) ss << "N/A";
-      ss << sum;
-      root[DATA].append(ss.str());
-      return;
-    }
-    if (opType_==OPHISTO) {
+    if (opType_==OPCAT) {
       if (nBinsPtr_==nullptr) {
         root[DATA].append("N/A");
         return;
@@ -362,20 +358,41 @@ void DataPoint::mergeAndSerialize(Json::Value & root,unsigned int lumi,bool init
         }
       }
       std::stringstream ss;
-      if (!*nBinsPtr_ || (!updates && NAifZeroUpdates_)) ss << "N/A";
-      else {
-        ss << "[";
-        if (*nBinsPtr_) {
-          for (unsigned int i=0;i<*nBinsPtr_-1;i++) {
-            ss << buf_[i] << ",";
-          }
-          ss << buf_[*nBinsPtr_-1];
-        }
-        ss << "]";
+      Json::Value jsonVect;
+      if (!*nBinsPtr_ || (!updates && NAifZeroUpdates_)) {
+        std::stringstream ss;
+        ss << "N/A";
+        root[DATA].append(ss.str());
       }
+      else {
+        for (unsigned int i=0;i<*nBinsPtr_;i++) {
+          std::stringstream ss;
+          ss << buf_[i];
+          jsonVect.append(ss.str());
+        }
+      }
+        root[DATA].append(jsonVect);
+      return;
+    }
+    else if (opType_==OPHISTO) {
+    }
+    else {//sum is default
+      std::stringstream ss;
+      unsigned int updates=0;
+      unsigned int sum=0;
+      for (unsigned int i=0;i<streamDataMaps_.size();i++) {
+        auto itr = streamDataMaps_[i].find(lumi);
+        if (itr!=streamDataMaps_[i].end()) {
+          sum+=static_cast<IntJ*>(itr->second.get())->value();
+          updates++;
+        }
+      }
+      if (!updates && NAifZeroUpdates_) ss << "N/A";
+      ss << sum;
       root[DATA].append(ss.str());
       return;
     }
+
   }
 }
 
