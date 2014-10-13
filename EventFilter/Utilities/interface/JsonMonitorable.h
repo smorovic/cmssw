@@ -17,8 +17,8 @@
 
 namespace jsoncollector {
 
-enum MonType  { TYPEINT, TYPEUINT, TYPEDOUBLE, TYPESTRING, TYPEUNDEFINED};
-enum OperationType  { OPSUM, OPAVG, OPSAME, OPHISTO, OPCAT, OPUNKNOWN};
+enum MonType  { TYPE_UNKNOWN, TYPE_INT, TYPE_DOUBLE, TYPE_STRING };
+enum OperationType  { OP_UNKNOWN, OP_SUM, OP_AVG, OP_SAME, OP_HISTO, OP_CAT, OP_BINARYAND, OP_MERGE, OP_BINARYOR, OP_ADLER32 };
 
 class JsonMonitorable {
 
@@ -192,14 +192,14 @@ private:
 template<class T> class VectorJ: public JsonMonitorable {
 
 public:
-	HistoJ( int expectedUpdates = 1 , unsigned int maxUpdates = 0 ){
+	VectorJ( int expectedUpdates = 1 , unsigned int maxUpdates = 0 ){
 		expectedSize_=expectedUpdates;
 		updates_ = 0;
 		maxUpdates_ = maxUpdates;
 		if (maxUpdates_ && maxUpdates_<expectedSize_) expectedSize_=maxUpdates_;
 		vec_.reserve(expectedSize_);
 	}
-	virtual ~HistoJ() {}
+	virtual ~VectorJ() {}
 
 	std::string toCSV() const {
 		std::stringstream ss;
@@ -317,41 +317,25 @@ public:
 		return *histo_;
 	}
 
-	unsigned int getExpectedSize() {
-		return expectedSize_;
-	}
-
-	unsigned int getMaxUpdates() {
-		return maxUpdates_;
-	}
-
-	void setMaxUpdates(unsigned int maxUpdates) {
-		maxUpdates_=maxUpdates;
-		if (!maxUpdates_) return;
-		if (expectedSize_>maxUpdates_) expectedSize_=maxUpdates_;
-		//truncate what is over the limit
-		if (maxUpdates_ && vec_.size()>maxUpdates_) {
-			vec_.resize(maxUpdates_);
-		}
-		else vec_.reserve(expectedSize_);
-	}
-
 	unsigned int getSize() {
 		return vec_.size();
 	}
 
-	void update(T val) {
-		if (maxUpdates_ && updates_>=maxUpdates_) return;
-		vec_.push_back(val);
-		updates_++;
+	void update(T val,size_t index) {
+		if (index>=len) return;
+		vec_[len]+=val;
 	}
+
+	void set(T val,size_t index) {
+		if (index>=len) return;
+		vec_[len]=val;
+	}
+
 
 private:
 	std::vector<T> * histo_ = nullptr;
         allocated_ = false;
         unsigned int len_=0;
-	unsigned int expectedSize_;
-	unsigned int maxUpdates_;
 };
 
 

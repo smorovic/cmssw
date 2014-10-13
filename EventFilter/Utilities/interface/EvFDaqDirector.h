@@ -106,8 +106,6 @@ namespace evf{
 
 
     private:
-      //bool bulock();
-      //bool fulock();
       bool bumpFile(unsigned int& ls, unsigned int& index, std::string& nextFile, uint32_t& fsize);
       void openFULockfileStream(std::string& fuLockFilePath, bool create);
       std::string inputFileNameStem(const unsigned int ls, const unsigned int index) const;
@@ -158,10 +156,6 @@ namespace evf{
       struct flock fu_rw_fulk;
       struct flock data_rw_flk;
       struct flock data_rw_fulk;
-      //struct flock fulocal_rw_flk;
-      //struct flock fulocal_rw_fulk;
-      //struct flock fulocal_rw_flk2;
-      //struct flock fulocal_rw_fulk2;
 
       evf::FastMonitoringService * fms_ = nullptr;
       std::vector<int> streamFileTracker_;
@@ -176,6 +170,7 @@ namespace evf{
       unsigned int nThreads_=0;
 
       bool readEolsDefinition_ = true;
+      std::map<std::string,DataPointDefinition*> defMap_;
       unsigned int eolsNFilesIndex_ = 1;
 
   };

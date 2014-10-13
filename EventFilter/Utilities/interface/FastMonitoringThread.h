@@ -22,18 +22,15 @@ namespace evf{
     struct MonitorData
     {
       //fastpath global monitorables
-      IntJ fastMacrostateJ_;
-      DoubleJ fastThroughputJ_;
-      DoubleJ fastAvgLeadTimeJ_;
-      IntJ fastFilesProcessedJ_;
-
-      unsigned int varIndexThrougput_;
-
+      IntJ *fastMacrostateJ_;
+      DoubleJ *fastThroughputJ_;
+      DoubleJ *fastAvgLeadTimeJ_;
+      IntJ *fastFilesProcessedJ_;
       //per stream
-      std::vector<unsigned int> microstateEncoded_;
-      std::vector<unsigned int> ministateEncoded_;
-      std::vector<AtomicMonUInt*> processed_;
-      IntJ fastPathProcessedJ_;
+      VectorJ<IntJ> *microstateEncoded_;
+      VectorJ<IntJ> *ministateEncoded_;
+      VectorJ<IntJ> *processed_;
+      IntJ *fastPathProcessedJ_;
       std::vector<unsigned int> threadMicrostateEncoded_;
 
       //tracking luminosity of a stream
@@ -70,7 +67,7 @@ namespace evf{
         fm->registerGlobalMonitorable(&fastFilesProcessedJ_,false);
 
 	for (unsigned int i=0;i<nStreams;i++) {
-	 AtomicMonUInt * p  = new AtomicMonUInt;
+	 AtomicMonInt * p  = new AtomicMonInt;
 	 *p=0;
    	  processed_.push_back(p);
           streamLumi_.push_back(0);
@@ -78,15 +75,10 @@ namespace evf{
 	
 	microstateEncoded_.resize(nStreams);
 	ministateEncoded_.resize(nStreams);
-	threadMicrostateEncoded_.resize(nThreads);
 
 	//tell FM to track these int vectors
         fm->registerStreamMonitorableUIntVec("Ministate", &ministateEncoded_,true,&ministateBins_);
-
-	if (nThreads<=nStreams)//no overlapping in module execution per stream
-          fm->registerStreamMonitorableUIntVec("Microstate",&microstateEncoded_,true,&microstateBins_);
-	else
-	  fm->registerStreamMonitorableUIntVec("Microstate",&threadMicrostateEncoded_,true,&microstateBins_);
+        fm->registerStreamMonitorableUIntVec("Microstate",&microstateEncoded_,true,&microstateBins_);
 
         fm->registerStreamMonitorableUIntVecAtomic("Processed",&processed_,false,0);
 

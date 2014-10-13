@@ -32,22 +32,10 @@ public:
   void setNStreams(unsigned int nStreams) {nStreams_=nStreams;}
 
   //register global monitorable
-  void registerGlobalMonitorable(JsonMonitorable *newMonitorable, bool NAifZeroUpdates, unsigned int *nBins=nullptr);
+  JsonMonitorable *registerMonitorable(JsonMonitorable *mon,std::string const& name, MonType type, OperationType op, EmptyMode em, SnapshotMode sm, bool isGlobal, size_t streams);
 
   //register fastPath global monitorable
-  void registerFastGlobalMonitorable(JsonMonitorable *newMonitorable);
-
-  //register per-stream monitores vector (unsigned int)
-  void registerStreamMonitorableUIntVec(std::string const& name, 
-      std::vector<unsigned int> *inputs, bool NAifZeroUpdates, unsigned int *nBins=nullptr);
-
-  //NOT implemented yet
-  //void registerStreamMonitorableIntVec(std::string &name, std::vector<unsigned int>,true,0);
-  //void registerStreamMonitorableDoubleVec(std::string &name, std::vector<unsigned int>,true,0);
-  //void registerStreamMonitorableStringVec(std::string &name, std::vector<std::string>,true,0);
-
-  void registerStreamMonitorableUIntVecAtomic(std::string const& name,
-      std::vector<AtomicMonUInt*> *inputs, bool NAifZeroUpdates, unsigned int *nBins=nullptr);
+  void registerFastMonitorable(JsonMonitorable *newMonitorable,name);
 
   //take vector used to track stream lumis and finish initialization
   void commit(std::vector<unsigned int> *streamLumisPtr);

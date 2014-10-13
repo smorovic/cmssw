@@ -522,47 +522,21 @@ namespace evf {
 
     std::string data;
     DataPoint dp;
+    dp.setDefMap(defMap_);
     dp.deserialize(deserializeRoot);
 
-    //read definition 
     if (readEolsDefinition_) {
-      //std::string def = boost::algorithm::trim(dp.getDefinition());
-      std::string def = dp.getDefinition();
-      if (!def.size()) readEolsDefinition_=false;
-      while (def.size()) {
-        std::string fullpath;
-        if (def.find('/')==0)
-          fullpath = def;
-        else
-          fullpath = bu_run_dir_+'/'+def; 
-        struct stat buf;
-        if (stat(fullpath.c_str(), &buf) == 0) {
-          DataPointDefinition eolsDpd;
-          std::string defLabel = "legend";
-          DataPointDefinition::getDataPointDefinitionFor(fullpath, &eolsDpd,&defLabel);
-          if (eolsDpd.getNames().size()==0) {
-             //try with "data" label if "legend" format is not used
-             eolsDpd = DataPointDefinition();
-             defLabel="data";
-             DataPointDefinition::getDataPointDefinitionFor(fullpath, &eolsDpd,&defLabel);
-          }
-          for (unsigned int i=0;i<eolsDpd.getNames().size();i++)
-            if (eolsDpd.getNames().at(i)=="NFiles")
-              eolsNFilesIndex_ = i;
-          readEolsDefinition_=false;
-          break;
-        }
-        //check if we can still find definition
-        if (def.size()<=1 || def.find('/')==std::string::npos) {
-          readEolsDefinition_=false;
-          break;
-        }
-        def = def.substr(def.find('/')+1);
-      }
+      //check read definition first time
+      DataPointDefinition *def = dp.getDPD();
+      if (def) def->hasVariable("NFiles",&eolsNFilesIndex_);
+      readEolsDefinition_=false;
     }
 
-    if (dp.getData().size()>eolsNFilesIndex_)
-      data = dp.getData()[eolsNFilesIndex_];
+    if (dp.getData().size()>eolsNFilesIndex_) {
+      if (def)
+        return dp.getData()[eolsNFilesIndex_].getValue().asInt();
+      else
+        data = dp.getData()[eolsNFilesIndex_].getValue().asString();
     else {
       edm::LogError("EvFDaqDirector") << " error reading number of files from BU JSON -: " << BUEoLSFile;
       return -1;

@@ -20,10 +20,11 @@ class JsonMonConfig;
 class DataPointDefinition: public JsonSerializable {
 
 public:
-  DataPointDefinition() {}
-
-  //DataPointDefinition(std::string const& prefix) : namePrefix_(prefix) {}
-  //DataPointDefinition(const std::vector<std::string>& names, const std::vector<std::string>& operations);
+  DataPointDefinition();
+  //DataPointDefinition(std::string const& defFilePath,
+  //                    DataPointDefinition* dpd,
+  //                    const std::string *defaultGroup=nullptr,
+  //                    const std::map<std::string,DataPointDefinition*> defMap=nullptr);
 
   virtual ~DataPointDefinition() {}
 
@@ -48,26 +49,26 @@ public:
   /**
    * Loads a DataPointDefinition from a specified reference
    */
-  static bool getDataPointDefinitionFor(std::string& defFilePath, DataPointDefinition* dpd, const std::string *defaultGroup=nullptr);
+  static bool getDataPointDefinitionFor(std::string const& defFilePath,
+                                        DataPointDefinition* dpd, 
+                                        const std::string *defaultGroup=nullptr,
+                                        const std::map<std::string,DataPointDefinition*> defMap=nullptr);
 
   void setDefaultGroup(std::string const& group) {defaultGroup_=group;}
 
   void addLegendItem(std::string const& name, std::string const& type, std::string const& operation);
 
+  bool hasVariable(std::string const&name,size_t *index=nullptr);
   OperationType getOperationFor(unsigned int index);
 
   std::string & getDefFilePath() {return defFilePath_;}
-  //void populateMonConfig(std::vector<JsonMonConfig>& monConfig);
 
-  //known JSON operation names
-  static const std::string SUM;
-  static const std::string AVG;
-  static const std::string SAME;
-  static const std::string HISTO;
-  static const std::string CAT;
-  static const std::string MERGE;
-  static const std::string BINARYOR;
-  static const std::string ADLER32;
+  //known JSON type names
+  static const unsigned char typeNames_[];
+  static const unsigned char operationNames_[];
+
+  std::map<std::string,MonType> typeMap_;
+  std::map<std::string,OperationType> operationMap_;
 
   // JSON field names
   static const std::string LEGEND;
@@ -76,14 +77,31 @@ public:
   static const std::string OPERATION;
   static const std::string TYPE;
 
+  class MonitorableDefinition {
+    public:
+      MonitorableDefinition(std::string name,MonType monType, OperationType opType):name_(name),monType_(monType),opType(opType) {}
+
+      std::string const& getName() const {return name_;}
+      void setName(std::string const& name) {name_=name;}
+
+      MonType getMonType() const {return monType_;}
+      void setMonType(MonType monType) {monType_=monType;}
+
+      OperationType getOperation() const {return opType_;}
+      void setOperation(OperationType opType) {opType_=opType;}
+    private:
+      std::string name_;
+      MonType monType_;
+      OperationType opType_;
+      bool isVector_;
+    
+  };
+
 private:
-  std::vector<std::string> varNames_;
-  std::vector<std::string> typeNames_;
-  std::vector<std::string> opNames_;
+  std::vector<MonitorableDefinition> variables_;
   std::string defFilePath_;
   std::string defaultGroup_;
 
-//	std::string namePrefix_;
 };
 }
 

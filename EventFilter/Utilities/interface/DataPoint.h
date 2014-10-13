@@ -26,12 +26,15 @@
 namespace jsoncollector {
 
 #if ATOMIC_LEVEL>0
-typedef std::atomic<unsigned int> AtomicMonUInt;
+typedef std::atomic<int> AtomicMonInt;
 #else
-typedef unsigned int AtomicMonUInt;
+typedef int AtomicMonInt;
 #endif
 
 typedef std::map<unsigned int,JsonMonPtr> MonPtrMap;
+
+enum EmptyMode = {EM_NA, EM_EMPTY};
+enum SnapshotMode = {SM_TIMER, SM_EOL};
 
 class DataPoint: public JsonSerializable {
 
@@ -39,8 +42,8 @@ public:
 
 	DataPoint() { }
 
-	DataPoint(std::string const& source, std::string const& definition, bool fast=false) :
-                 source_(source), definition_(definition), isFastOnly_(fast) { }
+	DataPoint(bool fast=false) :
+                 source_(source), definition_(definition), isFastOnly_(fast), defMap_(defMap) { }
 
 	~DataPoint();
 
@@ -55,8 +58,9 @@ public:
 	 */
 	virtual void deserialize(Json::Value& root);
 
-	std::vector<std::string>& getData() {return data_;}
-	std::string& getDefinition() {return definition_;}
+	std::string& getDefinition() const {return definition_;}
+        const DataPointDefinition* getDPD() const {return def_;}
+	std::vector<Json::Value>& getData() const {return data_;}
 
 	/**
 	 * Functions specific to new monitoring implementation
@@ -73,10 +77,10 @@ public:
 	void trackMonitorable(JsonMonitorable *monitorable,bool NAifZeroUpdates);
 
 	//set to track a vector of variables
-	void trackVectorUInt(std::string const& name, std::vector<unsigned int> *monvec, bool NAifZeroUpdates, bool global=false);
+	void trackVectorInt(std::string const& name, std::vector<unsigned int> *monvec, bool NAifZeroUpdates, bool global=false);
 
 	//set to track a vector of atomic variables with guaranteed collection
-	void trackVectorUIntAtomic(std::string const& name, std::vector<AtomicMonUInt*> *monvec, bool NAifZeroUpdates);
+	void trackVectorIntAtomic(std::string const& name, std::vector<AtomicMonInt*> *monvec, bool NAifZeroUpdates);
 
 	//variable not found by the service, but want to output something to JSON
 	void trackDummy(std::string const& name, bool setNAifZeroUpdates)
@@ -117,6 +121,8 @@ public:
 
         void updateDefinition(std::string const& definition) {definition_=definition;}
 
+        void setDefinitionMap(std::map<std::string,DataPointDefinition*> *defMap) {defMap_=defMap;}
+
 	// JSON field names
 	static const std::string SOURCE;
 	static const std::string DEFINITION;
@@ -126,7 +132,10 @@ protected:
 	//for simple usage
 	std::string source_;
 	std::string definition_;
-	std::vector<std::string> data_;
+        std::map<std::string,DataPointDefinition*> *defMap_=nullptr;
+        DataPointDefinition *def_=nullptr;
+
+	std::vector<Json::Value> data_;
 
 	std::vector<MonPtrMap> streamDataMaps_;
 	MonPtrMap globalDataMap_;
