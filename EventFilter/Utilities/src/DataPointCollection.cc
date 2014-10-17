@@ -18,38 +18,57 @@
 
 using namespace jsoncollector;
 
-namespace jsoncollector {
-  template class HistoJ<unsigned int>;
-  template class HistoJ<double>;
-  template class VectorJ<unsigned int>;
-  template class VectorJ<double>;
-}
-
 const std::string DataPoint::SOURCE = "source";
 const std::string DataPoint::DEFINITION = "definition";
 const std::string DataPoint::DATA = "data";
 
-
-DataPointCollection::~DataPoint()
+//constructor for taking snapshots of tracked variables
+DataPointCollection::DataPointCollection(std::vector<TrackedMonitorable> * trackedVector,bool fastMon): trackedVector_(trackedVector),fastMon_(fastMon)
 {
+  for (t : *trackedVector)
+  {
+    //object copy
+    data_.push_back(new DataPoint(t,true,fastMon));
+  }
 }
 
-/*
- *
- * Method implementation for simple DataPoint usage
- *
- */
+//constructor for parsing json files containing definition field
+DataPointCollection::DataPointCollection(std::string const & filename, std::map<std::string,DataPointDefinition> *defMap)
+:defMap_(defMap)
+{
+  Json::Value root;
+  JSONSerializer::deserialize(root,name);
+}
+
+
+//constructor for parsing json file name
+DataPointCollection::DataPointCollection(std::string const & definition,std::string const& filename)
+:defMap_(defMap)
+{
+  Json::Value root;
+  JSONSerializer::deserialize(root,name);
+}
+
+
+//reset all snapped data
+void DataPointCollection::reset() {
+  for (dp : data_) dp->reset();
+}
+
+DataPointCollection::~DataPointCollection() {
+  for (d :data_) delete d;
+}
 
 void DataPointCollection::serialize(Json::Value& root) const
 {
-  if (source_.size()) {
+  if (initSourceMaybe()) {
     root[SOURCE] = source_;
   }
-  if (definition_.size()) {
+  if (initDefinitionStringMaybe()) {
     root[DEFINITION] = definition_;
   }
-    for (unsigned int i=0;i<data_.size();i++)
-      root[DATA].append(data_[i]);
+  for (unsigned int i=0;i<data_.size();i++)
+    root[DATA].append(data_[i]->getValue());
 }
 
 void DataPointCollection::deserialize(Json::Value& root)
@@ -58,15 +77,13 @@ void DataPointCollection::deserialize(Json::Value& root)
   definition_ = root.get(DEFINITION, "").asString();
   MonType type = TYPE_UNKNOWN;
   OpType op = OP_UNKNOWN;
-  if (defMap_) {
+  if (defMap_ && !def_) {
     auto itr = defMap_->find(definition_);
     if (itr == defMap_->end()) {
-      auto dpd = new DataPointDefinition()
+      auto dpd = new DataPointDefinition();
       if (DataPointDefinition::getDataPointDefinitionFor(definition_,dpd,nullptr,defMap_))
         def_=dpd;
-      }
       else delete dpd;
-      }
     }
     else def_=*itr;
   }
@@ -75,152 +92,106 @@ void DataPointCollection::deserialize(Json::Value& root)
     unsigned int size = root.get(DATA, "").size();
     for (unsigned int i = 0; i < size; i++)
     {
-      //data_.push_back(DataPoint dp(root.get(DATA, "")[i]));
       if (def_) {
-        type= def_->getType(i);
-        op= def_->getOperation(i);
+        data_.push_back(new DataPoint(root.get(DATA, "")[i],def_->getMonitorableDefinition(i)));
       }
-      data_.push_back(DataPoint dp(root.get(DATA, "")[i],type,op));
+      else
+        //still allow to deserialize without valid definition
+        if (typeAndOperationCheck(type,op)) return;//TODO:throw exception?
+        data_.push_back(new DataPoint(root.get(DATA, "")[i],MonitorableDefinition md(type,op,false)));
     }
   }
 }
 
-/*
- *
- * Method implementation for the new multi-threaded model
- *
- * */
-
-void DataPointCollection::trackMonitorable(std::vector<JsonMonitorable> &monitorables,
-                                 std::string const& name,
-                                 MonType type,
-                                 OperationType op,
-                                 EmptyMode em,
-                                 SnapshotMode sm,
-                                 bool isGlobal,
-                                 size_t streams,
-                                 bool forceSize);//false --> true to use full per-stream instances in LS history for types where only one can be used (sums..)
-
-  assert(streams==1 && isGlobal);
-
-  for (size_t streamid=0;streamid<streams;streamid++)
-  {
-    switch (op) {
-      case OP_SUM:
-        assert(type!=TYPE_STRING);
-        if (type==TYPE_INT) monitorables.push_back(new IntJ(...));
-        if (type==TYPE_DOUBLE) monitorables.push_back(new DoubleJ(...));
-        break;
-      case OP_AVG:
-        assert(type!=TYPE_STRING);
-        if (type==TYPE_INT) monitorables.push_back(new VectorJ<IntJ>(...));
-        if (type==TYPE_DOUBLE) monitorables.push_back(new VectorJ<DoubleJ>(...));
-        break;
-      case OP_SAME:
-        if (type==TYPE_STRING) monitorables.push_back(new StringJ(...));
-        if (type==TYPE_INT) monitorables.push_back(new IntJ(...));
-        if (type==TYPE_DOUBLE) monitorables.push_back(new DoubleJ(...));
-        break;
-      case OP_HISTO:
-        assert(type!=TYPE_STRING);
-        if (type==TYPE_INT) monitorables.push_back(new HistoJ<IntJ>(...));
-        if (type==TYPE_DOUBLE) monitorables.push_back(new HistoJ<DoubleJ>(...));
-        break;
-      case OP_CAT:
-        if (type==TYPE_STRING) monitorables.push_back(new VectorJ<StringJ>(...));
-        if (type==TYPE_INT) monitorables.push_back(new VectorJ<IntJ>(...));
-        if (type==TYPE_DOUBLE) monitorables.push_back(new VectorJ<DoubleJ>(...));
-        break;
-      case OP_BINARYAND:
-      case OP_BINARYOR:
-        assert(type!=TYPE_STRING && type!=TYPE_DOUBLE);
-        if (type==TYPE_INT) monitorables.push_back(new IntJ(...));
-        break;
-      case OP_MERGE:
-        break;//??TODO
-      case OP_ADLER32:
-        assert(op==OP_ADLER32 && isGlobal);
-        assert(type!=TYPE_STRING && type!=TYPE_DOUBLE);
-        if (type==TYPE_INT) monitorables.push_back(new VectorJ<IntJ>(...));
-        break; 
-      default:
-        assert(0);
-    }
-  }
-  data_.push_back(DataPoint dp(name,monitorables,type,op,em,sm,isGlobal,forceSize));
-  dataMap_[name]=data_[data_.size()-1];
-  //todo:build definition..
-}
-
-//decltype(lumiDataMap_)::iterator
-std::map<unsigned int,std::vector<std::vector<JsonMonitorable*>>>::iterator DataPointCollection::getLumiDataItr(unsigned int ls) {
-
-  //TODO:cache
-  auto itr = getLumiDataItr();
-  lumiDataMap_.find(ls);
-  if (itr==lumiDataMap_.end()) {
-    lumiDataMap_[ls]=new std::vector<std::vector<JsonMonitorable*>>;
-    itr = lumiDataMap_.find(ls);
-    for (size_t i=0;i<data_.size();i++)
-      itr->push_back(new std::vector<JsonMonitorable>);
-  }
-  return itr;
-}
-
-void DataPointCollection::snap(unsigned int ls)
+void DataPointCollection::snap()
 {
-  auto itr = getLumiDataItr();
-  for (size_t i=0;i<data_.size();i++)
-    data_[i] d.snap(ls,itr->at(i));
+  for (d:data_) d->snapTimer();
 }
 
-void DataPointCollection::snapGlobalEOL(unsigned int ls)
+void DataPointCollection::snapTimer()
 {
-  auto itr = getLumiDataItr();
-  for (size_t i=0;i<data_.size();i++)
-   data_[i].snapGlobalEoL(ls,itr->at(i));
+  for (d:data_) d->snapTimer();
 }
 
-void DataPointCollection::snapStreamEoL(unsigned int ls, unsigned int streamID)
+void DataPointCollection::snapGlobalEOL()
 {
-  auto itr = getLumiDataItr();
-  for (size_t i=0;i<data_.size();i++)
-   data_[i].snapStreamEoL(ls,streamID,itr->at(i));
+  for (d:data_) d->snapGlobalEoL();
 }
 
-//call only when data for ls is snapped before
-JsonMonitorable* DataPointCollection::mergeAndRetrieveValue(std::string const& name, unsigned int ls)
+void DataPointCollection::snapStreamEoL(unsigned int streamID)
 {
-  auto itr = dataMap_.find(name);
-  if (itr==dataMap_.end()) return nullptr;
+   for (d:data_) d->snapStreamEoL(streamID);
+}
+
+JsonMonitorable* DataPointCollection::mergeAndRetrieveMonitorable(std::string const& name)
+{
+  size_t i;
+  if (!def_.getIndex(name,i)) return nullptr;//todo
+  return data_[i]->mergeAndRetrieveMonitorable();
+}
+
+JsonMonitorable* DataPointCollection::mergeAndRetrieveMonitorable(size_t index)
+{
+  if (index>=data_.size()) return nullptr;
   //assume the caller takes care of deleting the object
-  return itr->mergeAndRetrieveValue(ls);
+  return data_[index]->mergeAndRetrieveMonitorable();
 }
 
-void DataPointCollection::mergeAndSerialize(Json::Value & root,unsigned int ls,bool initJsonValue)
+Json::Value && DataPointCollection::mergeAndSerialize()
 {
+  Json::Value root
   root[SOURCE] = source_;
   root[DEFINITION] = definition_;
   for (d : data_) {
-      root[DATA].append(d.getJsonValue(ls));
+      root[DATA].append(d->getJsonValue());
   }
-  //TODO:write string..
+  return root;
 }
 
-//wipe out data that will no longer be used
-void DataPointCollection::discardCollected(unsigned int ls)
+bool DataPointCollection::mergeCollections(std::vector<DataPointCollection*>& collections)
 {
-  auto itr = getLumiDataItr();
-  if (itr==lumiDataMap_.end()) return;
-  if (*itr) {
-    for (v : **itr)
-      if (v) {
-        for (e : *v)
-          if (e) delete e;
-      delete v;
-      }
-    delete *itr;
+  //assert(nStreams_==1);//function is allowed only for this case
+  if (!data_.size()) {
+    assert(!collections.size());
+    def_ = collections[0]->getDef();
+    for (size_t i=0;i<collections[0].size()) {
+      data.push_back(new DataPoint(collections[0].at(i)->getTracked(),collections[0].at(i)->getMonitorable()));
+    }
   }
-  lumiDataMap_.erase(itr);
+  std::vector<JsonMonitorable*> dpArray(collections.size());
+  for (size_t i=0;i<data_.size();i++) {
+    //build array..
+    for (size_t j=0;j<collections.size();j++) {
+      dpArray[j] = collections[j]->getDataAt(i).getMonitorable();
+      if (dpArray[j]==nullptr) return false;
+    }
+    data_[i].mergeAndSerializeMonitorables(monArray);
+  }
+  return true;
+  //run mergeAndSerialize to get output
 }
 
+bool DataPointCollection::mergeTrackedCollections(std::vector<DataPointCollection*>& collections)
+{
+  //assert(nStreams_==1);//function is allowed only for this case
+  if (!data_.size()) {
+    assert(!collections.size());
+    def_ = collections[0]->getDef();
+    for (size_t i=0;i<collections[0].size()) {
+      data.push_back(new DataPoint(collections[0].at(i)->getTracked(),collections[0].at(i)->getMonitorable()));
+    }
+  }
+  std::vector<JsonMonitorable*> dpArray(collections.size());
+  for (size_t i=0;i<data_.size();i++) {
+    //build array..
+    for (size_t j=0;j<collections.size();j++) {
+      auto mvec = collections[j]->getDataAt(i).getTracked().mon_;
+      if (mvec || mvec->size()) return false;
+      dpArray[j] = mvec_->at(0);
+      if (dpArray[j]==nullptr) return false;
+    }
+    data_[i]->mergeMonitorables(monArray);
+  }
+  return true;
+  //run mergeAndSerialize to get output
+}

@@ -9,13 +9,49 @@
 #define DATAPOINTDEFINITION_H_
 
 #include "EventFilter/Utilities/interface/JsonMonitorable.h"
-#include "EventFilter/Utilities/interface/JsonSerializable.h"
-#include <string>
-#include <vector>
 
 namespace jsoncollector {
 
-class JsonMonConfig;
+class MonitorableDefinition {
+  public:
+    MonitorableDefinition(std::string const& name, MonType type, OperationType op, bool isValidated=false, EmptyMode em=EM_UNSET, SnapshotMode sm=SM_UNSET):
+      name_(name),
+      type_(type),
+      op_(op),
+      em_(em),
+      sm_(sm),
+      isValidated_(isValidated)
+      {}
+
+    std::string const& getName() const {return name_;}
+    void setName(std::string const& name) {name_=name;}
+
+    MonType getType() const {return type_;}
+    void setType(MonType type) {type_=type;}
+
+    OperationType getOperation() const {return op_;}
+    void setOperation(OperationType op) {op_=op;}
+
+    EmptyMode getEmptyMode() const {return em_;}
+    void setEmptyMode(EmptyMode em) {em_=em;}
+
+    EmptyMode getSnapshotMode() const {return sm_;}
+    void setSnapshotMode(SnapshotMode sm) {sm_=sm;}
+
+    bool isValidated() {return isValidated;}
+
+  private:
+    std::string name_;
+    MonType type_;
+    OperationType op_;
+    EmptyMode em_;
+    SnapshotMode sm_;
+    bool isValidated_;
+    
+};
+
+
+
 
 class DataPointDefinition: public JsonSerializable {
 
@@ -43,7 +79,7 @@ public:
   /**
    * Returns a LegendItem object ref at the specified index
    */
-  std::vector<std::string> const& getNames() {return varNames_;}
+  std::vector<MonitorableDefinition> const& getVariables() {return variables_;}
   std::vector<std::string> const& getOperations() {return opNames_;}
 
   /**
@@ -56,7 +92,9 @@ public:
 
   void setDefaultGroup(std::string const& group) {defaultGroup_=group;}
 
-  void addLegendItem(std::string const& name, std::string const& type, std::string const& operation);
+  void addLegendItem(std::string const& name, std::string const& type, std::string const& operation, bool isValidated, EmptyMode em = EM_UNDEF, SnapshotMode sm = SM_UNDEF);
+
+  void addMonitorableDefinition(MonitorableDefinition & monDef);
 
   bool hasVariable(std::string const&name,size_t *index=nullptr);
   OperationType getOperationFor(unsigned int index);
@@ -77,32 +115,13 @@ public:
   static const std::string OPERATION;
   static const std::string TYPE;
 
-  class MonitorableDefinition {
-    public:
-      MonitorableDefinition(std::string name,MonType monType, OperationType opType):name_(name),monType_(monType),opType(opType) {}
-
-      std::string const& getName() const {return name_;}
-      void setName(std::string const& name) {name_=name;}
-
-      MonType getMonType() const {return monType_;}
-      void setMonType(MonType monType) {monType_=monType;}
-
-      OperationType getOperation() const {return opType_;}
-      void setOperation(OperationType opType) {opType_=opType;}
-    private:
-      std::string name_;
-      MonType monType_;
-      OperationType opType_;
-      bool isVector_;
-    
-  };
-
 private:
   std::vector<MonitorableDefinition> variables_;
   std::string defFilePath_;
   std::string defaultGroup_;
 
 };
+
 }
 
 #endif /* DATAPOINTDEFINITION_H_ */

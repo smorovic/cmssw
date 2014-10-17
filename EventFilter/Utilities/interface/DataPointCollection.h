@@ -8,7 +8,7 @@
 #ifndef DATAPOINT_H_
 #define DATAPOINT_H_
 
-#include "EventFilter/Utilities/interface/JsonMonitorable.h"
+#include "EventFilter/Utilities/interface/DataPoint.h"
 #include "EventFilter/Utilities/interface/JsonSerializable.h"
 
 #include <string>
@@ -33,10 +33,13 @@ class DataPoint: public JsonSerializable {
 
 public:
 
-	DataPoint() { }
+	DataPointCollection() { }
 
-	DataPoint(std::string const& source, std::string const& definition, std::map<std::string,DataPointDefiniton*> defMap=nullptr) :
-                 source_(source), definition_(definition), defMap_(defMap) { }
+	DataPointCollection(std::vector<TrackedMonitorable> *,bool fastMon=false);
+
+	DataPointCollection(DataPointDefinition const* def):def_(def) {}
+
+        DataPointCollection::DataPointCollection(std::string const& definition, std::map<std::string,DataPointDefinition> *defMap=nullptr);
 
 	~DataPoint();
 
@@ -63,9 +66,6 @@ public:
 	void snapGlobalEOL(unsigned int ls);
 	void snapStreamEOL(unsigned int ls, unsigned int streamID);
 
-	void makeStreamLumiMap(unsigned int size);//?
-
-
 	//only used if per-stream DP (should use non-atomic vector here)
 	void setStreamLumiPtr(std::vector<unsigned int> *streamLumiPtr) {
 	  streamLumisPtr_=streamLumiPtr;
@@ -86,6 +86,11 @@ public:
 
         void setDefinitionMap(std::map<std::string,DataPointDefinition*> *defMap) {defMap_=defMap;}
 
+        void DataPoint const& getDataAt(size_t index) const {
+          if (index>=data_.size()) return nullptr;
+          return data_[index];
+        }
+
 	// JSON field names
 	static const std::string SOURCE;
 	static const std::string DEFINITION;
@@ -99,14 +104,8 @@ protected:
         DataPointDefinition *def_=nullptr;
 
 	std::vector<DataPoint> data_;
-
-        std::map<unsigned int,std::vector<std::vector<JsonMonitorable*>*>*> lumiDataMap_;
-	std::vector<MonPtrMapVector> streamDataMaps_;
-	MonPtrMapVector globalDataMap_;
-
-        //stream lumi block position
-	std::vector<unsigned int> *streamLumisPtr_ = nullptr;
-	
+        std::vector<MonitorableDefinition> *trackedVector_ = nullptr;
+        bool fastMon_=false;
 	//std::string name_;//?should be runX, lumi-->, type--> suffix-->
 
 

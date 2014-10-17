@@ -9,7 +9,6 @@
 #define DATAPOINT_H_
 
 #include "EventFilter/Utilities/interface/JsonMonitorable.h"
-#include "EventFilter/Utilities/interface/JsonSerializable.h"
 
 #include <string>
 #include <vector>
@@ -18,154 +17,82 @@
 #include <stdint.h>
 #include <assert.h>
 
-//synchronization level between streams/threads for atomic updates
-//#define ATOMIC_LEVEL 2 //assume postEvent and postLumi are not synchronized (each invocation can run in different thread)
-//#define ATOMIC_LEVEL 1 //assume postEvent can run in different threads but endLumi still sees all memory writes properly
-#define ATOMIC_LEVEL 0 //assume data is synchronized
-
 namespace jsoncollector {
 
-#if ATOMIC_LEVEL>0
-typedef std::atomic<int> AtomicMonInt;
-#else
-typedef int AtomicMonInt;
-#endif
+struct TrackedMonitorable {
 
-typedef std::map<unsigned int,JsonMonPtr> MonPtrMap;
-
-enum EmptyMode = {EM_NA, EM_EMPTY};
-enum SnapshotMode = {SM_TIMER, SM_EOL};
-
-class DataPoint: public JsonSerializable {
+  MonitorableDefinition md_;
+  //vector of stream copies (one if global)
+  std::vector<JsonMonitorable*> *mon_ = nullptr;
+  bool isGlobal_ = true;
+  size_t nbins_=0;
+  size_t expectedUpdates_=0;
+  size_t maxUpdates_=0;
+  /* 
+  TrackedMonitorable(TrackedMonitorable m):
+    md_(m.md_),
+    mon_(m.mon_),
+    isGlobal(m.isGlobal_),
+    nbins_(m.nbins_),
+    expectedUpdates_(m.expectedUpdates_),
+    maxUpdates_(m.maxUpdates_) {}
+  */
+};
+ 
+class DataPoint {
 
 public:
 
-	DataPoint() { }
+  DataPoint() { }
+  DataPoint(TrackedMonitorable tracked, bool trackingInstance=true, bool fastMon=false): tracked_(tracked),fastMon_(fastMon);
+  DataPoint(TrackedMonitorable tracked, JsonMonitorable* aggregated);
 
-	DataPoint(bool fast=false) :
-                 source_(source), definition_(definition), isFastOnly_(fast), defMap_(defMap) { }
+  ~DataPoint();
 
-	~DataPoint();
+  //take new update for lumi
+  void snapTimer();
+  void snapGlobalEOL();
+  void snapStreamEOL();
 
-	/**
-	 * JSON serialization procedure for this class
-	 */
+  void snap() {snapTimer();}
 
-	virtual void serialize(Json::Value& root) const;
+  //serialize to JSON value
+  Json::Value& getJsonValue();
 
-	/**
-	 * JSON deserialization procedure for this class
-	 */
-	virtual void deserialize(Json::Value& root);
+  //pointed object should be available until discard
+  JsonMonitorable* mergeAndRetrieveMonitorable()
 
-	std::string& getDefinition() const {return definition_;}
-        const DataPointDefinition* getDPD() const {return def_;}
-	std::vector<Json::Value>& getData() const {return data_;}
+  //merge monitorable vector into this data point
+  bool mergeAndSerializeMonitorables(Json::Value &root,std::vector<JsonMonitorable*>* vec);
 
-	/**
-	 * Functions specific to new monitoring implementation
-	 */
+  //
+  bool mergeMonitorables(std::vector<JsonMonitorable*> *vec)
 
-	void serialize(Json::Value& root, bool rootInit, std::string const& input) const;
+  MonitorableDesctription const& getTracked() const {return tracked_;}
 
-	//take new update for lumi
-	void snap(unsigned int lumi);
-	void snapGlobal(unsigned int lumi);
-	void snapStreamAtomic(unsigned int lumi, unsigned int streamID);
+  JsonMonitorable* getMonitorable() const {return monitorable_;}
 
-	//set to track a variable
-	void trackMonitorable(JsonMonitorable *monitorable,bool NAifZeroUpdates);
+  bool usesGlobalCopy() {return useGlobalCopy_;}
 
-	//set to track a vector of variables
-	void trackVectorInt(std::string const& name, std::vector<unsigned int> *monvec, bool NAifZeroUpdates, bool global=false);
-
-	//set to track a vector of atomic variables with guaranteed collection
-	void trackVectorIntAtomic(std::string const& name, std::vector<AtomicMonInt*> *monvec, bool NAifZeroUpdates);
-
-	//variable not found by the service, but want to output something to JSON
-	void trackDummy(std::string const& name, bool setNAifZeroUpdates)
-	{
-		name_ = name;
-		isDummy_=true;
-		NAifZeroUpdates_=true;
-	}
-
-	void makeStreamLumiMap(unsigned int size);
-
-	//sets which operation is going to be performed on data (specified by JSON def)
-        void setOperation(OperationType op) {
-    		opType_=op;
-	}
-
-	//only used if per-stream DP (should use non-atomic vector here)
-	void setStreamLumiPtr(std::vector<unsigned int> *streamLumiPtr) {
-	  streamLumisPtr_=streamLumiPtr;
-	}
-
-	//fastpath (not implemented now)
-	std::string fastOutCSV();
-
-	//pointed object should be available until discard
-	JsonMonitorable * mergeAndRetrieveValue(unsigned int forLumi);
-
-	//get everything collected prepared for output
-	void mergeAndSerialize(Json::Value& jsonRoot, unsigned int lumi, bool initJsonValue);
-
-	//cleanup lumi
-	void discardCollected(unsigned int forLumi);
-
-	//this parameter sets location where we can find hwo many bins are needed for histogram 
-	void setNBins(unsigned int *nBins) {nBinsPtr_ = nBins;}
-
-	std::string const& getName() {return name_;}
-
-        void updateDefinition(std::string const& definition) {definition_=definition;}
-
-        void setDefinitionMap(std::map<std::string,DataPointDefinition*> *defMap) {defMap_=defMap;}
-
-	// JSON field names
-	static const std::string SOURCE;
-	static const std::string DEFINITION;
-	static const std::string DATA;
+  static const std::string SOURCE;
+  static const std::string DEFINITION;
+  static const std::string DATA;
 
 protected:
-	//for simple usage
-	std::string source_;
-	std::string definition_;
-        std::map<std::string,DataPointDefinition*> *defMap_=nullptr;
-        DataPointDefinition *def_=nullptr;
+  //std::string name_;
+  JsonMonitorable *monitorable_=nullptr;
+  std::vector<JsonMonitorable*> streamMonitorables_=nullptr;
 
-	std::vector<Json::Value> data_;
+  TrackedMonitorable tracked_;
+  bool useGlobalCopy_=true;
+  bool fastMon_=false;
 
-	std::vector<MonPtrMap> streamDataMaps_;
-	MonPtrMap globalDataMap_;
-	void *tracked_ = nullptr;
-
-        //stream lumi block position
-	std::vector<unsigned int> *streamLumisPtr_ = nullptr;
-
-	bool isStream_ = false;
-	bool isAtomic_ = false;
-	bool isDummy_ = false;
-	bool NAifZeroUpdates_ = false;
-        bool isFastOnly_;
-	
-	MonType monType_;
-	OperationType opType_;
-	std::string name_;
-
-	//helpers
-	uint32_t *buf_ = nullptr;
-	unsigned int bufLen_ =0;
-
-	unsigned int * nBinsPtr_ = nullptr;
-	int cacheI_;//int cache
-	bool isCached_=0;
-
-	unsigned int fastIndex_ = 0;
-
+  //json value cache
+  Json::Value value_;
+  bool isCached_=false;
 
 };
-}
+
+}//jsoncollector
 
 #endif /* DATAPOINT_H_ */

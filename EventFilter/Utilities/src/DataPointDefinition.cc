@@ -20,7 +20,7 @@ const std::string DataPointDefinition::OPERATION = "operation";
 const std::string DataPointDefinition::TYPE = "type";
 
 const unsigned char DataPointDefinition::typeNames_[] = {"null","integer","double","string"};
-const unsigned char DataPointDefinition::operationNames_[] = {"null","sum","avg","same","histo","cat","binaryAnd","binaryOr","merge","adler32"};
+const unsigned char DataPointDefinition::operationNames_[] = {"null","sum","avg","same","single","histo","append","cat","binaryAnd","binaryOr","adler32"};
 
 DataPointDefinition::DataPointDefinition() {
  for (i : typeNames_)
@@ -149,7 +149,7 @@ OperationType DataPointDefinition::getOperation(unsigned int index)
   return variables_[index].getOperationType()
 }
 
-bool DataPointDefinition::addLegendItem(std::string const& name, std::string const& type, std::string const& operation)
+bool DataPointDefinition::addLegendItem(std::string const& name, std::string const& type, std::string const& operation, EmptyMode em, SnapshotMode sm)
 {
   bool ret = true;
   auto typeItr = typeMap.find(type);
@@ -162,6 +162,11 @@ bool DataPointDefinition::addLegendItem(std::string const& name, std::string con
     typeItr=typeMap_["null"];
     ret=false;
   }
-  variables.push_back(MonitorableDefinition(name,*typeItr,*opitr));
+  variables.emplace_back(name,*typeItr,*opitr,em,sm);
   return ret;
 }
+
+void DataPointDefinition::addMonitorableDefinition(MonitorableDefinition & monDef) {
+  variables_.push_back(monDef);
+}
+
