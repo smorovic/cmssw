@@ -332,8 +332,10 @@ namespace evf {
       }
     } else {
       //return if not in empty lumisection mode
-      if (!edm::Service<evf::EvFDaqDirector>()->emptyLumisectionMode())
+      if (!edm::Service<evf::EvFDaqDirector>()->emptyLumisectionMode()) {
+        remove(openDatFilePath_.string().c_str());
         return;
+      }
       filelist_ = "";
       fileAdler32_.value()=-1;
     }
