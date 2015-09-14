@@ -54,7 +54,7 @@ namespace evf {
     hltSourceDirectory_(pset.getUntrackedParameter<std::string>("hltSourceDirectory","")),
     fuLockPollInterval_(pset.getUntrackedParameter<unsigned int>("fuLockPollInterval",2000)),
     emptyLumisectionMode_(pset.getUntrackedParameter<bool>("emptyLumisectionMode",false)),
-    micromergeDisabled_(pset.getUntrackedParameter<bool>("microMergeDisabled",false)),
+    microMergeDisabled_(pset.getUntrackedParameter<bool>("microMergeDisabled",false)),
     hostname_(""),
     bu_readlock_fd_(-1),
     bu_writelock_fd_(-1),
