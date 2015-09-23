@@ -54,6 +54,7 @@ namespace evf {
     hltSourceDirectory_(pset.getUntrackedParameter<std::string>("hltSourceDirectory","")),
     fuLockPollInterval_(pset.getUntrackedParameter<unsigned int>("fuLockPollInterval",2000)),
     emptyLumisectionMode_(pset.getUntrackedParameter<bool>("emptyLumisectionMode",false)),
+    microMergeDisabled_(pset.getUntrackedParameter<bool>("microMergeDisabled",false)),
     hostname_(""),
     bu_readlock_fd_(-1),
     bu_writelock_fd_(-1),
@@ -116,6 +117,12 @@ namespace evf {
     if (emptyLumiModePtr) {
         emptyLumisectionMode_ = true;
         edm::LogInfo("Setting empty lumisection mode");
+    }
+ 
+    char * microMergeDisabledPtr = getenv("FFF_MICROMERGEDISABLED");
+    if (microMergeDisabledPtr) {
+        microMergeDisabled_ = true;
+        edm::LogInfo("Disabling dat file micro-merge by the HLT process (delegated to the hlt daemon)");
     }
  
     // check if base dir exists or create it accordingly
@@ -348,6 +355,10 @@ namespace evf {
 
   std::string EvFDaqDirector::getOpenInputJsonFilePath(const unsigned int ls, const unsigned int index) const {
     return bu_run_dir_ + "/open/" + fffnaming::inputJsonFileName(run_,ls,index);
+  }
+
+  std::string EvFDaqDirector::getDatFilePath(const unsigned int ls, std::string const& stream) const {
+    return run_dir_ + "/" + fffnaming::streamerDataFileNameWithPid(run_,ls,stream);
   }
 
   std::string EvFDaqDirector::getOpenDatFilePath(const unsigned int ls, std::string const& stream) const {
