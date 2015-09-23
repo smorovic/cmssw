@@ -64,7 +64,7 @@ namespace evf {
     boost::shared_ptr<FastMonitor> jsonMonitor_;
     evf::FastMonitoringService *fms_;
     DataPointDefinition outJsonDef_;
-    unsigned char* outBuf_=0;
+    unsigned char* outBuf_=nullptr;
     bool readAdler32Check_=false;
 
 
@@ -208,6 +208,11 @@ namespace evf {
       readInput+=toRead;
     }
     fclose(src);
+    //free output buffer if micromerge is not done by the module
+    if (edm::Service<evf::EvFDaqDirector>()->microMergeDisabled()) {
+      delete [] outBuf_;
+      outBuf_=nullptr;
+    }
     uint32_t adler32c = (adlerb << 16) | adlera;
     if (adler32c != c_->get_adler32_ini()) {
       throw cms::Exception("RecoEventOutputModuleForFU") << "Checksum mismatch of ini file -: " << openIniFileName
