@@ -271,7 +271,7 @@ namespace evf {
 
       //lock
       struct stat istat;
-      if (edm::Service<evf::EvFDaqDirector>()->microMergeDisabled()) {
+      if (!edm::Service<evf::EvFDaqDirector>()->microMergeDisabled()) {
         FILE *des = edm::Service<evf::EvFDaqDirector>()->maybeCreateAndLockFileHeadForStream(ls.luminosityBlock(),stream_label_);
 
         std::string deschecksum = edm::Service<evf::EvFDaqDirector>()->getMergedDatChecksumFilePath(ls.luminosityBlock(), stream_label_);
