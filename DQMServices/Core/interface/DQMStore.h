@@ -722,6 +722,9 @@ class DQMStore
   IBooker * ibooker_;
   IGetter * igetter_;
 
+  bool                          cacheGlobalMEs=true;
+  MEMap                         dataCache_;
+
   friend class edm::DQMHttpSource;
   friend class DQMService;
   friend class DQMNet;

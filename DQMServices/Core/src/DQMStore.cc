@@ -460,6 +460,7 @@ void DQMStore::mergeAndResetMEsLuminositySummaryCache(uint32_t run,
     // be locked.
     std::lock_guard<std::mutex> guard(book_mutex_);
     std::set<MonitorElement>::const_iterator me = data_.find(global_me);
+    bool resetPerformed=false;
     if (me != data_.end()) {
       if (verbose_ > 1)
 	      std::cout << "Found global Object, using it --> " << me->getFullname() << std::endl;
@@ -480,17 +481,43 @@ void DQMStore::mergeAndResetMEsLuminositySummaryCache(uint32_t run,
     } else {
       if (verbose_ > 1)
         std::cout << "No global Object found. " << std::endl;
-      std::pair<std::set<MonitorElement>::const_iterator, bool> gme;
+      global_me.setLumi(0);
+      //look for same object already in cache (with special LS value 0)
+      std::set<MonitorElement>::const_iterator me_cached = dataCache_.find(global_me);
+      if (me_cached != dataCache_.end()) {
+        //no-clone ME copy
+        MonitorElement global_cached_me(*me_cached, MonitorElementNoCloneTag());
+        global_cached_me.object_ = me_cached->object_;
+        global_cached_me.refvalue_ = me_cached->refvalue_;
+        //remove cached copy, zero pointers first to prevent deletion
+        const_cast<MonitorElement*>(&*me_cached)->zeroRootPointers();
+        dataCache_.erase(me_cached);
 
-      // this makes an actual and a single copy with Clone()'ed th1
-      MonitorElement actual_global_me(*i);
-      actual_global_me.globalize();
-      actual_global_me.setLumi(lumi);
-      gme = data_.insert(std::move(actual_global_me));
-      assert(gme.second);
+        //ROOT TH Copy (does a bit less than clone) - TODO:should check if TProfile
+        //const_cast<MonitorElement*>(&*i)->getTH1()->Copy(*global_cached_me.getTH1());
+        //resetPerformed=false;
+        //or zero-copy:
+        //swap contents of monitor elements (currently causes assertion due to modules keeping TObject pointers)
+        const_cast<MonitorElement*>(&*i)->swapROOTObjects(global_cached_me);
+        resetPerformed=true;//reset is already done for swapped-in object
+
+        //set lumi and move to main store
+        global_cached_me.setLumi(lumi);
+        auto gme = data_.insert(std::move(global_cached_me));
+        assert(gme.second);
+      }
+      else {//no global copy in cache, clone a new one
+        ct3++;
+        MonitorElement actual_global_me(*i);
+        actual_global_me.globalize();
+        actual_global_me.setLumi(lumi);
+        auto gme = data_.insert(std::move(actual_global_me));
+        assert(gme.second);
+      }
     }
     // make the ME reusable for the next LS
-    const_cast<MonitorElement*>(&*i)->Reset();
+    if (!resetPerformed)
+      const_cast<MonitorElement*>(&*i)->Reset();
     ++i;
   }
 }
@@ -2592,8 +2619,29 @@ void DQMStore::savePB(const std::string &filename,
         delete toWrite;
       }
 
+      bool resetPerformed=false;
+      if (cacheGlobalMEs && mi->kind() >= MonitorElement::DQM_KIND_TH1F) { //only ROOT
+        //make no-clone copy to search for identical data member with LS 0
+        MonitorElement cache_me(*const_cast<MonitorElement*>(&*mi), MonitorElementNoCloneTag());
+        cache_me.setLumi(0);
+        MEMap::iterator pos = dataCache_.find(cache_me);
+        if (pos == dataCache_.end()) {
+          //steal ROOT pointers
+          cache_me.object_ = mi->object_;
+          cache_me.refvalue_ = mi->refvalue_;
+          //reset content
+ 	  cache_me.Reset();
+          resetPerformed=true;
+          const_cast<MonitorElement*>(&*mi)->zeroRootPointers();//zero pointers in original object to prevent being deleted when removed from set
+
+          std::pair<std::set<MonitorElement>::const_iterator, bool> gme;
+          gme = dataCache_.insert(std::move(cache_me));
+          assert(gme.second);
+        }
+        //else do nothing, leave it to be deleted as there is already object in cache
+      }
       //reset the ME just written to make it available for the next LS (online)
-      if (resetMEsAfterWriting)
+      if (resetMEsAfterWriting && !resetPerformed)
 	const_cast<MonitorElement*>(&*mi)->Reset();
     }
   }
@@ -2606,7 +2654,7 @@ void DQMStore::savePB(const std::string &filename,
   FileOutputStream file_stream(filedescriptor);
   GzipOutputStream::Options options;
   options.format = GzipOutputStream::GZIP;
-  options.compression_level = 6;
+  options.compression_level = 6;//1
   GzipOutputStream gzip_stream(&file_stream,
                                options);
   dqmstore_message.SerializeToZeroCopyStream(&gzip_stream);
