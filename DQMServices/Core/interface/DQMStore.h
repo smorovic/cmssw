@@ -712,6 +712,7 @@ class DQMStore
 
   std::string                   pwd_;
   MEMap                         data_;
+  MEMap                         dataCache_;
   std::set<std::string>         dirs_;
 
   QCMap                         qtests_;

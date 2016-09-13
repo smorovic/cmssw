@@ -28,6 +28,7 @@ ThroughputService::ThroughputService(const edm::ParameterSet & config, edm::Acti
 {
   registry.watchPreallocate(        this, & ThroughputService::preallocate );
   registry.watchPreStreamBeginRun(  this, & ThroughputService::preStreamBeginRun );
+  registry.watchPostStreamBeginLumi(this, & ThroughputService::postStreamBeginLumi );
   registry.watchPostStreamEndLumi(  this, & ThroughputService::postStreamEndLumi );
   registry.watchPostStreamEndRun(   this, & ThroughputService::postStreamEndRun );
   registry.watchPreSourceEvent(     this, & ThroughputService::preSourceEvent );
@@ -64,17 +65,28 @@ ThroughputService::preStreamBeginRun(edm::StreamContext const & sc)
     // define a callback that can book the histograms
     auto bookTransactionCallback = [&, this] (DQMStore::IBooker & booker) {
       booker.setCurrentFolder(m_dqm_path);
-      stream.sourced_events = booker.book1D("throughput_sourced",  "Throughput (sourced events)",   bins, 0., range)->getTH1F();
-      stream.sourced_events ->SetXTitle("time [s]");
-      stream.sourced_events ->SetYTitle(y_axis_title.c_str());
-      stream.retired_events = booker.book1D("throughput_retired",  "Throughput (retired events)",   bins, 0., range)->getTH1F();
-      stream.retired_events ->SetXTitle("time [s]");
-      stream.retired_events ->SetYTitle(y_axis_title.c_str());
+      stream.sourced_events = booker.book1D("throughput_sourced",  "Throughput (sourced events)",   bins, 0., range);
+      stream.sourced_events->setSwappableFlag();
+      stream.sourced_events->getTH1F() ->SetXTitle("time [s]");
+      stream.sourced_events->getTH1F() ->SetYTitle(y_axis_title.c_str());
+      stream.retired_events = booker.book1D("throughput_retired",  "Throughput (retired events)",   bins, 0., range);
+      stream.retired_events->setSwappableFlag();
+      stream.retired_events->getTH1F() ->SetXTitle("time [s]");
+      stream.retired_events->getTH1F() ->SetYTitle(y_axis_title.c_str());
     };
 
     // book MonitorElement's for this stream
     edm::Service<DQMStore>()->bookTransaction(bookTransactionCallback, sc.eventID().run(), sid, m_module_id);
   }
+}
+
+void
+ThroughputService::postStreamBeginLumi(edm::StreamContext const& sc)
+{
+  unsigned int sid = sc.streamID().value();
+  auto & stream = m_stream_histograms[sid];
+  stream.sourced_events_th = stream.sourced_events->getTH1F();
+  stream.retired_events_th = stream.retired_events->getTH1F();
 }
 
 void
@@ -95,7 +107,7 @@ void
 ThroughputService::preSourceEvent(edm::StreamID sid)
 {
   auto timestamp = std::chrono::steady_clock::now();
-  m_stream_histograms[sid].sourced_events->Fill( std::chrono::duration_cast<std::chrono::duration<double>>(timestamp - m_startup).count() );
+  m_stream_histograms[sid].sourced_events_th->Fill( std::chrono::duration_cast<std::chrono::duration<double>>(timestamp - m_startup).count() );
 }
 
 void
@@ -103,7 +115,7 @@ ThroughputService::postEvent(edm::StreamContext const & sc)
 {
   unsigned int sid = sc.streamID().value();
   auto timestamp = std::chrono::steady_clock::now();
-  m_stream_histograms[sid].retired_events->Fill( std::chrono::duration_cast<std::chrono::duration<double>>(timestamp - m_startup).count() );
+  m_stream_histograms[sid].retired_events_th->Fill( std::chrono::duration_cast<std::chrono::duration<double>>(timestamp - m_startup).count() );
 }
 
 

@@ -187,7 +187,8 @@ private:
     FastTimer                   timer;              // per-event timer
     double                      time_active;        // time actually spent in this module
     double                      summary_active;
-    TH1F *                      dqm_active;
+    MonitorElement *            dqm_active;
+    TH1F *                      dqm_active_th;
     PathInfo *                  run_in_path;        // the path inside which the module was atually active
     uint32_t                    counter;            // count how many times the module was scheduled to run
 
@@ -215,6 +216,10 @@ private:
       run_in_path = nullptr;
       counter = 0;
     }
+
+    void refresh() {
+      dqm_active_th = dqm_active->getTH1F();
+    }
   };
 
   struct PathInfo {
@@ -237,16 +242,26 @@ private:
     uint32_t                    last_run;           // index of the last module run in this path, plus one
     uint32_t                    index;              // index of the Path or EndPath in the "schedule"
     bool                        accept;             // flag indicating if the path acepted the event
-    TH1F *                      dqm_active;         // see time_active
-    TH1F *                      dqm_exclusive;      // see time_exclusive
-    TH1F *                      dqm_premodules;     // see time_premodules
-    TH1F *                      dqm_intermodules;   // see time_intermodules
-    TH1F *                      dqm_postmodules;    // see time_postmodules
-    TH1F *                      dqm_overhead;       // see time_overhead
-    TH1F *                      dqm_total;          // see time_total
-    TH1F *                      dqm_module_counter; // for each module in the path, track how many times it ran
-    TH1F *                      dqm_module_active;  // for each module in the path, track the active time spent
-    TH1F *                      dqm_module_total;   // for each module in the path, track the total time spent
+    MonitorElement *                      dqm_active;         // see time_active
+    MonitorElement *                      dqm_exclusive;      // see time_exclusive
+    MonitorElement *                      dqm_premodules;     // see time_premodules
+    MonitorElement *                      dqm_intermodules;   // see time_intermodules
+    MonitorElement *                      dqm_postmodules;    // see time_postmodules
+    MonitorElement *                      dqm_overhead;       // see time_overhead
+    MonitorElement *                      dqm_total;          // see time_total
+    MonitorElement *                      dqm_module_counter; // for each module in the path, track how many times it ran
+    MonitorElement *                      dqm_module_active;  // for each module in the path, track the active time spent
+    MonitorElement *                      dqm_module_total;   // for each module in the path, track the total time spent
+    TH1F *                      dqm_active_th;
+    TH1F *                      dqm_exclusive_th;
+    TH1F *                      dqm_premodules_th;
+    TH1F *                      dqm_intermodules_th;
+    TH1F *                      dqm_postmodules_th;
+    TH1F *                      dqm_overhead_th;
+    TH1F *                      dqm_total_th;
+    TH1F *                      dqm_module_counter_th;
+    TH1F *                      dqm_module_active_th;
+    TH1F *                      dqm_module_total_th;
 
   public:
     PathInfo() :
@@ -278,7 +293,17 @@ private:
       dqm_total(nullptr),
       dqm_module_counter(nullptr),
       dqm_module_active(nullptr),
-      dqm_module_total(nullptr)
+      dqm_module_total(nullptr),
+      dqm_active_th(nullptr),
+      dqm_exclusive_th(nullptr),
+      dqm_premodules_th(nullptr),
+      dqm_intermodules_th(nullptr),
+      dqm_postmodules_th(nullptr),
+      dqm_overhead_th(nullptr),
+      dqm_total_th(nullptr),
+      dqm_module_counter_th(nullptr),
+      dqm_module_active_th(nullptr),
+      dqm_module_total_th(nullptr)
     { }
 
     ~PathInfo() {
@@ -316,6 +341,28 @@ private:
       dqm_module_counter = nullptr;
       dqm_module_active = nullptr;
       dqm_module_total = nullptr;
+      dqm_active_th = nullptr;
+      dqm_premodules_th = nullptr;
+      dqm_intermodules_th = nullptr;
+      dqm_postmodules_th = nullptr;
+      dqm_overhead_th = nullptr;
+      dqm_total_th = nullptr;
+      dqm_module_counter_th = nullptr;
+      dqm_module_active_th = nullptr;
+      dqm_module_total_th = nullptr;
+    }
+
+    void refresh() {
+      if (dqm_active) dqm_active_th=dqm_active->getTH1F();
+      if (dqm_exclusive) dqm_exclusive_th=dqm_exclusive->getTH1F();
+      if (dqm_premodules) dqm_premodules_th=dqm_premodules->getTH1F();
+      if (dqm_intermodules) dqm_intermodules_th=dqm_intermodules->getTH1F();
+      if (dqm_postmodules) dqm_postmodules_th=dqm_postmodules->getTH1F();
+      if (dqm_overhead) dqm_overhead_th=dqm_overhead->getTH1F();
+      if (dqm_total) dqm_total_th=dqm_total->getTH1F();
+      if (dqm_module_counter) dqm_module_counter_th=dqm_module_counter->getTH1F();
+      if (dqm_module_active) dqm_module_active_th=dqm_module_active->getTH1F();
+      if (dqm_module_total) dqm_module_total_th=dqm_module_total->getTH1F();
     }
   };
 
@@ -461,16 +508,24 @@ private:
 
   // set of summary plots, over all subprocesses
   struct SummaryPlots {
-    TH1F *     presource;
-    TH1F *     source;
-    TH1F *     preevent;
-    TH1F *     event;
+    MonitorElement *     presource;
+    MonitorElement *     source;
+    MonitorElement *     preevent;
+    MonitorElement *     event;
+    TH1F * presource_th;
+    TH1F * source_th;
+    TH1F * preevent_th;
+    TH1F * event_th;
 
     SummaryPlots() :
       presource     (nullptr),
       source        (nullptr),
       preevent      (nullptr),
-      event         (nullptr)
+      event         (nullptr),
+      presource_th  (nullptr),
+      source_th     (nullptr),
+      preevent_th   (nullptr),
+      event_th      (nullptr)
     { }
 
     void reset() {
@@ -479,32 +534,53 @@ private:
       source        = nullptr;
       preevent      = nullptr;
       event         = nullptr;
+      presource_th  = nullptr;
+      source_th     = nullptr;
+      preevent_th   = nullptr;
+      event_th      = nullptr;
+    }
+
+    void refresh() {
+      if (presource) presource_th = presource->getTH1F();
+      if (source) source_th = source->getTH1F();
+      if (preevent) preevent_th = preevent->getTH1F();
+      if (event) event_th = event->getTH1F();
     }
 
     void fill(Timing const & value) {
       // convert on the fly from seconds to ms
-      presource     ->Fill( 1000. * value.presource );
-      source        ->Fill( 1000. * value.source );
-      preevent      ->Fill( 1000. * value.preevent );
-      event         ->Fill( 1000. * value.event );
+      presource_th     ->Fill( 1000. * value.presource );
+      source_th        ->Fill( 1000. * value.source );
+      preevent_th      ->Fill( 1000. * value.preevent );
+      event_th         ->Fill( 1000. * value.event );
     }
 
   };
 
   // set of summary plots, per subprocess
   struct SummaryPlotsPerProcess {
-    TH1F *     preevent;
-    TH1F *     event;
-    TH1F *     all_paths;
-    TH1F *     all_endpaths;
-    TH1F *     interpaths;
+    MonitorElement *     preevent;
+    MonitorElement *     event;
+    MonitorElement *     all_paths;
+    MonitorElement *     all_endpaths;
+    MonitorElement *     interpaths;
+    TH1F * preevent_th;
+    TH1F * event_th;
+    TH1F * all_paths_th;
+    TH1F * all_endpaths_th;
+    TH1F * interpaths_th;
 
     SummaryPlotsPerProcess() :
       preevent      (nullptr),
       event         (nullptr),
       all_paths     (nullptr),
       all_endpaths  (nullptr),
-      interpaths    (nullptr)
+      interpaths    (nullptr),
+      preevent_th    (nullptr),
+      event_th       (nullptr),
+      all_paths_th   (nullptr),
+      all_endpaths_th  (nullptr),
+      interpaths_th    (nullptr)
     { }
 
     void reset() {
@@ -514,31 +590,51 @@ private:
       all_paths     = nullptr;
       all_endpaths  = nullptr;
       interpaths    = nullptr;
+      preevent_th   = nullptr;
+      event_th      = nullptr;
+      all_paths_th  = nullptr;
+      all_endpaths_th  = nullptr;
+      interpaths_th    = nullptr;
+    }
+
+    void refresh() {
+      if (preevent) preevent_th = preevent->getTH1F();
+      if (event) event_th = event->getTH1F();
+      if (all_paths) all_paths_th = all_paths->getTH1F();
+      if (all_endpaths) all_endpaths_th = all_endpaths->getTH1F();
+      if (interpaths) interpaths_th = interpaths->getTH1F();
     }
 
     void fill(TimingPerProcess const & value) {
-      // convert on the fly from seconds to ms
-      preevent      ->Fill( 1000. * value.preevent );
-      event         ->Fill( 1000. * value.event );
-      all_paths     ->Fill( 1000. * value.all_paths );
-      all_endpaths  ->Fill( 1000. * value.all_endpaths );
-      interpaths    ->Fill( 1000. * value.interpaths );
+      preevent_th      ->Fill( 1000. * value.preevent );
+      event_th         ->Fill( 1000. * value.event );
+      all_paths_th     ->Fill( 1000. * value.all_paths );
+      all_endpaths_th  ->Fill( 1000. * value.all_endpaths );
+      interpaths_th    ->Fill( 1000. * value.interpaths );
     }
 
   };
 
   // set of summary profiles vs. luminosity, over all subprocesses
   struct SummaryProfiles {
-    TProfile * presource;
-    TProfile * source;
-    TProfile * preevent;
-    TProfile * event;
+    MonitorElement * presource;
+    MonitorElement * source;
+    MonitorElement * preevent;
+    MonitorElement * event;
+    TProfile * presource_tp;
+    TProfile * source_tp;
+    TProfile * preevent_tp;
+    TProfile * event_tp;
 
     SummaryProfiles() :
       presource     (nullptr),
       source        (nullptr),
       preevent      (nullptr),
-      event         (nullptr)
+      event         (nullptr),
+      presource_tp  (nullptr),
+      source_tp     (nullptr),
+      preevent_tp   (nullptr),
+      event_tp      (nullptr)
     { }
 
     void reset() {
@@ -547,31 +643,52 @@ private:
       source        = nullptr;
       preevent      = nullptr;
       event         = nullptr;
+      presource_tp  = nullptr;
+      source_tp     = nullptr;
+      preevent_tp   = nullptr;
+      event_tp      = nullptr;
+    }
+
+    void refresh() {
+      if (presource) presource_tp = presource->getTProfile();
+      if (source) source_tp = source->getTProfile();
+      if (preevent) preevent_tp = preevent->getTProfile();
+      if (event) event_tp = event->getTProfile();
     }
 
     void fill(double x, Timing const & value) {
-      presource     ->Fill( x, 1000. * value.presource );
-      source        ->Fill( x, 1000. * value.source );
-      preevent      ->Fill( x, 1000. * value.preevent );
-      event         ->Fill( x, 1000. * value.event );
+      presource_tp     ->Fill( x, 1000. * value.presource );
+      source_tp        ->Fill( x, 1000. * value.source );
+      preevent_tp      ->Fill( x, 1000. * value.preevent );
+      event_tp         ->Fill( x, 1000. * value.event );
     }
 
   };
 
   // set of summary profiles vs. luminosity, per subprocess
   struct SummaryProfilesPerProcess {
-    TProfile * preevent;
-    TProfile * event;
-    TProfile * all_paths;
-    TProfile * all_endpaths;
-    TProfile * interpaths;
+    MonitorElement * preevent;
+    MonitorElement * event;
+    MonitorElement * all_paths;
+    MonitorElement * all_endpaths;
+    MonitorElement * interpaths;
+    TProfile * preevent_tp;
+    TProfile * event_tp;
+    TProfile * all_paths_tp;
+    TProfile * all_endpaths_tp;
+    TProfile * interpaths_tp;
 
     SummaryProfilesPerProcess() :
       preevent      (nullptr),
       event         (nullptr),
       all_paths     (nullptr),
       all_endpaths  (nullptr),
-      interpaths    (nullptr)
+      interpaths    (nullptr),
+      preevent_tp   (nullptr),
+      event_tp      (nullptr),
+      all_paths_tp  (nullptr),
+      all_endpaths_tp  (nullptr),
+      interpaths_tp    (nullptr)
     { }
 
     ~SummaryProfilesPerProcess() {
@@ -585,30 +702,51 @@ private:
       all_paths     = nullptr;
       all_endpaths  = nullptr;
       interpaths    = nullptr;
+      preevent_tp   = nullptr;
+      event_tp      = nullptr;
+      all_paths_tp  = nullptr;
+      all_endpaths_tp  = nullptr;
+      interpaths_tp    = nullptr;
+    }
+
+    void refresh() {
+      if (preevent) preevent_tp = preevent->getTProfile();
+      if (event) event_tp = event->getTProfile();
+      if (all_paths) all_paths_tp = all_paths->getTProfile();
+      if (all_endpaths) all_endpaths_tp = all_endpaths->getTProfile();
+      if (interpaths) interpaths_tp = interpaths->getTProfile();
     }
 
     void fill(double x, TimingPerProcess const & value) {
-      preevent      ->Fill( x, 1000. * value.preevent );
-      event         ->Fill( x, 1000. * value.event );
-      all_paths     ->Fill( x, 1000. * value.all_paths );
-      all_endpaths  ->Fill( x, 1000. * value.all_endpaths );
-      interpaths    ->Fill( x, 1000. * value.interpaths );
+      preevent_tp      ->Fill( x, 1000. * value.preevent );
+      event_tp         ->Fill( x, 1000. * value.event );
+      all_paths_tp     ->Fill( x, 1000. * value.all_paths );
+      all_endpaths_tp  ->Fill( x, 1000. * value.all_endpaths );
+      interpaths_tp    ->Fill( x, 1000. * value.interpaths );
     }
 
   };
 
   // set of profile plots by path, per subprocess
   struct PathProfilesPerProcess {
-    TProfile * active_time;
-    TProfile * total_time;
-    TProfile * exclusive_time;
-    TProfile * interpaths;
+    MonitorElement * active_time;
+    MonitorElement * total_time;
+    MonitorElement * exclusive_time;
+    MonitorElement * interpaths;
+    TProfile * active_time_tp;
+    TProfile * total_time_tp;
+    TProfile * exclusive_time_tp;
+    TProfile * interpaths_tp;
 
     PathProfilesPerProcess() :
       active_time   (nullptr),
       total_time    (nullptr),
       exclusive_time(nullptr),
-      interpaths    (nullptr)
+      interpaths    (nullptr),
+      active_time_tp   (nullptr),
+      total_time_tp    (nullptr),
+      exclusive_time_tp(nullptr),
+      interpaths_tp    (nullptr)
     {}
 
     ~PathProfilesPerProcess() {
@@ -621,6 +759,17 @@ private:
       total_time     = nullptr;
       exclusive_time = nullptr;
       interpaths     = nullptr;
+      active_time_tp    = nullptr;
+      total_time_tp     = nullptr;
+      exclusive_time_tp = nullptr;
+      interpaths_tp     = nullptr;
+    }
+
+    void refresh() {
+      if (active_time) active_time_tp = active_time->getTProfile();
+      if (total_time) total_time_tp = total_time->getTProfile();
+      if (exclusive_time) exclusive_time_tp = exclusive_time->getTProfile();
+      if (interpaths) interpaths_tp = interpaths->getTProfile();
     }
 
   };

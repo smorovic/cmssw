@@ -34,6 +34,7 @@ public:
 private:
   void preallocate(edm::service::SystemBounds const & bounds);
   void preStreamBeginRun(edm::StreamContext const & sc);
+  void postStreamBeginLumi(edm::StreamContext const& sc);
   void postStreamEndLumi(edm::StreamContext const& sc);
   void postStreamEndRun(edm::StreamContext const & sc);
   void preSourceEvent(edm::StreamID sid);
@@ -48,11 +49,15 @@ private:
   {
     stream_histograms() :
       sourced_events(nullptr),
-      retired_events(nullptr)
+      retired_events(nullptr),
+      sourced_events_th(nullptr),
+      retired_events_th(nullptr)
     { }
 
-    TH1F * sourced_events;
-    TH1F * retired_events;
+    MonitorElement * sourced_events;
+    MonitorElement * retired_events;
+    TH1F * sourced_events_th;
+    TH1F * retired_events_th;
   };
 
   std::vector<stream_histograms>        m_stream_histograms;
