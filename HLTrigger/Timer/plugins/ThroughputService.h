@@ -51,8 +51,8 @@ private:
       retired_events(nullptr)
     { }
 
-    TH1F * sourced_events;
-    TH1F * retired_events;
+    MonitorElement * sourced_events;
+    MonitorElement * retired_events;
   };
 
   std::vector<stream_histograms>        m_stream_histograms;

@@ -120,28 +120,28 @@ private:
   // L1T and HLT rate plots
 
   struct HLTRatesPlots {
-    TH1F * pass_l1_seed;
-    TH1F * pass_prescale;
-    TH1F * accept;
-    TH1F * reject;
-    TH1F * error;
+    MonitorElement * pass_l1_seed;
+    MonitorElement * pass_prescale;
+    MonitorElement * accept;
+    MonitorElement * reject;
+    MonitorElement * error;
   };
 
   // overall event count and event types
-  TH1F *                        m_events_processed;
-  std::vector<TH1F *>           m_tcds_counts;
+  MonitorElement *                        m_events_processed;
+  std::vector<MonitorElement *>           m_tcds_counts;
 
   // L1T triggers
-  std::vector<TH1F *>           m_l1t_counts;
+  std::vector<MonitorElement *>           m_l1t_counts;
 
   // HLT triggers
   std::vector<HLTRatesPlots>    m_hlt_counts;
 
   // datasets
-  std::vector<TH1F *>           m_dataset_counts;
+  std::vector<MonitorElement *>           m_dataset_counts;
 
   // streams
-  std::vector<TH1F *>           m_stream_counts;
+  std::vector<MonitorElement *>           m_stream_counts;
 
 };
 
@@ -192,6 +192,7 @@ TriggerRatesMonitor::~TriggerRatesMonitor()
 
 void TriggerRatesMonitor::dqmBeginRun(edm::Run const & run, edm::EventSetup const & setup)
 {
+
   m_events_processed = nullptr;
   m_tcds_counts.clear();
   m_tcds_counts.resize(sizeof(s_tcds_trigger_types)/sizeof(const char *), nullptr);
@@ -251,12 +252,14 @@ void TriggerRatesMonitor::bookHistograms(DQMStore::IBooker & booker, edm::Run co
 {
   // book the overall event count and event types histograms
   booker.setCurrentFolder( m_dqm_path );
-  m_events_processed = booker.book1D("events", "Processed events vs. lumisection", m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5)->getTH1F();
+  m_events_processed = booker.book1D("events", "Processed events vs. lumisection", m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5);
+  m_events_processed->setSwappableFlag();
   booker.setCurrentFolder( m_dqm_path + "/TCDS" );
   for (unsigned int i = 0; i < sizeof(s_tcds_trigger_types)/sizeof(const char *); ++i)
     if (s_tcds_trigger_types[i]) {
       std::string const & title = (boost::format("%s events vs. lumisection") % s_tcds_trigger_types[i]).str();
-      m_tcds_counts[i] = booker.book1D(s_tcds_trigger_types[i], title, m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5)->getTH1F();
+      m_tcds_counts[i] = booker.book1D(s_tcds_trigger_types[i], title, m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5);
+      m_tcds_counts[i]->setSwappableFlag();
     }
 
   if (m_l1tMenu) {
@@ -267,7 +270,8 @@ void TriggerRatesMonitor::bookHistograms(DQMStore::IBooker & booker, edm::Run co
       bool masked = false;      // FIXME read L1 masks once they will be avaiable in the EventSetup
       std::string const & name  = (boost::format("%s (bit %d)") % keyval.first % bit).str();
       std::string const & title = (boost::format("%s (bit %d)%s vs. lumisection") % keyval.first % bit % (masked ? " (masked)" : "")).str();
-      m_l1t_counts.at(bit) = booker.book1D(name, title, m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5)->getTH1F();
+      m_l1t_counts.at(bit) = booker.book1D(name, title, m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5);
+      m_l1t_counts.at(bit)->setSwappableFlag();
     }
   }
 
@@ -276,11 +280,16 @@ void TriggerRatesMonitor::bookHistograms(DQMStore::IBooker & booker, edm::Run co
     booker.setCurrentFolder( m_dqm_path + "/HLT" );
     for (unsigned int i = 0; i < m_hltConfig.size(); ++i) {
       std::string const & name = m_hltConfig.triggerName(i);
-      m_hlt_counts[i].pass_l1_seed  = booker.book1D(name + " pass L1 seed",     name + " pass L1 seed, vs. lumisection",     m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5)->getTH1F();
-      m_hlt_counts[i].pass_prescale = booker.book1D(name + " pass prescaler",   name + " pass prescaler, vs. lumisection",   m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5)->getTH1F();
-      m_hlt_counts[i].accept        = booker.book1D(name + " accept",           name + " accept, vs. lumisection",           m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5)->getTH1F();
-      m_hlt_counts[i].reject        = booker.book1D(name + " reject",           name + " reject, vs. lumisection",           m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5)->getTH1F();
-      m_hlt_counts[i].error         = booker.book1D(name + " error",            name + " error, vs. lumisection",            m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5)->getTH1F();
+      m_hlt_counts[i].pass_l1_seed  = booker.book1D(name + " pass L1 seed",     name + " pass L1 seed, vs. lumisection",     m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5);
+      m_hlt_counts[i].pass_prescale = booker.book1D(name + " pass prescaler",   name + " pass prescaler, vs. lumisection",   m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5);
+      m_hlt_counts[i].accept        = booker.book1D(name + " accept",           name + " accept, vs. lumisection",           m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5);
+      m_hlt_counts[i].reject        = booker.book1D(name + " reject",           name + " reject, vs. lumisection",           m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5);
+      m_hlt_counts[i].error         = booker.book1D(name + " error",            name + " error, vs. lumisection",            m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5);
+      m_hlt_counts[i].pass_l1_seed->setSwappableFlag();
+      m_hlt_counts[i].pass_prescale->setSwappableFlag();
+      m_hlt_counts[i].accept->setSwappableFlag();
+      m_hlt_counts[i].reject->setSwappableFlag();
+      m_hlt_counts[i].error->setSwappableFlag();
       // look for the index of the (last) L1 seed and prescale module in each path
       m_hltIndices[i].index_l1_seed  = m_hltConfig.size(i);
       m_hltIndices[i].index_prescale = m_hltConfig.size(i);
@@ -303,14 +312,18 @@ void TriggerRatesMonitor::bookHistograms(DQMStore::IBooker & booker, edm::Run co
     // book the HLT datasets rate histograms
     booker.setCurrentFolder( m_dqm_path + "/Datasets" );
     auto const & datasets = m_hltConfig.datasetNames();
-    for (unsigned int i = 0; i < datasets.size(); ++i)
-      m_dataset_counts[i] = booker.book1D(datasets[i], datasets[i], m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5)->getTH1F();
+    for (unsigned int i = 0; i < datasets.size(); ++i) {
+      m_dataset_counts[i] = booker.book1D(datasets[i], datasets[i], m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5);
+      m_dataset_counts[i]->setSwappableFlag();
+    }
 
     // book the HLT streams rate histograms
     booker.setCurrentFolder( m_dqm_path + "/Streams" );
     auto const & streams = m_hltConfig.streamNames();
-    for (unsigned int i = 0; i < streams.size(); ++i)
-      m_stream_counts[i]  = booker.book1D(streams[i],  streams[i],  m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5)->getTH1F();
+    for (unsigned int i = 0; i < streams.size(); ++i) {
+      m_stream_counts[i]  = booker.book1D(streams[i],  streams[i],  m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5);
+      m_stream_counts[i]->setSwappableFlag();
+    }
   }
 }
 
@@ -320,9 +333,9 @@ void TriggerRatesMonitor::analyze(edm::Event const & event, edm::EventSetup cons
   unsigned int lumisection = event.luminosityBlock();
 
   // monitor the overall event count and event types rates
-  m_events_processed->Fill(lumisection);
+  m_events_processed->getTH1F()->Fill(lumisection);
   if (m_tcds_counts[event.experimentType()])
-    m_tcds_counts[event.experimentType()]->Fill(lumisection);
+    m_tcds_counts[event.experimentType()]->getTH1F()->Fill(lumisection);
 
   // monitor the L1 triggers rates
   if (m_l1tMenu) {
@@ -332,7 +345,7 @@ void TriggerRatesMonitor::analyze(edm::Event const & event, edm::EventSetup cons
       for (unsigned int i = 0; i < GlobalAlgBlk::maxPhysicsTriggers; ++i)
         if (results.getAlgoDecisionFinal(i))
           if (m_l1t_counts[i])
-            m_l1t_counts[i]->Fill(lumisection);
+            m_l1t_counts[i]->getTH1F()->Fill(lumisection);
     }
   }
 
@@ -343,15 +356,15 @@ void TriggerRatesMonitor::analyze(edm::Event const & event, edm::EventSetup cons
       for (unsigned int i = 0; i < m_hlt_counts.size(); ++i) {
         edm::HLTPathStatus const & path = hltResults.at(i);
         if (path.index() > m_hltIndices[i].index_l1_seed)
-          m_hlt_counts[i].pass_l1_seed->Fill(lumisection);
+          m_hlt_counts[i].pass_l1_seed->getTH1F()->Fill(lumisection);
         if  (path.index() > m_hltIndices[i].index_prescale)
-          m_hlt_counts[i].pass_prescale->Fill(lumisection);
+          m_hlt_counts[i].pass_prescale->getTH1F()->Fill(lumisection);
         if (path.accept())
-          m_hlt_counts[i].accept->Fill(lumisection);
+          m_hlt_counts[i].accept->getTH1F()->Fill(lumisection);
         else if (path.error())
-          m_hlt_counts[i].error ->Fill(lumisection);
+          m_hlt_counts[i].error ->getTH1F()->Fill(lumisection);
         else
-          m_hlt_counts[i].reject->Fill(lumisection);
+          m_hlt_counts[i].reject->getTH1F()->Fill(lumisection);
       }
     } else {
       edm::LogWarning("TriggerRatesMonitor") << "This should never happen: the number of HLT paths has changed since the beginning of the run";
@@ -360,7 +373,7 @@ void TriggerRatesMonitor::analyze(edm::Event const & event, edm::EventSetup cons
     for (unsigned int i = 0; i < m_datasets.size(); ++i)
       for (unsigned int j: m_datasets[i])
         if (hltResults.at(j).accept()) {
-          m_dataset_counts[i]->Fill(lumisection);
+          m_dataset_counts[i]->getTH1F()->Fill(lumisection);
           // ensure each dataset is incremented only once per event
           break;
         }
@@ -368,7 +381,7 @@ void TriggerRatesMonitor::analyze(edm::Event const & event, edm::EventSetup cons
     for (unsigned int i = 0; i < m_streams.size(); ++i)
       for (unsigned int j: m_streams[i])
         if (hltResults.at(j).accept()) {
-          m_stream_counts[i]->Fill(lumisection);
+          m_stream_counts[i]->getTH1F()->Fill(lumisection);
           // ensure each stream is incremented only once per event
           break;
         }

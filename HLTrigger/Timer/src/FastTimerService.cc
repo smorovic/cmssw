@@ -274,70 +274,83 @@ void FastTimerService::preStreamBeginRun(edm::StreamContext const & sc)
       // whole event
       if (pid == 0) {
         booker.setCurrentFolder(m_dqm_path);
-        stream.dqm.presource     = booker.book1D("presource",    "Pre-Source processing time",    modulebins, 0., m_dqm_moduletime_range)->getTH1F();
-        stream.dqm.presource     ->StatOverflows(true);
-        stream.dqm.presource     ->SetXTitle("processing time [ms]");
-        stream.dqm.source        = booker.book1D("source",       "Source processing time",        modulebins, 0., m_dqm_moduletime_range)->getTH1F();
-        stream.dqm.source        ->StatOverflows(true);
-        stream.dqm.source        ->SetXTitle("processing time [ms]");
-        stream.dqm.preevent      = booker.book1D("preevent",     "Pre-Event processing time",     modulebins, 0., m_dqm_moduletime_range)->getTH1F();
-        stream.dqm.preevent      ->StatOverflows(true);
-        stream.dqm.preevent      ->SetXTitle("processing time [ms]");
-        stream.dqm.event         = booker.book1D("event",        "Event processing time",         eventbins,  0., m_dqm_eventtime_range)->getTH1F();
-        stream.dqm.event         ->StatOverflows(true);
-        stream.dqm.event         ->SetXTitle("processing time [ms]");
+        stream.dqm.presource     = booker.book1D("presource",    "Pre-Source processing time",    modulebins, 0., m_dqm_moduletime_range);
+        stream.dqm.presource->setSwappableFlag();
+        stream.dqm.presource->getTH1F()     ->StatOverflows(true);
+        stream.dqm.presource->getTH1F()     ->SetXTitle("processing time [ms]");
+        stream.dqm.source        = booker.book1D("source",       "Source processing time",        modulebins, 0., m_dqm_moduletime_range);
+        stream.dqm.source->setSwappableFlag();
+        stream.dqm.source->getTH1F()        ->StatOverflows(true);
+        stream.dqm.source->getTH1F()        ->SetXTitle("processing time [ms]");
+        stream.dqm.preevent      = booker.book1D("preevent",     "Pre-Event processing time",     modulebins, 0., m_dqm_moduletime_range);
+        stream.dqm.preevent->setSwappableFlag();
+        stream.dqm.preevent->getTH1F()      ->StatOverflows(true);
+        stream.dqm.preevent->getTH1F()      ->SetXTitle("processing time [ms]");
+        stream.dqm.event         = booker.book1D("event",        "Event processing time",         eventbins,  0., m_dqm_eventtime_range);
+        stream.dqm.event->setSwappableFlag();
+        stream.dqm.event->getTH1F()         ->StatOverflows(true);
+        stream.dqm.event->getTH1F()         ->SetXTitle("processing time [ms]");
       }
 
       // per subprocess
       booker.setCurrentFolder(m_dqm_path + "/process " + process_name);
-      stream.dqm_perprocess[pid].preevent      = booker.book1D("preevent",     "Pre-Event processing time",     modulebins, 0., m_dqm_moduletime_range)->getTH1F();
-      stream.dqm_perprocess[pid].preevent      ->StatOverflows(true);
-      stream.dqm_perprocess[pid].preevent      ->SetXTitle("processing time [ms]");
-      stream.dqm_perprocess[pid].event         = booker.book1D("event",        "Event processing time",         eventbins,  0., m_dqm_eventtime_range)->getTH1F();
-      stream.dqm_perprocess[pid].event         ->StatOverflows(true);
-      stream.dqm_perprocess[pid].event         ->SetXTitle("processing time [ms]");
-      stream.dqm_perprocess[pid].all_paths     = booker.book1D("all_paths",    "Paths processing time",         eventbins,  0., m_dqm_eventtime_range)->getTH1F();
-      stream.dqm_perprocess[pid].all_paths     ->StatOverflows(true);
-      stream.dqm_perprocess[pid].all_paths     ->SetXTitle("processing time [ms]");
-      stream.dqm_perprocess[pid].all_endpaths  = booker.book1D("all_endpaths", "EndPaths processing time",      pathbins,   0., m_dqm_pathtime_range)->getTH1F();
-      stream.dqm_perprocess[pid].all_endpaths  ->StatOverflows(true);
-      stream.dqm_perprocess[pid].all_endpaths  ->SetXTitle("processing time [ms]");
-      stream.dqm_perprocess[pid].interpaths    = booker.book1D("interpaths",   "Time spent between paths",      pathbins,   0., m_dqm_eventtime_range)->getTH1F();
-      stream.dqm_perprocess[pid].interpaths    ->StatOverflows(true);
-      stream.dqm_perprocess[pid].interpaths    ->SetXTitle("processing time [ms]");
+      stream.dqm_perprocess[pid].preevent      = booker.book1D("preevent",     "Pre-Event processing time",     modulebins, 0., m_dqm_moduletime_range);
+      stream.dqm_perprocess[pid].preevent->setSwappableFlag();
+      stream.dqm_perprocess[pid].preevent->getTH1F()      ->StatOverflows(true);
+      stream.dqm_perprocess[pid].preevent->getTH1F()      ->SetXTitle("processing time [ms]");
+      stream.dqm_perprocess[pid].event         = booker.book1D("event",        "Event processing time",         eventbins,  0., m_dqm_eventtime_range);
+      stream.dqm_perprocess[pid].event->setSwappableFlag();
+      stream.dqm_perprocess[pid].event->getTH1F()         ->StatOverflows(true);
+      stream.dqm_perprocess[pid].event->getTH1F()         ->SetXTitle("processing time [ms]");
+      stream.dqm_perprocess[pid].all_paths     = booker.book1D("all_paths",    "Paths processing time",         eventbins,  0., m_dqm_eventtime_range);
+      stream.dqm_perprocess[pid].all_paths->setSwappableFlag();
+      stream.dqm_perprocess[pid].all_paths->getTH1F()     ->StatOverflows(true);
+      stream.dqm_perprocess[pid].all_paths->getTH1F()     ->SetXTitle("processing time [ms]");
+      stream.dqm_perprocess[pid].all_endpaths  = booker.book1D("all_endpaths", "EndPaths processing time",      pathbins,   0., m_dqm_pathtime_range);
+      stream.dqm_perprocess[pid].all_endpaths->setSwappableFlag();
+      stream.dqm_perprocess[pid].all_endpaths->getTH1F()  ->StatOverflows(true);
+      stream.dqm_perprocess[pid].all_endpaths->getTH1F()  ->SetXTitle("processing time [ms]");
+      stream.dqm_perprocess[pid].interpaths    = booker.book1D("interpaths",   "Time spent between paths",      pathbins,   0., m_dqm_eventtime_range);
+      stream.dqm_perprocess[pid].interpaths->setSwappableFlag();
+      stream.dqm_perprocess[pid].interpaths->getTH1F()    ->StatOverflows(true);
+      stream.dqm_perprocess[pid].interpaths->getTH1F()    ->SetXTitle("processing time [ms]");
     }
 
     // plots by path
     if (m_enable_timing_paths) {
       booker.setCurrentFolder(m_dqm_path + "/process " + process_name);
-      stream.dqm_paths[pid].active_time     = booker.bookProfile("paths_active_time",    "Additional time spent in each path", size, -0.5, size-0.5, pathbins, 0., std::numeric_limits<double>::infinity(), " ")->getTProfile();
-      stream.dqm_paths[pid].active_time     ->StatOverflows(true);
-      stream.dqm_paths[pid].active_time     ->SetYTitle("processing time [ms]");
-      stream.dqm_paths[pid].total_time      = booker.bookProfile("paths_total_time",     "Total time spent in each path",      size, -0.5, size-0.5, pathbins, 0., std::numeric_limits<double>::infinity(), " ")->getTProfile();
-      stream.dqm_paths[pid].total_time      ->StatOverflows(true);
-      stream.dqm_paths[pid].total_time      ->SetYTitle("processing time [ms]");
-      stream.dqm_paths[pid].exclusive_time  = booker.bookProfile("paths_exclusive_time", "Exclusive time spent in each path",  size, -0.5, size-0.5, pathbins, 0., std::numeric_limits<double>::infinity(), " ")->getTProfile();
-      stream.dqm_paths[pid].exclusive_time  ->StatOverflows(true);
-      stream.dqm_paths[pid].exclusive_time  ->SetYTitle("processing time [ms]");
-      stream.dqm_paths[pid].interpaths      = booker.bookProfile("paths_interpaths",     "Time spent between each path",     size+1, -0.5, size+0.5, pathbins, 0., std::numeric_limits<double>::infinity(), " ")->getTProfile();
-      stream.dqm_paths[pid].interpaths      ->StatOverflows(true);
-      stream.dqm_paths[pid].interpaths      ->SetYTitle("processing time [ms]");
+      stream.dqm_paths[pid].active_time     = booker.bookProfile("paths_active_time",    "Additional time spent in each path", size, -0.5, size-0.5, pathbins, 0., std::numeric_limits<double>::infinity(), " ");
+      stream.dqm_paths[pid].active_time->setSwappableFlag();
+      stream.dqm_paths[pid].active_time->getTProfile()     ->StatOverflows(true);
+      stream.dqm_paths[pid].active_time->getTProfile()     ->SetYTitle("processing time [ms]");
+      stream.dqm_paths[pid].total_time      = booker.bookProfile("paths_total_time",     "Total time spent in each path",      size, -0.5, size-0.5, pathbins, 0., std::numeric_limits<double>::infinity(), " ");
+      stream.dqm_paths[pid].total_time->setSwappableFlag();
+      stream.dqm_paths[pid].total_time->getTProfile()      ->StatOverflows(true);
+      stream.dqm_paths[pid].total_time->getTProfile()      ->SetYTitle("processing time [ms]");
+      stream.dqm_paths[pid].exclusive_time  = booker.bookProfile("paths_exclusive_time", "Exclusive time spent in each path",  size, -0.5, size-0.5, pathbins, 0., std::numeric_limits<double>::infinity(), " ");
+      stream.dqm_paths[pid].exclusive_time->setSwappableFlag();
+      stream.dqm_paths[pid].exclusive_time->getTProfile()  ->StatOverflows(true);
+      stream.dqm_paths[pid].exclusive_time->getTProfile()  ->SetYTitle("processing time [ms]");
+      stream.dqm_paths[pid].interpaths      = booker.bookProfile("paths_interpaths",     "Time spent between each path",     size+1, -0.5, size+0.5, pathbins, 0., std::numeric_limits<double>::infinity(), " ");
+      stream.dqm_paths[pid].interpaths->setSwappableFlag();
+      stream.dqm_paths[pid].interpaths->getTProfile()      ->StatOverflows(true);
+      stream.dqm_paths[pid].interpaths->getTProfile()      ->SetYTitle("processing time [ms]");
 
       for (uint32_t i = 0; i < size_p; ++i) {
         std::string const & label = tns.getTrigPath(i);
-        stream.dqm_paths[pid].active_time    ->GetXaxis()->SetBinLabel(i + 1, label.c_str());
-        stream.dqm_paths[pid].total_time     ->GetXaxis()->SetBinLabel(i + 1, label.c_str());
-        stream.dqm_paths[pid].exclusive_time ->GetXaxis()->SetBinLabel(i + 1, label.c_str());
-        stream.dqm_paths[pid].interpaths     ->GetXaxis()->SetBinLabel(i + 1, label.c_str());
+        stream.dqm_paths[pid].active_time->getTProfile()    ->GetXaxis()->SetBinLabel(i + 1, label.c_str());
+        stream.dqm_paths[pid].total_time->getTProfile()     ->GetXaxis()->SetBinLabel(i + 1, label.c_str());
+        stream.dqm_paths[pid].exclusive_time->getTProfile() ->GetXaxis()->SetBinLabel(i + 1, label.c_str());
+        stream.dqm_paths[pid].interpaths->getTProfile()     ->GetXaxis()->SetBinLabel(i + 1, label.c_str());
       }
       for (uint32_t i = 0; i < size_e; ++i) {
         std::string const & label = tns.getEndPath(i);
-        stream.dqm_paths[pid].active_time    ->GetXaxis()->SetBinLabel(i + size_p + 1, label.c_str());
-        stream.dqm_paths[pid].total_time     ->GetXaxis()->SetBinLabel(i + size_p + 1, label.c_str());
-        stream.dqm_paths[pid].exclusive_time ->GetXaxis()->SetBinLabel(i + size_p + 1, label.c_str());
-        stream.dqm_paths[pid].interpaths     ->GetXaxis()->SetBinLabel(i + size_p + 1, label.c_str());
+        stream.dqm_paths[pid].active_time->getTProfile()    ->GetXaxis()->SetBinLabel(i + size_p + 1, label.c_str());
+        stream.dqm_paths[pid].total_time->getTProfile()     ->GetXaxis()->SetBinLabel(i + size_p + 1, label.c_str());
+        stream.dqm_paths[pid].exclusive_time->getTProfile() ->GetXaxis()->SetBinLabel(i + size_p + 1, label.c_str());
+        stream.dqm_paths[pid].interpaths->getTProfile()     ->GetXaxis()->SetBinLabel(i + size_p + 1, label.c_str());
       }
-      stream.dqm_paths[pid].interpaths       ->GetXaxis()->SetBinLabel(size+1, "");
+      stream.dqm_paths[pid].interpaths->getTProfile()       ->GetXaxis()->SetBinLabel(size+1, "");
     }
 
     // plots vs. instantaneous luminosity
@@ -351,22 +364,26 @@ void FastTimerService::preStreamBeginRun(edm::StreamContext const & sc)
         for (unsigned int i = 0; i < m_dqm_luminosity.size(); ++i) {
           auto & plots = stream.dqm_byluminosity[i];
           int lumibins = (int) std::ceil(m_dqm_luminosity[i].range / m_dqm_luminosity[i].resolution);
-          plots.presource = booker.bookProfile("presource_by" + m_dqm_luminosity[i].name,    "Pre-Source processing time vs. " + m_dqm_luminosity[i].title,   lumibins, 0., m_dqm_luminosity[i].range, pathbins,  0., std::numeric_limits<double>::infinity(), " ")->getTProfile();
-          plots.presource ->StatOverflows(true);
-          plots.presource ->SetXTitle(m_dqm_luminosity[i].label.c_str());
-          plots.presource ->SetYTitle("processing time [ms]");
-          plots.source    = booker.bookProfile("source_by" + m_dqm_luminosity[i].name,       "Source processing time vs. " + m_dqm_luminosity[i].title,       lumibins, 0., m_dqm_luminosity[i].range, pathbins,  0., std::numeric_limits<double>::infinity(), " ")->getTProfile();
-          plots.source    ->StatOverflows(true);
-          plots.source    ->SetXTitle(m_dqm_luminosity[i].label.c_str());
-          plots.source    ->SetYTitle("processing time [ms]");
-          plots.preevent  = booker.bookProfile("preevent_by" + m_dqm_luminosity[i].name,     "Pre-Event processing time vs. " + m_dqm_luminosity[i].title,    lumibins, 0., m_dqm_luminosity[i].range, pathbins,  0., std::numeric_limits<double>::infinity(), " ")->getTProfile();
-          plots.preevent  ->StatOverflows(true);
-          plots.preevent  ->SetXTitle(m_dqm_luminosity[i].label.c_str());
-          plots.preevent  ->SetYTitle("processing time [ms]");
-          plots.event     = booker.bookProfile("event_by" + m_dqm_luminosity[i].name,        "Event processing time vs. " + m_dqm_luminosity[i].title,        lumibins, 0., m_dqm_luminosity[i].range, eventbins, 0., std::numeric_limits<double>::infinity(), " ")->getTProfile();
-          plots.event     ->StatOverflows(true);
-          plots.event     ->SetXTitle(m_dqm_luminosity[i].label.c_str());
-          plots.event     ->SetYTitle("processing time [ms]");
+          plots.presource = booker.bookProfile("presource_by" + m_dqm_luminosity[i].name,    "Pre-Source processing time vs. " + m_dqm_luminosity[i].title,   lumibins, 0., m_dqm_luminosity[i].range, pathbins,  0., std::numeric_limits<double>::infinity(), " ");
+          plots.presource->setSwappableFlag();
+          plots.presource->getTProfile() ->StatOverflows(true);
+          plots.presource->getTProfile() ->SetXTitle(m_dqm_luminosity[i].label.c_str());
+          plots.presource->getTProfile() ->SetYTitle("processing time [ms]");
+          plots.source    = booker.bookProfile("source_by" + m_dqm_luminosity[i].name,       "Source processing time vs. " + m_dqm_luminosity[i].title,       lumibins, 0., m_dqm_luminosity[i].range, pathbins,  0., std::numeric_limits<double>::infinity(), " ");
+          plots.source->setSwappableFlag();
+          plots.source->getTProfile()    ->StatOverflows(true);
+          plots.source->getTProfile()    ->SetXTitle(m_dqm_luminosity[i].label.c_str());
+          plots.source->getTProfile()    ->SetYTitle("processing time [ms]");
+          plots.preevent  = booker.bookProfile("preevent_by" + m_dqm_luminosity[i].name,     "Pre-Event processing time vs. " + m_dqm_luminosity[i].title,    lumibins, 0., m_dqm_luminosity[i].range, pathbins,  0., std::numeric_limits<double>::infinity(), " ");
+          plots.preevent->setSwappableFlag();
+          plots.preevent->getTProfile()  ->StatOverflows(true);
+          plots.preevent->getTProfile()  ->SetXTitle(m_dqm_luminosity[i].label.c_str());
+          plots.preevent->getTProfile()  ->SetYTitle("processing time [ms]");
+          plots.event     = booker.bookProfile("event_by" + m_dqm_luminosity[i].name,        "Event processing time vs. " + m_dqm_luminosity[i].title,        lumibins, 0., m_dqm_luminosity[i].range, eventbins, 0., std::numeric_limits<double>::infinity(), " ");
+          plots.event->setSwappableFlag();
+          plots.event->getTProfile()     ->StatOverflows(true);
+          plots.event->getTProfile()     ->SetXTitle(m_dqm_luminosity[i].label.c_str());
+          plots.event->getTProfile()     ->SetYTitle("processing time [ms]");
         }
       }
 
@@ -378,26 +395,31 @@ void FastTimerService::preStreamBeginRun(edm::StreamContext const & sc)
       for (unsigned int i = 0; i < m_dqm_luminosity.size(); ++i) {
         auto & plots = stream.dqm_perprocess_byluminosity[pid][i];
         int lumibins = (int) std::ceil(m_dqm_luminosity[i].range / m_dqm_luminosity[i].resolution);
-        plots.preevent     = booker.bookProfile("preevent_by" + m_dqm_luminosity[i].name,     "Pre-Event processing time vs. " + m_dqm_luminosity[i].title,    lumibins, 0., m_dqm_luminosity[i].range, pathbins,  0., std::numeric_limits<double>::infinity(), " ")->getTProfile();
-        plots.preevent     ->StatOverflows(true);
-        plots.preevent     ->SetXTitle(m_dqm_luminosity[i].label.c_str());
-        plots.preevent     ->SetYTitle("processing time [ms]");
-        plots.event        = booker.bookProfile("event_by" + m_dqm_luminosity[i].name,        "Event processing time vs. " + m_dqm_luminosity[i].title,        lumibins, 0., m_dqm_luminosity[i].range, eventbins, 0., std::numeric_limits<double>::infinity(), " ")->getTProfile();
-        plots.event        ->StatOverflows(true);
-        plots.event        ->SetXTitle(m_dqm_luminosity[i].label.c_str());
-        plots.event        ->SetYTitle("processing time [ms]");
-        plots.all_paths    = booker.bookProfile("all_paths_by" + m_dqm_luminosity[i].name,    "Paths processing time vs. " + m_dqm_luminosity[i].title,        lumibins, 0., m_dqm_luminosity[i].range, eventbins, 0., std::numeric_limits<double>::infinity(), " ")->getTProfile();
-        plots.all_paths    ->StatOverflows(true);
-        plots.all_paths    ->SetXTitle(m_dqm_luminosity[i].label.c_str());
-        plots.all_paths    ->SetYTitle("processing time [ms]");
-        plots.all_endpaths = booker.bookProfile("all_endpaths_by" + m_dqm_luminosity[i].name, "EndPaths processing time vs. " + m_dqm_luminosity[i].title,     lumibins, 0., m_dqm_luminosity[i].range, pathbins,  0., std::numeric_limits<double>::infinity(), " ")->getTProfile();
-        plots.all_endpaths ->StatOverflows(true);
-        plots.all_endpaths ->SetXTitle(m_dqm_luminosity[i].label.c_str());
-        plots.all_endpaths ->SetYTitle("processing time [ms]");
-        plots.interpaths   = booker.bookProfile("interpaths_by" + m_dqm_luminosity[i].name,   "Time spent between paths vs. " + m_dqm_luminosity[i].title,     lumibins, 0., m_dqm_luminosity[i].range, pathbins,  0., std::numeric_limits<double>::infinity(), " ")->getTProfile();
-        plots.interpaths   ->StatOverflows(true);
-        plots.interpaths   ->SetXTitle(m_dqm_luminosity[i].label.c_str());
-        plots.interpaths   ->SetYTitle("processing time [ms]");
+        plots.preevent     = booker.bookProfile("preevent_by" + m_dqm_luminosity[i].name,     "Pre-Event processing time vs. " + m_dqm_luminosity[i].title,    lumibins, 0., m_dqm_luminosity[i].range, pathbins,  0., std::numeric_limits<double>::infinity(), " ");
+        plots.preevent->setSwappableFlag();
+        plots.preevent->getTProfile()     ->StatOverflows(true);
+        plots.preevent->getTProfile()     ->SetXTitle(m_dqm_luminosity[i].label.c_str());
+        plots.preevent->getTProfile()     ->SetYTitle("processing time [ms]");
+        plots.event        = booker.bookProfile("event_by" + m_dqm_luminosity[i].name,        "Event processing time vs. " + m_dqm_luminosity[i].title,        lumibins, 0., m_dqm_luminosity[i].range, eventbins, 0., std::numeric_limits<double>::infinity(), " ");
+        plots.event->setSwappableFlag();
+        plots.event->getTProfile()        ->StatOverflows(true);
+        plots.event->getTProfile()        ->SetXTitle(m_dqm_luminosity[i].label.c_str());
+        plots.event->getTProfile()        ->SetYTitle("processing time [ms]");
+        plots.all_paths    = booker.bookProfile("all_paths_by" + m_dqm_luminosity[i].name,    "Paths processing time vs. " + m_dqm_luminosity[i].title,        lumibins, 0., m_dqm_luminosity[i].range, eventbins, 0., std::numeric_limits<double>::infinity(), " ");
+        plots.all_paths->setSwappableFlag();
+        plots.all_paths->getTProfile()    ->StatOverflows(true);
+        plots.all_paths->getTProfile()    ->SetXTitle(m_dqm_luminosity[i].label.c_str());
+        plots.all_paths->getTProfile()    ->SetYTitle("processing time [ms]");
+        plots.all_endpaths = booker.bookProfile("all_endpaths_by" + m_dqm_luminosity[i].name, "EndPaths processing time vs. " + m_dqm_luminosity[i].title,     lumibins, 0., m_dqm_luminosity[i].range, pathbins,  0., std::numeric_limits<double>::infinity(), " ");
+        plots.all_endpaths->setSwappableFlag();
+        plots.all_endpaths->getTProfile() ->StatOverflows(true);
+        plots.all_endpaths->getTProfile() ->SetXTitle(m_dqm_luminosity[i].label.c_str());
+        plots.all_endpaths->getTProfile() ->SetYTitle("processing time [ms]");
+        plots.interpaths   = booker.bookProfile("interpaths_by" + m_dqm_luminosity[i].name,   "Time spent between paths vs. " + m_dqm_luminosity[i].title,     lumibins, 0., m_dqm_luminosity[i].range, pathbins,  0., std::numeric_limits<double>::infinity(), " ");
+        plots.interpaths->setSwappableFlag();
+        plots.interpaths->getTProfile()   ->StatOverflows(true);
+        plots.interpaths->getTProfile()   ->SetXTitle(m_dqm_luminosity[i].label.c_str());
+        plots.interpaths->getTProfile()   ->SetYTitle("processing time [ms]");
       }
     }
 
@@ -409,30 +431,36 @@ void FastTimerService::preStreamBeginRun(edm::StreamContext const & sc)
         PathInfo          & pathinfo = keyval.second;
 
         if (m_enable_dqm_bypath_active) {
-          pathinfo.dqm_active       = booker.book1D(pathname + "_active",       pathname + " active time",            pathbins, 0., m_dqm_pathtime_range)->getTH1F();
-          pathinfo.dqm_active       ->StatOverflows(true);
-          pathinfo.dqm_active       ->SetXTitle("processing time [ms]");
+          pathinfo.dqm_active       = booker.book1D(pathname + "_active",       pathname + " active time",            pathbins, 0., m_dqm_pathtime_range);
+          pathinfo.dqm_active->setSwappableFlag();
+          pathinfo.dqm_active->getTH1F()       ->StatOverflows(true);
+          pathinfo.dqm_active->getTH1F()       ->SetXTitle("processing time [ms]");
         }
 
         if (m_enable_dqm_bypath_total) {
-          pathinfo.dqm_total        = booker.book1D(pathname + "_total",        pathname + " total time",             pathbins, 0., m_dqm_pathtime_range)->getTH1F();
-          pathinfo.dqm_total        ->StatOverflows(true);
-          pathinfo.dqm_total        ->SetXTitle("processing time [ms]");
+          pathinfo.dqm_total        = booker.book1D(pathname + "_total",        pathname + " total time",             pathbins, 0., m_dqm_pathtime_range);
+          pathinfo.dqm_total->setSwappableFlag();
+          pathinfo.dqm_total->getTH1F()        ->StatOverflows(true);
+          pathinfo.dqm_total->getTH1F()        ->SetXTitle("processing time [ms]");
         }
 
         if (m_enable_dqm_bypath_overhead) {
-          pathinfo.dqm_premodules   = booker.book1D(pathname + "_premodules",   pathname + " pre-modules overhead",   modulebins, 0., m_dqm_moduletime_range)->getTH1F();
-          pathinfo.dqm_premodules   ->StatOverflows(true);
-          pathinfo.dqm_premodules   ->SetXTitle("processing time [ms]");
-          pathinfo.dqm_intermodules = booker.book1D(pathname + "_intermodules", pathname + " inter-modules overhead", modulebins, 0., m_dqm_moduletime_range)->getTH1F();
-          pathinfo.dqm_intermodules ->StatOverflows(true);
-          pathinfo.dqm_intermodules ->SetXTitle("processing time [ms]");
-          pathinfo.dqm_postmodules  = booker.book1D(pathname + "_postmodules",  pathname + " post-modules overhead",  modulebins, 0., m_dqm_moduletime_range)->getTH1F();
-          pathinfo.dqm_postmodules  ->StatOverflows(true);
-          pathinfo.dqm_postmodules  ->SetXTitle("processing time [ms]");
-          pathinfo.dqm_overhead     = booker.book1D(pathname + "_overhead",     pathname + " overhead time",          modulebins, 0., m_dqm_moduletime_range)->getTH1F();
-          pathinfo.dqm_overhead     ->StatOverflows(true);
-          pathinfo.dqm_overhead     ->SetXTitle("processing time [ms]");
+          pathinfo.dqm_premodules   = booker.book1D(pathname + "_premodules",   pathname + " pre-modules overhead",   modulebins, 0., m_dqm_moduletime_range);
+          pathinfo.dqm_premodules->setSwappableFlag();
+          pathinfo.dqm_premodules->getTH1F()   ->StatOverflows(true);
+          pathinfo.dqm_premodules->getTH1F()   ->SetXTitle("processing time [ms]");
+          pathinfo.dqm_intermodules = booker.book1D(pathname + "_intermodules", pathname + " inter-modules overhead", modulebins, 0., m_dqm_moduletime_range);
+          pathinfo.dqm_intermodules->setSwappableFlag();
+          pathinfo.dqm_intermodules->getTH1F() ->StatOverflows(true);
+          pathinfo.dqm_intermodules->getTH1F() ->SetXTitle("processing time [ms]");
+          pathinfo.dqm_postmodules  = booker.book1D(pathname + "_postmodules",  pathname + " post-modules overhead",  modulebins, 0., m_dqm_moduletime_range);
+          pathinfo.dqm_postmodules->setSwappableFlag();
+          pathinfo.dqm_postmodules->getTH1F()  ->StatOverflows(true);
+          pathinfo.dqm_postmodules->getTH1F()  ->SetXTitle("processing time [ms]");
+          pathinfo.dqm_overhead     = booker.book1D(pathname + "_overhead",     pathname + " overhead time",          modulebins, 0., m_dqm_moduletime_range);
+          pathinfo.dqm_overhead->setSwappableFlag();
+          pathinfo.dqm_overhead->getTH1F()     ->StatOverflows(true);
+          pathinfo.dqm_overhead->getTH1F()     ->SetXTitle("processing time [ms]");
         }
 
         if (m_enable_dqm_bypath_details or m_enable_dqm_bypath_counters) {
@@ -475,31 +503,35 @@ void FastTimerService::preStreamBeginRun(edm::StreamContext const & sc)
 
           // book counter histograms
           if (m_enable_dqm_bypath_counters) {
-            pathinfo.dqm_module_counter = booker.book1D(pathname + "_module_counter", pathname + " module counter", modules.size() + 1, -0.5, modules.size() + 0.5)->getTH1F();
+            pathinfo.dqm_module_counter = booker.book1D(pathname + "_module_counter", pathname + " module counter", modules.size() + 1, -0.5, modules.size() + 0.5);
+            pathinfo.dqm_module_counter->setSwappableFlag();
             // find module labels
             for (uint32_t i = 0; i < modules.size(); ++i)
-              pathinfo.dqm_module_counter->GetXaxis()->SetBinLabel( i+1, labels[i] );
-            pathinfo.dqm_module_counter->GetXaxis()->SetBinLabel( modules.size() + 1, "" );
+              pathinfo.dqm_module_counter->getTH1F()->GetXaxis()->SetBinLabel( i+1, labels[i] );
+            pathinfo.dqm_module_counter->getTH1F()->GetXaxis()->SetBinLabel( modules.size() + 1, "" );
           }
           // book detailed timing histograms
           if (m_enable_dqm_bypath_details) {
-            pathinfo.dqm_module_active  = booker.book1D(pathname + "_module_active",  pathname + " module active",  modules.size(), -0.5, modules.size() - 0.5)->getTH1F();
-            pathinfo.dqm_module_active  ->SetYTitle("cumulative processing time [ms]");
-            pathinfo.dqm_module_total   = booker.book1D(pathname + "_module_total",   pathname + " module total",   modules.size(), -0.5, modules.size() - 0.5)->getTH1F();
-            pathinfo.dqm_module_total   ->SetYTitle("cumulative processing time [ms]");
+            pathinfo.dqm_module_active  = booker.book1D(pathname + "_module_active",  pathname + " module active",  modules.size(), -0.5, modules.size() - 0.5);
+            pathinfo.dqm_module_active->setSwappableFlag();
+            pathinfo.dqm_module_active->getTH1F()  ->SetYTitle("cumulative processing time [ms]");
+            pathinfo.dqm_module_total   = booker.book1D(pathname + "_module_total",   pathname + " module total",   modules.size(), -0.5, modules.size() - 0.5);
+            pathinfo.dqm_module_total->setSwappableFlag();
+            pathinfo.dqm_module_total->getTH1F()   ->SetYTitle("cumulative processing time [ms]");
             // find module labels
             for (uint32_t i = 0; i < modules.size(); ++i) {
-              pathinfo.dqm_module_active ->GetXaxis()->SetBinLabel( i+1, labels[i] );
-              pathinfo.dqm_module_total  ->GetXaxis()->SetBinLabel( i+1, labels[i] );
+              pathinfo.dqm_module_active->getTH1F() ->GetXaxis()->SetBinLabel( i+1, labels[i] );
+              pathinfo.dqm_module_total->getTH1F()  ->GetXaxis()->SetBinLabel( i+1, labels[i] );
             }
           }
         }
 
         // book exclusive path time histograms
         if (m_enable_dqm_bypath_exclusive) {
-          pathinfo.dqm_exclusive = booker.book1D(pathname + "_exclusive", pathname + " exclusive time", pathbins, 0., m_dqm_pathtime_range)->getTH1F();
-          pathinfo.dqm_exclusive ->StatOverflows(true);
-          pathinfo.dqm_exclusive ->SetXTitle("processing time [ms]");
+          pathinfo.dqm_exclusive = booker.book1D(pathname + "_exclusive", pathname + " exclusive time", pathbins, 0., m_dqm_pathtime_range);
+          pathinfo.dqm_exclusive->setSwappableFlag();
+          pathinfo.dqm_exclusive->getTH1F() ->StatOverflows(true);
+          pathinfo.dqm_exclusive->getTH1F() ->SetXTitle("processing time [ms]");
         }
 
       }
@@ -510,9 +542,10 @@ void FastTimerService::preStreamBeginRun(edm::StreamContext const & sc)
       for (auto & keyval: stream.modules) {
         std::string const & label  = keyval.first;
         ModuleInfo        & module = keyval.second;
-        module.dqm_active = booker.book1D(label, label, modulebins, 0., m_dqm_moduletime_range)->getTH1F();
-        module.dqm_active->StatOverflows(true);
-        module.dqm_active->SetXTitle("processing time [ms]");
+        module.dqm_active = booker.book1D(label, label, modulebins, 0., m_dqm_moduletime_range);
+        module.dqm_active->setSwappableFlag();
+        module.dqm_active->getTH1F()->StatOverflows(true);
+        module.dqm_active->getTH1F()->SetXTitle("processing time [ms]");
       }
     }
 
@@ -521,9 +554,10 @@ void FastTimerService::preStreamBeginRun(edm::StreamContext const & sc)
       for (auto & keyval: stream.moduletypes) {
         std::string const & label  = keyval.first;
         ModuleInfo        & module = keyval.second;
-        module.dqm_active = booker.book1D(label, label, modulebins, 0., m_dqm_moduletime_range)->getTH1F();
-        module.dqm_active->StatOverflows(true);
-        module.dqm_active->SetXTitle("processing time [ms]");
+        module.dqm_active = booker.book1D(label, label, modulebins, 0., m_dqm_moduletime_range);
+        module.dqm_active->setSwappableFlag();
+        module.dqm_active->getTH1F()->StatOverflows(true);
+        module.dqm_active->getTH1F()->SetXTitle("processing time [ms]");
       }
     }
 
@@ -859,24 +893,24 @@ void FastTimerService::postEvent(edm::StreamContext const & sc) {
     for (auto & keyval: stream.paths[pid]) {
       PathInfo & pathinfo = keyval.second;
 
-      stream.dqm_paths[pid].active_time->Fill(pathinfo.index, pathinfo.time_active * 1000.);
+      stream.dqm_paths[pid].active_time->getTProfile()->Fill(pathinfo.index, pathinfo.time_active * 1000.);
       if (m_enable_dqm_bypath_active)
-        pathinfo.dqm_active->Fill(pathinfo.time_active * 1000.);
+        pathinfo.dqm_active->getTH1F()->Fill(pathinfo.time_active * 1000.);
 
-      stream.dqm_paths[pid].exclusive_time->Fill(pathinfo.index, pathinfo.time_exclusive * 1000.);
+      stream.dqm_paths[pid].exclusive_time->getTProfile()->Fill(pathinfo.index, pathinfo.time_exclusive * 1000.);
       if (m_enable_dqm_bypath_exclusive)
-        pathinfo.dqm_exclusive->Fill(pathinfo.time_exclusive * 1000.);
+        pathinfo.dqm_exclusive->getTH1F()->Fill(pathinfo.time_exclusive * 1000.);
 
-      stream.dqm_paths[pid].total_time->Fill(pathinfo.index, pathinfo.time_total * 1000.);
+      stream.dqm_paths[pid].total_time->getTProfile()->Fill(pathinfo.index, pathinfo.time_total * 1000.);
       if (m_enable_dqm_bypath_total)
-        pathinfo.dqm_total->Fill(pathinfo.time_total * 1000.);
+        pathinfo.dqm_total->getTH1F()->Fill(pathinfo.time_total * 1000.);
 
       // fill path overhead histograms
       if (m_enable_dqm_bypath_overhead) {
-        pathinfo.dqm_premodules  ->Fill(pathinfo.time_premodules      * 1000.);
-        pathinfo.dqm_intermodules->Fill(pathinfo.time_intermodules    * 1000.);
-        pathinfo.dqm_postmodules ->Fill(pathinfo.time_postmodules     * 1000.);
-        pathinfo.dqm_overhead    ->Fill(pathinfo.time_overhead        * 1000.);
+        pathinfo.dqm_premodules->getTH1F()  ->Fill(pathinfo.time_premodules      * 1000.);
+        pathinfo.dqm_intermodules->getTH1F()->Fill(pathinfo.time_intermodules    * 1000.);
+        pathinfo.dqm_postmodules->getTH1F() ->Fill(pathinfo.time_postmodules     * 1000.);
+        pathinfo.dqm_overhead->getTH1F()    ->Fill(pathinfo.time_overhead        * 1000.);
       }
 
       // fill detailed timing histograms
@@ -887,10 +921,10 @@ void FastTimerService::postEvent(edm::StreamContext const & sc) {
           if (module == nullptr)
             continue;
           // fill the total time for all non-duplicate modules
-          pathinfo.dqm_module_total->Fill(i, module->time_active * 1000.);
+          pathinfo.dqm_module_total->getTH1F()->Fill(i, module->time_active * 1000.);
           // fill the active time only for module that have actually run in this path
           if (module->run_in_path == & pathinfo)
-            pathinfo.dqm_module_active->Fill(i, module->time_active * 1000.);
+            pathinfo.dqm_module_active->getTH1F()->Fill(i, module->time_active * 1000.);
         }
       }
 
@@ -899,9 +933,9 @@ void FastTimerService::postEvent(edm::StreamContext const & sc) {
       //   - fill the N+1th bin for paths accepting the event, so the FastTimerServiceClient can properly measure the last filter efficiency
       if (m_enable_dqm_bypath_counters) {
         for (uint32_t i = 0; i < pathinfo.last_run; ++i)
-          pathinfo.dqm_module_counter->Fill(i);
+          pathinfo.dqm_module_counter->getTH1F()->Fill(i);
         if (pathinfo.accept)
-          pathinfo.dqm_module_counter->Fill(pathinfo.modules.size());
+          pathinfo.dqm_module_counter->getTH1F()->Fill(pathinfo.modules.size());
       }
 
     }
@@ -912,7 +946,7 @@ void FastTimerService::postEvent(edm::StreamContext const & sc) {
   if ((m_enable_dqm_bymodule) and (pid+1 == m_process.size())) {
     for (auto & keyval : stream.modules) {
       ModuleInfo & module = keyval.second;
-      module.dqm_active->Fill(module.time_active * 1000.);
+      module.dqm_active->getTH1F()->Fill(module.time_active * 1000.);
     }
   }
 
@@ -921,14 +955,14 @@ void FastTimerService::postEvent(edm::StreamContext const & sc) {
   if ((m_enable_dqm_bymoduletype) and (pid+1 == m_process.size())) {
     for (auto & keyval : stream.moduletypes) {
       ModuleInfo & module = keyval.second;
-      module.dqm_active->Fill(module.time_active * 1000.);
+      module.dqm_active->getTH1F()->Fill(module.time_active * 1000.);
     }
   }
 
   // fill the interpath overhead plot
   if (m_enable_timing_paths)
     for (unsigned int i = 0; i <= stream.paths[pid].size(); ++i)
-      stream.dqm_paths[pid].interpaths->Fill(i, stream.timing_perprocess[pid].paths_interpaths[i] * 1000.);
+      stream.dqm_paths[pid].interpaths->getTProfile()->Fill(i, stream.timing_perprocess[pid].paths_interpaths[i] * 1000.);
 
   if (m_enable_dqm_summary) {
     if (pid+1 == m_process.size())

@@ -102,6 +102,42 @@ public:
       return DQMNet::setOrder(data_, x.data_);
     }
 
+  Scalar swapScalar(Scalar scalar) {
+    Scalar temp = scalar_;
+    scalar_ = scalar;
+    return temp;
+  }
+  TH1* swapObject(TH1* object) {
+    TH1 * temp = object_;
+    object_=object;
+    return temp;
+  }
+  TH1* swapReference(TH1* reference) {
+    TH1 * temp = reference_;
+    reference_=reference;
+    return temp;
+  }
+  TH1* swapRefvalue(TH1* refvalue) {
+    TH1 * temp = refvalue_;
+    refvalue_=refvalue;
+    return temp;
+  }
+  void swapQreports(std::vector<QReport>  & qreports) {
+    qreports_.swap(qreports);
+  }
+  void swapROOTObjects(MonitorElement & me2) {
+    scalar_=me2.swapScalar(scalar_);
+    object_=me2.swapObject(object_);
+    reference_=me2.swapReference(reference_);
+    refvalue_=me2.swapRefvalue(refvalue_);
+    me2.swapQreports(qreports_);
+  }
+
+  void zeroRootPointers() {
+    object_=nullptr;
+    refvalue_=nullptr;
+  }
+
   /// Check the consistency of the axis labels
   static bool CheckBinLabels(const TAxis* a1, const TAxis * a2);
 
@@ -153,6 +189,14 @@ public:
   /// this ME is meant to be stored for each luminosity section
   void setLumiFlag(void)
     { data_.flags |= DQMNet::DQM_PROP_LUMI; }
+
+  /// true if ME is meant to be stored for each luminosity section
+  bool getSwappableFlag(void) const
+    { return data_.flags & DQMNet::DQM_PROP_SWAPPABLE; }
+
+  /// this ME is meant to be stored for each luminosity section
+  void setSwappableFlag(void)
+    { data_.flags |= DQMNet::DQM_PROP_SWAPPABLE; }
 
   /// this ME is meant to be an efficiency plot that must not be
   /// normalized when drawn in the DQM GUI.

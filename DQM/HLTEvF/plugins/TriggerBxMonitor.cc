@@ -99,12 +99,12 @@ private:
   HLTConfigProvider         m_hltConfig;
 
   // L1T and HLT results
-  TH2F *                    m_tcds_bx_all;
-  TH2F *                    m_l1t_bx_all;
-  TH2F *                    m_hlt_bx_all;
-  std::vector<TH1F *>       m_tcds_bx;
-  std::vector<TH1F *>       m_l1t_bx;
-  std::vector<TH1F *>       m_hlt_bx;
+  MonitorElement *                    m_tcds_bx_all;
+  MonitorElement *                    m_l1t_bx_all;
+  MonitorElement *                    m_hlt_bx_all;
+  std::vector<MonitorElement *>       m_tcds_bx;
+  std::vector<MonitorElement *>       m_l1t_bx;
+  std::vector<MonitorElement *>       m_hlt_bx;
 };
 
 // definition
@@ -145,6 +145,7 @@ TriggerBxMonitor::~TriggerBxMonitor()
 
 void TriggerBxMonitor::dqmBeginRun(edm::Run const & run, edm::EventSetup const & setup)
 {
+
   // initialise the TCDS vector
   m_tcds_bx.clear();
   m_tcds_bx.resize(sizeof(s_tcds_trigger_types) / sizeof(const char *), nullptr);
@@ -179,14 +180,16 @@ void TriggerBxMonitor::bookHistograms(DQMStore::IBooker & booker, edm::Run const
 
     // book 2D histogram to monitor all TCDS trigger types in a single plot
     booker.setCurrentFolder( m_dqm_path );
-    m_tcds_bx_all = booker.book2D("TCDS Trigger Types", "TCDS Trigger Types vs. bunch crossing", s_bx_range + 1, -0.5, s_bx_range + 0.5, size, -0.5, size - 0.5)->getTH2F();
+    m_tcds_bx_all = booker.book2D("TCDS Trigger Types", "TCDS Trigger Types vs. bunch crossing", s_bx_range + 1, -0.5, s_bx_range + 0.5, size, -0.5, size - 0.5);
+    m_tcds_bx_all->setSwappableFlag();
 
     // book the individual histograms for the known TCDS trigger types
     booker.setCurrentFolder( m_dqm_path + "/TCDS" );
     for (unsigned int i = 0; i < size; ++i) {
       if (s_tcds_trigger_types[i]) {
-        m_tcds_bx.at(i) = booker.book1D(s_tcds_trigger_types[i], s_tcds_trigger_types[i], s_bx_range + 1, -0.5, s_bx_range + 0.5)->getTH1F();
-        m_tcds_bx_all->GetYaxis()->SetBinLabel(i+1, s_tcds_trigger_types[i]);
+        m_tcds_bx.at(i) = booker.book1D(s_tcds_trigger_types[i], s_tcds_trigger_types[i], s_bx_range + 1, -0.5, s_bx_range + 0.5);
+        m_tcds_bx.at(i)->setSwappableFlag();
+        m_tcds_bx_all->getTH2F()->GetYaxis()->SetBinLabel(i+1, s_tcds_trigger_types[i]);
       }
     }
   }
@@ -195,15 +198,16 @@ void TriggerBxMonitor::bookHistograms(DQMStore::IBooker & booker, edm::Run const
   if (m_l1tMenu) {
     // book 2D histogram to monitor all L1 triggers in a single plot
     booker.setCurrentFolder( m_dqm_path );
-    m_l1t_bx_all = booker.book2D("Level 1 Triggers", "Level 1 Triggers vs. bunch crossing", s_bx_range + 1, -0.5, s_bx_range + 0.5, m_l1t_bx.size(), -0.5, m_l1t_bx.size() - 0.5)->getTH2F();
-
+    m_l1t_bx_all = booker.book2D("Level 1 Triggers", "Level 1 Triggers vs. bunch crossing", s_bx_range + 1, -0.5, s_bx_range + 0.5, m_l1t_bx.size(), -0.5, m_l1t_bx.size() - 0.5);
+    m_l1t_bx_all->setSwappableFlag();
     // book the individual histograms for the L1 triggers that are included in the L1 menu
     booker.setCurrentFolder( m_dqm_path + "/L1T" );
     for (auto const & keyval: m_l1tMenu->getAlgorithmMap()) {
       unsigned int bit = keyval.second.getIndex();
       std::string const & name = (boost::format("%s (bit %d)") % keyval.first % bit).str();
-      m_l1t_bx.at(bit) = booker.book1D(name, name, s_bx_range + 1, -0.5, s_bx_range + 0.5)->getTH1F();
-      m_l1t_bx_all->GetYaxis()->SetBinLabel(bit+1, keyval.first.c_str());
+      m_l1t_bx.at(bit) = booker.book1D(name, name, s_bx_range + 1, -0.5, s_bx_range + 0.5);
+      m_l1t_bx.at(bit)->setSwappableFlag();
+      m_l1t_bx_all->getTH2F()->GetYaxis()->SetBinLabel(bit+1, keyval.first.c_str());
     }
   }
 
@@ -211,14 +215,16 @@ void TriggerBxMonitor::bookHistograms(DQMStore::IBooker & booker, edm::Run const
   if (m_hltConfig.inited()) {
     // book 2D histogram to monitor all HLT paths in a single plot
     booker.setCurrentFolder( m_dqm_path );
-    m_hlt_bx_all = booker.book2D("High Level Triggers", "High Level Triggers vs. bunch crossing", s_bx_range + 1, -0.5, s_bx_range + 0.5, m_hltConfig.size(), -0.5, m_hltConfig.size() - 0.5)->getTH2F();
+    m_hlt_bx_all = booker.book2D("High Level Triggers", "High Level Triggers vs. bunch crossing", s_bx_range + 1, -0.5, s_bx_range + 0.5, m_hltConfig.size(), -0.5, m_hltConfig.size() - 0.5);
+    m_hlt_bx_all->setSwappableFlag();
 
     // book the individual HLT triggers histograms
     booker.setCurrentFolder( m_dqm_path + "/HLT" );
     for (unsigned int i = 0; i < m_hltConfig.size(); ++i) {
       std::string const & name = m_hltConfig.triggerName(i);
-      m_hlt_bx[i] = booker.book1D(name, name, s_bx_range + 1, -0.5, s_bx_range + 0.5)->getTH1F();
-      m_hlt_bx_all->GetYaxis()->SetBinLabel(i+1, name.c_str());
+      m_hlt_bx[i] = booker.book1D(name, name, s_bx_range + 1, -0.5, s_bx_range + 0.5);
+      m_hlt_bx[i]->setSwappableFlag();
+      m_hlt_bx_all->getTH2F()->GetYaxis()->SetBinLabel(i+1, name.c_str());
     }
   }
 }
@@ -233,8 +239,8 @@ void TriggerBxMonitor::analyze(edm::Event const & event, edm::EventSetup const &
     size_t size = sizeof(s_tcds_trigger_types) / sizeof(const char *);
     unsigned int type = event.experimentType();
     if (type < size and m_tcds_bx[type])
-      m_tcds_bx[type]->Fill(bx);
-    m_tcds_bx_all->Fill(bx, type);
+      m_tcds_bx[type]->getTH1F()->Fill(bx);
+    m_tcds_bx_all->getTH2F()->Fill(bx, type);
   }
 
   // monitor the bx distribution for the L1 triggers
@@ -245,8 +251,8 @@ void TriggerBxMonitor::analyze(edm::Event const & event, edm::EventSetup const &
       for (unsigned int i = 0; i < GlobalAlgBlk::maxPhysicsTriggers; ++i)
         if (results.getAlgoDecisionFinal(i)) {
           if (m_l1t_bx[i])
-            m_l1t_bx[i]->Fill(bx);
-          m_l1t_bx_all->Fill(bx, i);
+            m_l1t_bx[i]->getTH1F()->Fill(bx);
+          m_l1t_bx_all->getTH2F()->Fill(bx, i);
         }
     }
   }
@@ -257,8 +263,8 @@ void TriggerBxMonitor::analyze(edm::Event const & event, edm::EventSetup const &
     if (hltResults.size() == m_hlt_bx.size()) {
       for (unsigned int i = 0; i < m_hlt_bx.size(); ++i) {
         if (hltResults.at(i).accept()) {
-          m_hlt_bx[i]->Fill(bx);
-          m_hlt_bx_all->Fill(bx, i);
+          m_hlt_bx[i]->getTH1F()->Fill(bx);
+          m_hlt_bx_all->getTH2F()->Fill(bx, i);
         }
       }
     } else {

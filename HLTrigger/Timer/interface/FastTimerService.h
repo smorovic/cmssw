@@ -187,7 +187,7 @@ private:
     FastTimer                   timer;              // per-event timer
     double                      time_active;        // time actually spent in this module
     double                      summary_active;
-    TH1F *                      dqm_active;
+    MonitorElement *                      dqm_active;
     PathInfo *                  run_in_path;        // the path inside which the module was atually active
     uint32_t                    counter;            // count how many times the module was scheduled to run
 
@@ -237,16 +237,16 @@ private:
     uint32_t                    last_run;           // index of the last module run in this path, plus one
     uint32_t                    index;              // index of the Path or EndPath in the "schedule"
     bool                        accept;             // flag indicating if the path acepted the event
-    TH1F *                      dqm_active;         // see time_active
-    TH1F *                      dqm_exclusive;      // see time_exclusive
-    TH1F *                      dqm_premodules;     // see time_premodules
-    TH1F *                      dqm_intermodules;   // see time_intermodules
-    TH1F *                      dqm_postmodules;    // see time_postmodules
-    TH1F *                      dqm_overhead;       // see time_overhead
-    TH1F *                      dqm_total;          // see time_total
-    TH1F *                      dqm_module_counter; // for each module in the path, track how many times it ran
-    TH1F *                      dqm_module_active;  // for each module in the path, track the active time spent
-    TH1F *                      dqm_module_total;   // for each module in the path, track the total time spent
+    MonitorElement *                      dqm_active;         // see time_active
+    MonitorElement *                      dqm_exclusive;      // see time_exclusive
+    MonitorElement *                      dqm_premodules;     // see time_premodules
+    MonitorElement *                      dqm_intermodules;   // see time_intermodules
+    MonitorElement *                      dqm_postmodules;    // see time_postmodules
+    MonitorElement *                      dqm_overhead;       // see time_overhead
+    MonitorElement *                      dqm_total;          // see time_total
+    MonitorElement *                      dqm_module_counter; // for each module in the path, track how many times it ran
+    MonitorElement *                      dqm_module_active;  // for each module in the path, track the active time spent
+    MonitorElement *                      dqm_module_total;   // for each module in the path, track the total time spent
 
   public:
     PathInfo() :
@@ -461,10 +461,10 @@ private:
 
   // set of summary plots, over all subprocesses
   struct SummaryPlots {
-    TH1F *     presource;
-    TH1F *     source;
-    TH1F *     preevent;
-    TH1F *     event;
+    MonitorElement *     presource;
+    MonitorElement *     source;
+    MonitorElement *     preevent;
+    MonitorElement *     event;
 
     SummaryPlots() :
       presource     (nullptr),
@@ -483,21 +483,21 @@ private:
 
     void fill(Timing const & value) {
       // convert on the fly from seconds to ms
-      presource     ->Fill( 1000. * value.presource );
-      source        ->Fill( 1000. * value.source );
-      preevent      ->Fill( 1000. * value.preevent );
-      event         ->Fill( 1000. * value.event );
+      presource->getTH1F()     ->Fill( 1000. * value.presource );
+      source->getTH1F()        ->Fill( 1000. * value.source );
+      preevent->getTH1F()      ->Fill( 1000. * value.preevent );
+      event->getTH1F()         ->Fill( 1000. * value.event );
     }
 
   };
 
   // set of summary plots, per subprocess
   struct SummaryPlotsPerProcess {
-    TH1F *     preevent;
-    TH1F *     event;
-    TH1F *     all_paths;
-    TH1F *     all_endpaths;
-    TH1F *     interpaths;
+    MonitorElement *     preevent;
+    MonitorElement *     event;
+    MonitorElement *     all_paths;
+    MonitorElement *     all_endpaths;
+    MonitorElement *     interpaths;
 
     SummaryPlotsPerProcess() :
       preevent      (nullptr),
@@ -518,21 +518,21 @@ private:
 
     void fill(TimingPerProcess const & value) {
       // convert on the fly from seconds to ms
-      preevent      ->Fill( 1000. * value.preevent );
-      event         ->Fill( 1000. * value.event );
-      all_paths     ->Fill( 1000. * value.all_paths );
-      all_endpaths  ->Fill( 1000. * value.all_endpaths );
-      interpaths    ->Fill( 1000. * value.interpaths );
+      preevent->getTH1F()      ->Fill( 1000. * value.preevent );
+      event->getTH1F()         ->Fill( 1000. * value.event );
+      all_paths->getTH1F()     ->Fill( 1000. * value.all_paths );
+      all_endpaths->getTH1F()  ->Fill( 1000. * value.all_endpaths );
+      interpaths->getTH1F()    ->Fill( 1000. * value.interpaths );
     }
 
   };
 
   // set of summary profiles vs. luminosity, over all subprocesses
   struct SummaryProfiles {
-    TProfile * presource;
-    TProfile * source;
-    TProfile * preevent;
-    TProfile * event;
+    MonitorElement * presource;
+    MonitorElement * source;
+    MonitorElement * preevent;
+    MonitorElement * event;
 
     SummaryProfiles() :
       presource     (nullptr),
@@ -550,21 +550,21 @@ private:
     }
 
     void fill(double x, Timing const & value) {
-      presource     ->Fill( x, 1000. * value.presource );
-      source        ->Fill( x, 1000. * value.source );
-      preevent      ->Fill( x, 1000. * value.preevent );
-      event         ->Fill( x, 1000. * value.event );
+      presource->getTProfile()     ->Fill( x, 1000. * value.presource );
+      source->getTProfile()        ->Fill( x, 1000. * value.source );
+      preevent->getTProfile()      ->Fill( x, 1000. * value.preevent );
+      event->getTProfile()         ->Fill( x, 1000. * value.event );
     }
 
   };
 
   // set of summary profiles vs. luminosity, per subprocess
   struct SummaryProfilesPerProcess {
-    TProfile * preevent;
-    TProfile * event;
-    TProfile * all_paths;
-    TProfile * all_endpaths;
-    TProfile * interpaths;
+    MonitorElement * preevent;
+    MonitorElement * event;
+    MonitorElement * all_paths;
+    MonitorElement * all_endpaths;
+    MonitorElement * interpaths;
 
     SummaryProfilesPerProcess() :
       preevent      (nullptr),
@@ -588,21 +588,21 @@ private:
     }
 
     void fill(double x, TimingPerProcess const & value) {
-      preevent      ->Fill( x, 1000. * value.preevent );
-      event         ->Fill( x, 1000. * value.event );
-      all_paths     ->Fill( x, 1000. * value.all_paths );
-      all_endpaths  ->Fill( x, 1000. * value.all_endpaths );
-      interpaths    ->Fill( x, 1000. * value.interpaths );
+      preevent->getTProfile()      ->Fill( x, 1000. * value.preevent );
+      event->getTProfile()         ->Fill( x, 1000. * value.event );
+      all_paths->getTProfile()     ->Fill( x, 1000. * value.all_paths );
+      all_endpaths->getTProfile()  ->Fill( x, 1000. * value.all_endpaths );
+      interpaths->getTProfile()    ->Fill( x, 1000. * value.interpaths );
     }
 
   };
 
   // set of profile plots by path, per subprocess
   struct PathProfilesPerProcess {
-    TProfile * active_time;
-    TProfile * total_time;
-    TProfile * exclusive_time;
-    TProfile * interpaths;
+    MonitorElement * active_time;
+    MonitorElement * total_time;
+    MonitorElement * exclusive_time;
+    MonitorElement * interpaths;
 
     PathProfilesPerProcess() :
       active_time   (nullptr),

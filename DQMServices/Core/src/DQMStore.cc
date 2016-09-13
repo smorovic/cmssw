@@ -408,8 +408,10 @@ void DQMStore::mergeAndResetMEsRunSummaryCache(uint32_t run,
 	      std::cout << "mergeAndResetMEsRunSummaryCache: Failed to merge DQM element "<<me->getFullname();
 	    }
 	  }
-	  else
-	    me->getTH1()->Add(i->getTH1());
+	  else {
+            if (i->getTH1()->GetEntries()!=0)
+	      me->getTH1()->Add(i->getTH1());
+            }
 	}
     } else {
       if (verbose_ > 1)
@@ -440,6 +442,7 @@ void DQMStore::mergeAndResetMEsLuminositySummaryCache(uint32_t run,
   MonitorElement proto(&null_str, null_str, run, streamId, moduleId);
   std::set<MonitorElement>::const_iterator e = data_.end();
   std::set<MonitorElement>::const_iterator i = data_.lower_bound(proto);
+  std::lock_guard<std::mutex> guard(book_mutex_);
 
   while (i != e) {
     if (i->data_.run != run
@@ -458,8 +461,8 @@ void DQMStore::mergeAndResetMEsLuminositySummaryCache(uint32_t run,
     global_me.setLumi(lumi);
     // Since this accesses the data, the operation must be
     // be locked.
-    std::lock_guard<std::mutex> guard(book_mutex_);
     std::set<MonitorElement>::const_iterator me = data_.find(global_me);
+    bool resetPerformed=false;
     if (me != data_.end()) {
       if (verbose_ > 1)
 	      std::cout << "Found global Object, using it --> " << me->getFullname() << std::endl;
@@ -474,23 +477,47 @@ void DQMStore::mergeAndResetMEsLuminositySummaryCache(uint32_t run,
 	      std::cout << "mergeAndResetMEsLuminositySummaryCache: Failed to merge DQM element "<<me->getFullname();
 	    }
 	  }
-	  else
-	    me->getTH1()->Add(i->getTH1());
+	  else {
+            if (i->getTH1()->GetEntries()!=0)
+	      me->getTH1()->Add(i->getTH1());
+          }
 	}
     } else {
       if (verbose_ > 1)
         std::cout << "No global Object found. " << std::endl;
-      std::pair<std::set<MonitorElement>::const_iterator, bool> gme;
-
-      // this makes an actual and a single copy with Clone()'ed th1
-      MonitorElement actual_global_me(*i);
-      actual_global_me.globalize();
-      actual_global_me.setLumi(lumi);
-      gme = data_.insert(std::move(actual_global_me));
-      assert(gme.second);
+      global_me.setLumi(0);
+      //look for same object already in cache (with special LS value 0)
+      std::set<MonitorElement>::const_iterator me_cached = dataCache_.find(global_me);
+      if (me_cached != dataCache_.end()) {
+        //reset before swapping TObject
+        const_cast<MonitorElement*>(&*me_cached)->Reset();
+        //shallow clone
+        MonitorElement global_cached_me(*me_cached, MonitorElementNoCloneTag());
+        global_cached_me.object_ = me_cached->object_;
+        global_cached_me.refvalue_ = me_cached->refvalue_;
+        //remove cached copy, zero pointers first
+        const_cast<MonitorElement*>(&*me_cached)->zeroRootPointers();
+        dataCache_.erase(me_cached);
+        //swap contents of monitor elements
+        const_cast<MonitorElement*>(&*i)->swapROOTObjects(global_cached_me);//not working correctly because modules keep pointers to TH1 objects
+        //needs changes to modules to get changed TH1F pointer appropriately
+        resetPerformed=true;
+        //set lumi and move to main store
+        global_cached_me.setLumi(lumi);
+        auto gme = data_.insert(std::move(global_cached_me));
+        assert(gme.second);
+      }
+      else {//no global copy in cache, clone TH1
+        MonitorElement actual_global_me(*i);
+        actual_global_me.globalize();
+        actual_global_me.setLumi(lumi);
+        auto gme = data_.insert(std::move(actual_global_me));
+        assert(gme.second);
+      }
     }
     // make the ME reusable for the next LS
-    const_cast<MonitorElement*>(&*i)->Reset();
+    if (!resetPerformed)
+      const_cast<MonitorElement*>(&*i)->Reset();
     ++i;
   }
 }
@@ -512,6 +539,7 @@ DQMStore::DQMStore(const edm::ParameterSet &pset, edm::ActivityRegistry& ar)
     ibooker_(0),
     igetter_(0)
 {
+  
   if (!ibooker_)
     ibooker_ = new DQMStore::IBooker(this);
   if (!igetter_)
@@ -2592,9 +2620,28 @@ void DQMStore::savePB(const std::string &filename,
         delete toWrite;
       }
 
+      bool resetScheduled=false;
+      if (mi->getSwappableFlag() && mi->kind() >= MonitorElement::DQM_KIND_TH1F) { //only ROOT objects
+        //make shallow clone to search for identical data member with LS 0
+        MonitorElement cache_me(*const_cast<MonitorElement*>(&*mi), MonitorElementNoCloneTag());
+        cache_me.setLumi(0);
+        MEMap::iterator pos = dataCache_.find(cache_me);
+        if (pos == dataCache_.end()) {
+          //take over ROOT pointers
+          cache_me.object_ = mi->object_;
+          cache_me.refvalue_ = mi->refvalue_;
+ 	  //cache_me.Reset();//done later
+          resetScheduled=true;
+          //zero pointers before moving object away from dataCache 
+          const_cast<MonitorElement*>(&*mi)->zeroRootPointers();
+          std::pair<std::set<MonitorElement>::const_iterator, bool> gme;
+          gme = dataCache_.insert(std::move(cache_me));
+          assert(gme.second);
+        }
+      }
       //reset the ME just written to make it available for the next LS (online)
-      if (resetMEsAfterWriting)
-	const_cast<MonitorElement*>(&*mi)->Reset();
+      if (resetMEsAfterWriting && !resetScheduled)
+        const_cast<MonitorElement*>(&*mi)->Reset();
     }
   }
 
@@ -2606,7 +2653,7 @@ void DQMStore::savePB(const std::string &filename,
   FileOutputStream file_stream(filedescriptor);
   GzipOutputStream::Options options;
   options.format = GzipOutputStream::GZIP;
-  options.compression_level = 6;
+  options.compression_level = 1;
   GzipOutputStream gzip_stream(&file_stream,
                                options);
   dqmstore_message.SerializeToZeroCopyStream(&gzip_stream);

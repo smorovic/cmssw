@@ -634,6 +634,7 @@ class DQMStore
 					      uint32_t moduleId);
 
   void deleteUnusedLumiHistograms(uint32_t run, uint32_t lumi);
+
  private:
 
   // ---------------- Miscellaneous -----------------------------
@@ -712,6 +713,7 @@ class DQMStore
 
   std::string                   pwd_;
   MEMap                         data_;
+  MEMap                         dataCache_;
   std::set<std::string>         dirs_;
 
   QCMap                         qtests_;
