@@ -403,6 +403,17 @@ public:
   TProfile *getRefTProfile(void) const;
   TProfile2D *getRefTProfile2D(void) const;
 
+  TH1 *getPtrTH1(void) const {return object_;}
+  TH1F *getPtrTH1F(void) const {return static_cast<TH1F *>(object_);}
+  TH1S *getPtrTH1S(void) const {return static_cast<TH1S *>(object_);}
+  TH1D *getPtrTH1D(void) const {return static_cast<TH1D *>(object_);}
+  TH2F *getPtrTH2F(void) const {return static_cast<TH2F *>(object_);}
+  TH2S *getPtrTH2S(void) const {return static_cast<TH2S *>(object_);}
+  TH2D *getPtrTH2D(void) const {return static_cast<TH2D *>(object_);}
+  TH3F *getPtrTH3F(void) const {return static_cast<TH3F *>(object_);}
+  TProfile *getPtrTProfile(void) const {return static_cast<TProfile *>(object_);}
+  TProfile2D *getPtrTProfile2D(void) const {return static_cast<TProfile2D *>(object_);}
+
   int64_t getIntValue(void) const
     {
       assert(kind() == DQM_KIND_INT);

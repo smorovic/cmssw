@@ -239,8 +239,8 @@ void TriggerBxMonitor::analyze(edm::Event const & event, edm::EventSetup const &
     size_t size = sizeof(s_tcds_trigger_types) / sizeof(const char *);
     unsigned int type = event.experimentType();
     if (type < size and m_tcds_bx[type])
-      m_tcds_bx[type]->getTH1F()->Fill(bx);
-    m_tcds_bx_all->getTH2F()->Fill(bx, type);
+      m_tcds_bx[type]->getPtrTH1F()->Fill(bx);
+    m_tcds_bx_all->getPtrTH2F()->Fill(bx, type);
   }
 
   // monitor the bx distribution for the L1 triggers
@@ -251,8 +251,8 @@ void TriggerBxMonitor::analyze(edm::Event const & event, edm::EventSetup const &
       for (unsigned int i = 0; i < GlobalAlgBlk::maxPhysicsTriggers; ++i)
         if (results.getAlgoDecisionFinal(i)) {
           if (m_l1t_bx[i])
-            m_l1t_bx[i]->getTH1F()->Fill(bx);
-          m_l1t_bx_all->getTH2F()->Fill(bx, i);
+            m_l1t_bx[i]->getPtrTH1F()->Fill(bx);
+          m_l1t_bx_all->getPtrTH2F()->Fill(bx, i);
         }
     }
   }
@@ -263,8 +263,8 @@ void TriggerBxMonitor::analyze(edm::Event const & event, edm::EventSetup const &
     if (hltResults.size() == m_hlt_bx.size()) {
       for (unsigned int i = 0; i < m_hlt_bx.size(); ++i) {
         if (hltResults.at(i).accept()) {
-          m_hlt_bx[i]->getTH1F()->Fill(bx);
-          m_hlt_bx_all->getTH2F()->Fill(bx, i);
+          m_hlt_bx[i]->getPtrTH1F()->Fill(bx);
+          m_hlt_bx_all->getPtrTH2F()->Fill(bx, i);
         }
       }
     } else {

@@ -333,9 +333,9 @@ void TriggerRatesMonitor::analyze(edm::Event const & event, edm::EventSetup cons
   unsigned int lumisection = event.luminosityBlock();
 
   // monitor the overall event count and event types rates
-  m_events_processed->getTH1F()->Fill(lumisection);
+  m_events_processed->getPtrTH1F()->Fill(lumisection);
   if (m_tcds_counts[event.experimentType()])
-    m_tcds_counts[event.experimentType()]->getTH1F()->Fill(lumisection);
+    m_tcds_counts[event.experimentType()]->getPtrTH1F()->Fill(lumisection);
 
   // monitor the L1 triggers rates
   if (m_l1tMenu) {
@@ -345,7 +345,7 @@ void TriggerRatesMonitor::analyze(edm::Event const & event, edm::EventSetup cons
       for (unsigned int i = 0; i < GlobalAlgBlk::maxPhysicsTriggers; ++i)
         if (results.getAlgoDecisionFinal(i))
           if (m_l1t_counts[i])
-            m_l1t_counts[i]->getTH1F()->Fill(lumisection);
+            m_l1t_counts[i]->getPtrTH1F()->Fill(lumisection);
     }
   }
 
@@ -356,15 +356,15 @@ void TriggerRatesMonitor::analyze(edm::Event const & event, edm::EventSetup cons
       for (unsigned int i = 0; i < m_hlt_counts.size(); ++i) {
         edm::HLTPathStatus const & path = hltResults.at(i);
         if (path.index() > m_hltIndices[i].index_l1_seed)
-          m_hlt_counts[i].pass_l1_seed->getTH1F()->Fill(lumisection);
+          m_hlt_counts[i].pass_l1_seed->getPtrTH1F()->Fill(lumisection);
         if  (path.index() > m_hltIndices[i].index_prescale)
-          m_hlt_counts[i].pass_prescale->getTH1F()->Fill(lumisection);
+          m_hlt_counts[i].pass_prescale->getPtrTH1F()->Fill(lumisection);
         if (path.accept())
-          m_hlt_counts[i].accept->getTH1F()->Fill(lumisection);
+          m_hlt_counts[i].accept->getPtrTH1F()->Fill(lumisection);
         else if (path.error())
-          m_hlt_counts[i].error ->getTH1F()->Fill(lumisection);
+          m_hlt_counts[i].error ->getPtrTH1F()->Fill(lumisection);
         else
-          m_hlt_counts[i].reject->getTH1F()->Fill(lumisection);
+          m_hlt_counts[i].reject->getPtrTH1F()->Fill(lumisection);
       }
     } else {
       edm::LogWarning("TriggerRatesMonitor") << "This should never happen: the number of HLT paths has changed since the beginning of the run";
@@ -373,7 +373,7 @@ void TriggerRatesMonitor::analyze(edm::Event const & event, edm::EventSetup cons
     for (unsigned int i = 0; i < m_datasets.size(); ++i)
       for (unsigned int j: m_datasets[i])
         if (hltResults.at(j).accept()) {
-          m_dataset_counts[i]->getTH1F()->Fill(lumisection);
+          m_dataset_counts[i]->getPtrTH1F()->Fill(lumisection);
           // ensure each dataset is incremented only once per event
           break;
         }
@@ -381,7 +381,7 @@ void TriggerRatesMonitor::analyze(edm::Event const & event, edm::EventSetup cons
     for (unsigned int i = 0; i < m_streams.size(); ++i)
       for (unsigned int j: m_streams[i])
         if (hltResults.at(j).accept()) {
-          m_stream_counts[i]->getTH1F()->Fill(lumisection);
+          m_stream_counts[i]->getPtrTH1F()->Fill(lumisection);
           // ensure each stream is incremented only once per event
           break;
         }

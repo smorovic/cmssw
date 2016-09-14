@@ -893,24 +893,24 @@ void FastTimerService::postEvent(edm::StreamContext const & sc) {
     for (auto & keyval: stream.paths[pid]) {
       PathInfo & pathinfo = keyval.second;
 
-      stream.dqm_paths[pid].active_time->getTProfile()->Fill(pathinfo.index, pathinfo.time_active * 1000.);
+      stream.dqm_paths[pid].active_time->getPtrTProfile()->Fill(pathinfo.index, pathinfo.time_active * 1000.);
       if (m_enable_dqm_bypath_active)
-        pathinfo.dqm_active->getTH1F()->Fill(pathinfo.time_active * 1000.);
+        pathinfo.dqm_active->getPtrTH1F()->Fill(pathinfo.time_active * 1000.);
 
-      stream.dqm_paths[pid].exclusive_time->getTProfile()->Fill(pathinfo.index, pathinfo.time_exclusive * 1000.);
+      stream.dqm_paths[pid].exclusive_time->getPtrTProfile()->Fill(pathinfo.index, pathinfo.time_exclusive * 1000.);
       if (m_enable_dqm_bypath_exclusive)
-        pathinfo.dqm_exclusive->getTH1F()->Fill(pathinfo.time_exclusive * 1000.);
+        pathinfo.dqm_exclusive->getPtrTH1F()->Fill(pathinfo.time_exclusive * 1000.);
 
-      stream.dqm_paths[pid].total_time->getTProfile()->Fill(pathinfo.index, pathinfo.time_total * 1000.);
+      stream.dqm_paths[pid].total_time->getPtrTProfile()->Fill(pathinfo.index, pathinfo.time_total * 1000.);
       if (m_enable_dqm_bypath_total)
-        pathinfo.dqm_total->getTH1F()->Fill(pathinfo.time_total * 1000.);
+        pathinfo.dqm_total->getPtrTH1F()->Fill(pathinfo.time_total * 1000.);
 
       // fill path overhead histograms
       if (m_enable_dqm_bypath_overhead) {
-        pathinfo.dqm_premodules->getTH1F()  ->Fill(pathinfo.time_premodules      * 1000.);
-        pathinfo.dqm_intermodules->getTH1F()->Fill(pathinfo.time_intermodules    * 1000.);
-        pathinfo.dqm_postmodules->getTH1F() ->Fill(pathinfo.time_postmodules     * 1000.);
-        pathinfo.dqm_overhead->getTH1F()    ->Fill(pathinfo.time_overhead        * 1000.);
+        pathinfo.dqm_premodules->getPtrTH1F()  ->Fill(pathinfo.time_premodules      * 1000.);
+        pathinfo.dqm_intermodules->getPtrTH1F()->Fill(pathinfo.time_intermodules    * 1000.);
+        pathinfo.dqm_postmodules->getPtrTH1F() ->Fill(pathinfo.time_postmodules     * 1000.);
+        pathinfo.dqm_overhead->getPtrTH1F()    ->Fill(pathinfo.time_overhead        * 1000.);
       }
 
       // fill detailed timing histograms
@@ -921,10 +921,10 @@ void FastTimerService::postEvent(edm::StreamContext const & sc) {
           if (module == nullptr)
             continue;
           // fill the total time for all non-duplicate modules
-          pathinfo.dqm_module_total->getTH1F()->Fill(i, module->time_active * 1000.);
+          pathinfo.dqm_module_total->getPtrTH1F()->Fill(i, module->time_active * 1000.);
           // fill the active time only for module that have actually run in this path
           if (module->run_in_path == & pathinfo)
-            pathinfo.dqm_module_active->getTH1F()->Fill(i, module->time_active * 1000.);
+            pathinfo.dqm_module_active->getPtrTH1F()->Fill(i, module->time_active * 1000.);
         }
       }
 
@@ -933,9 +933,9 @@ void FastTimerService::postEvent(edm::StreamContext const & sc) {
       //   - fill the N+1th bin for paths accepting the event, so the FastTimerServiceClient can properly measure the last filter efficiency
       if (m_enable_dqm_bypath_counters) {
         for (uint32_t i = 0; i < pathinfo.last_run; ++i)
-          pathinfo.dqm_module_counter->getTH1F()->Fill(i);
+          pathinfo.dqm_module_counter->getPtrTH1F()->Fill(i);
         if (pathinfo.accept)
-          pathinfo.dqm_module_counter->getTH1F()->Fill(pathinfo.modules.size());
+          pathinfo.dqm_module_counter->getPtrTH1F()->Fill(pathinfo.modules.size());
       }
 
     }
@@ -946,7 +946,7 @@ void FastTimerService::postEvent(edm::StreamContext const & sc) {
   if ((m_enable_dqm_bymodule) and (pid+1 == m_process.size())) {
     for (auto & keyval : stream.modules) {
       ModuleInfo & module = keyval.second;
-      module.dqm_active->getTH1F()->Fill(module.time_active * 1000.);
+      module.dqm_active->getPtrTH1F()->Fill(module.time_active * 1000.);
     }
   }
 
@@ -955,14 +955,14 @@ void FastTimerService::postEvent(edm::StreamContext const & sc) {
   if ((m_enable_dqm_bymoduletype) and (pid+1 == m_process.size())) {
     for (auto & keyval : stream.moduletypes) {
       ModuleInfo & module = keyval.second;
-      module.dqm_active->getTH1F()->Fill(module.time_active * 1000.);
+      module.dqm_active->getPtrTH1F()->Fill(module.time_active * 1000.);
     }
   }
 
   // fill the interpath overhead plot
   if (m_enable_timing_paths)
     for (unsigned int i = 0; i <= stream.paths[pid].size(); ++i)
-      stream.dqm_paths[pid].interpaths->getTProfile()->Fill(i, stream.timing_perprocess[pid].paths_interpaths[i] * 1000.);
+      stream.dqm_paths[pid].interpaths->getPtrTProfile()->Fill(i, stream.timing_perprocess[pid].paths_interpaths[i] * 1000.);
 
   if (m_enable_dqm_summary) {
     if (pid+1 == m_process.size())

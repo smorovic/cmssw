@@ -98,7 +98,7 @@ void
 ThroughputService::preSourceEvent(edm::StreamID sid)
 {
   auto timestamp = std::chrono::steady_clock::now();
-  m_stream_histograms[sid].sourced_events->getTH1F()->Fill( std::chrono::duration_cast<std::chrono::duration<double>>(timestamp - m_startup).count() );
+  m_stream_histograms[sid].sourced_events->getPtrTH1F()->Fill( std::chrono::duration_cast<std::chrono::duration<double>>(timestamp - m_startup).count() );
 }
 
 void
@@ -106,7 +106,7 @@ ThroughputService::postEvent(edm::StreamContext const & sc)
 {
   unsigned int sid = sc.streamID().value();
   auto timestamp = std::chrono::steady_clock::now();
-  m_stream_histograms[sid].retired_events->getTH1F()->Fill( std::chrono::duration_cast<std::chrono::duration<double>>(timestamp - m_startup).count() );
+  m_stream_histograms[sid].retired_events->getPtrTH1F()->Fill( std::chrono::duration_cast<std::chrono::duration<double>>(timestamp - m_startup).count() );
 }
 
 

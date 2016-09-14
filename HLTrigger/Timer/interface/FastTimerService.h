@@ -483,10 +483,10 @@ private:
 
     void fill(Timing const & value) {
       // convert on the fly from seconds to ms
-      presource->getTH1F()     ->Fill( 1000. * value.presource );
-      source->getTH1F()        ->Fill( 1000. * value.source );
-      preevent->getTH1F()      ->Fill( 1000. * value.preevent );
-      event->getTH1F()         ->Fill( 1000. * value.event );
+      presource->getPtrTH1F()     ->Fill( 1000. * value.presource );
+      source->getPtrTH1F()        ->Fill( 1000. * value.source );
+      preevent->getPtrTH1F()      ->Fill( 1000. * value.preevent );
+      event->getPtrTH1F()         ->Fill( 1000. * value.event );
     }
 
   };
@@ -518,11 +518,11 @@ private:
 
     void fill(TimingPerProcess const & value) {
       // convert on the fly from seconds to ms
-      preevent->getTH1F()      ->Fill( 1000. * value.preevent );
-      event->getTH1F()         ->Fill( 1000. * value.event );
-      all_paths->getTH1F()     ->Fill( 1000. * value.all_paths );
-      all_endpaths->getTH1F()  ->Fill( 1000. * value.all_endpaths );
-      interpaths->getTH1F()    ->Fill( 1000. * value.interpaths );
+      preevent->getPtrTH1F()      ->Fill( 1000. * value.preevent );
+      event->getPtrTH1F()         ->Fill( 1000. * value.event );
+      all_paths->getPtrTH1F()     ->Fill( 1000. * value.all_paths );
+      all_endpaths->getPtrTH1F()  ->Fill( 1000. * value.all_endpaths );
+      interpaths->getPtrTH1F()    ->Fill( 1000. * value.interpaths );
     }
 
   };
@@ -550,10 +550,10 @@ private:
     }
 
     void fill(double x, Timing const & value) {
-      presource->getTProfile()     ->Fill( x, 1000. * value.presource );
-      source->getTProfile()        ->Fill( x, 1000. * value.source );
-      preevent->getTProfile()      ->Fill( x, 1000. * value.preevent );
-      event->getTProfile()         ->Fill( x, 1000. * value.event );
+      presource->getPtrTProfile()     ->Fill( x, 1000. * value.presource );
+      source->getPtrTProfile()        ->Fill( x, 1000. * value.source );
+      preevent->getPtrTProfile()      ->Fill( x, 1000. * value.preevent );
+      event->getPtrTProfile()         ->Fill( x, 1000. * value.event );
     }
 
   };
@@ -588,11 +588,11 @@ private:
     }
 
     void fill(double x, TimingPerProcess const & value) {
-      preevent->getTProfile()      ->Fill( x, 1000. * value.preevent );
-      event->getTProfile()         ->Fill( x, 1000. * value.event );
-      all_paths->getTProfile()     ->Fill( x, 1000. * value.all_paths );
-      all_endpaths->getTProfile()  ->Fill( x, 1000. * value.all_endpaths );
-      interpaths->getTProfile()    ->Fill( x, 1000. * value.interpaths );
+      preevent->getPtrTProfile()      ->Fill( x, 1000. * value.preevent );
+      event->getPtrTProfile()         ->Fill( x, 1000. * value.event );
+      all_paths->getPtrTProfile()     ->Fill( x, 1000. * value.all_paths );
+      all_endpaths->getPtrTProfile()  ->Fill( x, 1000. * value.all_endpaths );
+      interpaths->getPtrTProfile()    ->Fill( x, 1000. * value.interpaths );
     }
 
   };
