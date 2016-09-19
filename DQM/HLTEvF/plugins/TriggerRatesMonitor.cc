@@ -251,12 +251,18 @@ void TriggerRatesMonitor::bookHistograms(DQMStore::IBooker & booker, edm::Run co
 {
   // book the overall event count and event types histograms
   booker.setCurrentFolder( m_dqm_path );
-  m_events_processed = booker.book1D("events", "Processed events vs. lumisection", m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5)->getTH1F();
+  MonitorElement *me_events = booker.book1D("events", "Processed events vs. lumisection", m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5);
+  m_events_processed = me_events->getTH1F();
+  m_events_processed->SetCanExtend(TH1F::kAllAxes);
+  me_events->setAddExtendableFlag();
   booker.setCurrentFolder( m_dqm_path + "/TCDS" );
   for (unsigned int i = 0; i < sizeof(s_tcds_trigger_types)/sizeof(const char *); ++i)
     if (s_tcds_trigger_types[i]) {
       std::string const & title = (boost::format("%s events vs. lumisection") % s_tcds_trigger_types[i]).str();
-      m_tcds_counts[i] = booker.book1D(s_tcds_trigger_types[i], title, m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5)->getTH1F();
+      MonitorElement *me = booker.book1D(s_tcds_trigger_types[i], title, m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5);
+      m_tcds_counts[i] =  me->getTH1F();
+      m_tcds_counts[i]->SetCanExtend(TH1F::kAllAxes);
+      me->setAddExtendableFlag();
     }
 
   if (m_l1tMenu) {
@@ -267,7 +273,10 @@ void TriggerRatesMonitor::bookHistograms(DQMStore::IBooker & booker, edm::Run co
       bool masked = false;      // FIXME read L1 masks once they will be avaiable in the EventSetup
       std::string const & name  = (boost::format("%s (bit %d)") % keyval.first % bit).str();
       std::string const & title = (boost::format("%s (bit %d)%s vs. lumisection") % keyval.first % bit % (masked ? " (masked)" : "")).str();
-      m_l1t_counts.at(bit) = booker.book1D(name, title, m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5)->getTH1F();
+      MonitorElement *me = booker.book1D(name, title, m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5);
+      m_l1t_counts.at(bit) =  me->getTH1F();
+      m_l1t_counts.at(bit)->SetCanExtend(TH1F::kAllAxes);
+      me->setAddExtendableFlag();
     }
   }
 
@@ -276,11 +285,31 @@ void TriggerRatesMonitor::bookHistograms(DQMStore::IBooker & booker, edm::Run co
     booker.setCurrentFolder( m_dqm_path + "/HLT" );
     for (unsigned int i = 0; i < m_hltConfig.size(); ++i) {
       std::string const & name = m_hltConfig.triggerName(i);
-      m_hlt_counts[i].pass_l1_seed  = booker.book1D(name + " pass L1 seed",     name + " pass L1 seed, vs. lumisection",     m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5)->getTH1F();
-      m_hlt_counts[i].pass_prescale = booker.book1D(name + " pass prescaler",   name + " pass prescaler, vs. lumisection",   m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5)->getTH1F();
-      m_hlt_counts[i].accept        = booker.book1D(name + " accept",           name + " accept, vs. lumisection",           m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5)->getTH1F();
-      m_hlt_counts[i].reject        = booker.book1D(name + " reject",           name + " reject, vs. lumisection",           m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5)->getTH1F();
-      m_hlt_counts[i].error         = booker.book1D(name + " error",            name + " error, vs. lumisection",            m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5)->getTH1F();
+      MonitorElement *me_pass_l1_seed  = booker.book1D(name + " pass L1 seed",     name + " pass L1 seed, vs. lumisection",     m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5);
+      MonitorElement *me_pass_prescale = booker.book1D(name + " pass prescaler",   name + " pass prescaler, vs. lumisection",   m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5);
+      MonitorElement *me_accept        = booker.book1D(name + " accept",           name + " accept, vs. lumisection",           m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5);
+      MonitorElement *me_reject        = booker.book1D(name + " reject",           name + " reject, vs. lumisection",           m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5);
+      MonitorElement *me_error         = booker.book1D(name + " error",            name + " error, vs. lumisection",            m_lumisections_range + 1,   -0.5,   m_lumisections_range + 0.5);
+
+      m_hlt_counts[i].pass_l1_seed = me_pass_l1_seed->getTH1F();
+      m_hlt_counts[i].pass_prescale = me_pass_prescale->getTH1F();
+      m_hlt_counts[i].accept = me_accept->getTH1F();
+      m_hlt_counts[i].reject = me_reject->getTH1F();
+      m_hlt_counts[i].error = me_error->getTH1F();
+
+      m_hlt_counts[i].pass_l1_seed->SetCanExtend(TH1F::kAllAxes);
+      m_hlt_counts[i].pass_prescale->SetCanExtend(TH1F::kAllAxes);
+      m_hlt_counts[i].accept->SetCanExtend(TH1F::kAllAxes);
+      m_hlt_counts[i].reject->SetCanExtend(TH1F::kAllAxes);
+      m_hlt_counts[i].error->SetCanExtend(TH1F::kAllAxes);
+
+      me_pass_l1_seed->setAddExtendableFlag();
+      me_pass_prescale->setAddExtendableFlag();
+      me_accept->setAddExtendableFlag();
+      me_reject->setAddExtendableFlag();
+      me_error->setAddExtendableFlag();
+
+
       // look for the index of the (last) L1 seed and prescale module in each path
       m_hltIndices[i].index_l1_seed  = m_hltConfig.size(i);
       m_hltIndices[i].index_prescale = m_hltConfig.size(i);
@@ -303,14 +332,22 @@ void TriggerRatesMonitor::bookHistograms(DQMStore::IBooker & booker, edm::Run co
     // book the HLT datasets rate histograms
     booker.setCurrentFolder( m_dqm_path + "/Datasets" );
     auto const & datasets = m_hltConfig.datasetNames();
-    for (unsigned int i = 0; i < datasets.size(); ++i)
-      m_dataset_counts[i] = booker.book1D(datasets[i], datasets[i], m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5)->getTH1F();
+    for (unsigned int i = 0; i < datasets.size(); ++i) {
+      MonitorElement *me = booker.book1D(datasets[i], datasets[i], m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5);
+      m_dataset_counts[i] = me->getTH1F();
+      m_dataset_counts[i]->SetCanExtend(TH1F::kAllAxes);
+      me->setAddExtendableFlag();
+    }
 
     // book the HLT streams rate histograms
     booker.setCurrentFolder( m_dqm_path + "/Streams" );
     auto const & streams = m_hltConfig.streamNames();
-    for (unsigned int i = 0; i < streams.size(); ++i)
-      m_stream_counts[i]  = booker.book1D(streams[i],  streams[i],  m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5)->getTH1F();
+    for (unsigned int i = 0; i < streams.size(); ++i) {
+      MonitorElement *me  = booker.book1D(streams[i],  streams[i],  m_lumisections_range + 1, -0.5, m_lumisections_range + 0.5);
+      m_stream_counts[i] = me->getTH1F();
+      m_stream_counts[i]->SetCanExtend(TH1F::kAllAxes);
+      me->setAddExtendableFlag();
+    }
   }
 }
 
