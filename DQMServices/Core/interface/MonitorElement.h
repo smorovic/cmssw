@@ -154,6 +154,14 @@ public:
   void setLumiFlag(void)
     { data_.flags |= DQMNet::DQM_PROP_LUMI; }
 
+  /// true if MEs are meant to have uniform range per stream when not empty
+  bool getAddExtendableFlag(void) const
+    { return data_.flags & DQMNet::DQM_PROP_ADD_EXTENDABLE; }
+
+  /// this ME is meant to be have uniform range per stream when not empty
+  void setAddExtendableFlag(void)
+    { data_.flags |= DQMNet::DQM_PROP_ADD_EXTENDABLE; }
+
   /// this ME is meant to be an efficiency plot that must not be
   /// normalized when drawn in the DQM GUI.
   void setEfficiencyFlag(void)

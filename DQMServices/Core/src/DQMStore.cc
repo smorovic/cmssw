@@ -402,11 +402,30 @@ void DQMStore::mergeAndResetMEsRunSummaryCache(uint32_t run,
       if(me->kind() >= MonitorElement::DQM_KIND_TH1F)
 	{
 	  if(me->getTH1()->CanExtendAllAxes() && i->getTH1()->CanExtendAllAxes()) {
-	    TList list;
-	    list.Add(i->getTH1());
-	    if( -1 == me->getTH1()->Merge(&list)) {
-	      std::cout << "mergeAndResetMEsRunSummaryCache: Failed to merge DQM element "<<me->getFullname();
-	    }
+
+            if (me->kind() == MonitorElement::DQM_KIND_TH1F && me->getAddExtendableFlag() && i->getAddExtendableFlag() && me->getTH1()->GetXaxis()->GetXmin()==i->getTH1()->GetXaxis()->GetXmin())
+            {
+              auto t1=me->getTH1F();
+              auto t2=i->getTH1F();
+              //filled in this LS, so X axis range is same
+              if (t1->GetEntries() && t2->GetEntries())
+	        me->getTH1F()->Add(i->getTH1F());
+              //range could be different, so overwrite first histogram
+              else if (!t1->GetEntries() && t2->GetEntries())
+                t2->Copy(*t1);
+              //both empty, but take histogram with more recent range
+              else if (t1->GetXaxis()->GetXmax()<t2->GetXaxis()->GetXmax())
+                t1->ExtendAxis(t2->GetXaxis()->GetXmax(),t1->GetXaxis());
+                //t2->Copy(*t1);
+            }
+            else {
+              //no edtendable flag or minimum range is different between histograms
+	      TList list;
+	      list.Add(i->getTH1());
+	      if( -1 == me->getTH1()->Merge(&list)) {
+	        std::cout << "mergeAndResetMEsLuminositySummaryCache: Failed to merge DQM element "<<me->getFullname();
+	      }
+            }
 	  }
 	  else {
             if (i->getTH1()->GetEntries())
