@@ -9,6 +9,10 @@
 
 #include <vector>
 #include <string>
+#include <map>
+#include <mutex>
+
+#include <curl/curl.h>
 
 namespace evf{
     class ExceptionGenerator : public edm::stream::EDAnalyzer<>
@@ -32,6 +36,11 @@ namespace evf{
       std::string original_referrer_;
       TH1D* timingHisto_;
       timeval tv_start_;
+
+      std::mutex stream_mutex_;
+      std::map<bool> ls_handled_;
+
+      std::string url_;
     };
   }
 

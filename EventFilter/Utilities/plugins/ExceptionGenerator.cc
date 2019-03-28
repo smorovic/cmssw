@@ -17,7 +17,10 @@
 #include <sys/types.h>
 #include <csignal>
 
+#include <chrono>
+
 using namespace std;
+using namespace std::chrono;
 
 namespace evf{
 
@@ -135,13 +138,68 @@ namespace evf{
     timingHisto_->SetBinContent(99,5);
     timingHisto_->SetBinContent(101,147);
     timingHisto_->SetEntries(24934);
+    
+    curl_global_init(CURL_GLOBAL_ALL);
   }
 
   void ExceptionGenerator::beginRun(const edm::Run& r, const edm::EventSetup& iSetup)
   {
 
     gettimeofday(&tv_start_,nullptr);
+    std::lock_guard<std::mutex> guard(stream_mutex_);
+    std::stringstream ss;
+    ss <<"http://es-local:9200/run_"<< r.run() << "/doc";
+    url_ = ss.str();
   }
+
+  void ExceptionGenerator::beginLuminosityBlock(edm::LuminosityBlock const &lb, edm::EventSetup const &es)
+  {
+    //A = actual data
+    //ARecord = corresponding recotd object
+    auto ls = lb.luminosityBlock();
+    {
+      std::lock_guard<std::mutex> guard(stream_mutex_);
+      if (ls_handled_.find(ls)!=ls_handled_.end()) return;
+      else ls_handled[ls]=true;
+    }
+
+    milliseconds ms1 = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+    long pre = ms1.count();
+
+    edm::ESHandle<A> testHandle;
+    iSetup.get<ARecord>().get(testHandle);
+
+    //unix timestamp (for example)
+    milliseconds ms2 = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+    long post = ms2.count();
+
+    auto initial_time = testHandle->getUnixTime();
+
+    auto dt1 = ms1-initial_time;
+    auto dt2 = ms2-initial_time;
+
+    std stringstream ss;
+    ss <<"{\"doc_type\":\"condlatency\",\"MergingTimePerFile\":" << dt1 << ",\"MergingTime\":"<<dt2<<",\"ls\":"<< ls <<"}"; // todo: ,host;>>...
+    std::string data == ss.str();
+
+    /* HTTP PUT please */ 
+    CURL * curl = curl_easy_init();
+//    curl_easy_setopt(curl_, CURLOPT_UPLOAD, 1L); //?
+    curl_easy_setopt(curl, CURLOPT_PUT, 1L);
+    curl_easy_setopt(curl, CURLOPT_URL, url_.c_str());
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data.c_str());
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, data.size());
+
+    CURLcode res = curl_easy_perform(curl);
+    /* Check for errors */ 
+    if(res != CURLE_OK)
+            fprintf(stderr, "curl_easy_perform() failed: %s\n",
+                            curl_easy_strerror(res));
+
+    curl_easy_cleanup(curl);
+
+  }
+
 
   void __attribute__((optimize("O0"))) ExceptionGenerator::analyze(const edm::Event & e, const edm::EventSetup& c)
     {
