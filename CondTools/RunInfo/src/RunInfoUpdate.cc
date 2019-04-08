@@ -47,11 +47,11 @@ void RunInfoUpdate::appendNewRun( const RunInfo& runInfo ){
 size_t RunInfoUpdate::import( size_t maxEntries, const std::string& sourceTag, cond::persistency::Session& sourceSession ){
   cond::persistency::RunInfoEditor editor;
   std::cout << "# Loading tag "<<sourceTag<<"..."<<std::endl;
-  cond::persistency::IOVProxy runInfoTag = sourceSession.readIov( sourceTag, true );
+  cond::persistency::IOVArray runInfoTag = sourceSession.readIov( sourceTag ).selectAll();
   editor = m_dbSession.editRunInfo();
   cond::Time_t lastRun = editor.getLastInserted();
   std::cout <<"# Last run found in RunInfo db : "<<lastRun<<std::endl;
-  cond::persistency::IOVProxy::Iterator it = runInfoTag.begin();
+  cond::persistency::IOVArray::Iterator it = runInfoTag.begin();
   if( lastRun>0 ){
     it = runInfoTag.find( lastRun+1 );
   }

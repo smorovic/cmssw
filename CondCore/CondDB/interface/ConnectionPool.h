@@ -47,8 +47,8 @@ namespace cond {
       
     private:
       std::shared_ptr<coral::ISessionProxy> createCoralSession( const std::string& connectionString, 
-                                                                  const std::string& transactionId, 
-                                                                  bool writeCapable = false );
+								const std::string& transactionId, 
+								bool writeCapable = false );
       Session createSession( const std::string& connectionString, 
                              const std::string& transactionId, 
                              bool writeCapable = false );

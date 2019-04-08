@@ -43,8 +43,8 @@ int cond::CopyIovUtilities::execute(){
   if( hasOptionValue("tag")) tag = getOptionValue<std::string>("tag");
 
   cond::Time_t sourceSince = getOptionValue<cond::Time_t>( "sourceSince");
-  cond::Time_t destSince = sourceSince;
-  if( hasOptionValue("destSince") ) destSince = getOptionValue<cond::Time_t>( "destSince");
+  //cond::Time_t destSince = sourceSince;
+  //if( hasOptionValue("destSince") ) destSince = getOptionValue<cond::Time_t>( "destSince");
 
   std::string description("");
   if( hasOptionValue("description") ) description = getOptionValue<std::string>( "description" );
@@ -61,11 +61,11 @@ int cond::CopyIovUtilities::execute(){
   std::cout <<"# input tag is "<<inputTag<<std::endl;
   std::cout <<"# destination tag is "<<tag<<std::endl;
 
-  bool imported = copyIov( session, inputTag, tag, sourceSince, destSince, description );
+  //bool imported = copyIov( session, inputTag, tag, sourceSince, destSince, description );
     
-  if( imported ) {
-    std::cout <<"# 1 iov copied. "<<std::endl;
- }
+  //if( imported ) {
+  //  std::cout <<"# 1 iov copied. "<<std::endl;
+  //}
   return 0;
 }
 

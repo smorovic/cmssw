@@ -17,6 +17,7 @@ int main()
     testSerialization<cond::IOVUserMetaData>();
     testSerialization<cond::SmallWORMDict>();
     testSerialization<cond::BasicPayload>();
+    testSerialization<cond::LumiTestPayload>();
     testSerialization<std::map<std::string, unsigned long long>>();
     //testSerialization<std::map<const std::basic_string<char>, DropBoxMetadata::Parameters>>(); no const-key std::map template (we could provide it, but it is equivalent to a non-const key std::map, and looks unused/should be unused)
     testSerialization<std::map<std::string, DropBoxMetadata::Parameters>>();

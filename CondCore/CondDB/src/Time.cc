@@ -31,6 +31,7 @@ namespace cond {
     }
 
     Time_t tillTimeFromNextSince( Time_t nextSince, TimeType timeType ){
+      if( nextSince == time::MAX_VAL ) return time::MAX_VAL;
       if( timeType != (TimeType)TIMESTAMP ){
 	return nextSince - 1;
       } else {
@@ -46,6 +47,10 @@ namespace cond {
 	unpackedTime.second = (unsigned int)(totalNanoseconds - (Time_t)unpackedTime.first*1000000000);
 	return pack(unpackedTime);
       }
+    }
+
+    Time_t lumiTime( unsigned int run, unsigned int lumiId ){
+      return cond::time::pack( std::make_pair( run, lumiId ) );
     }
 
     Time_t sinceGroupSize( TimeType tp ){

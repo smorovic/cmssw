@@ -44,10 +44,11 @@ namespace cond {
       
       // this one had the loading in a separate function in the previous impl
       ValidityInterval setIntervalFor( Time_t target, bool loadPayload=false );
+      ValidityInterval setIntervalFor( Time_t target, Time_t defaultIovSize );
       
       bool isValid() const;
       
-      TimeType timeType() const { return m_iovProxy.timeType();}
+      TimeType timeType() const { return m_iovProxy.tagInfo().timeType;}
       
       virtual void loadMore(CondGetter const &){
       }
@@ -92,12 +93,13 @@ namespace cond {
       }
 
       void make() override{
-	if( isValid() ){
-	  if( m_currentIov.payloadId == m_currentPayloadId ) return;
-	  m_session.transaction().start(true);
-	  loadPayload();
-	  m_session.transaction().commit();
+	if( !isValid() ){
+	  throwException( "The Current IOV is invalid.","PayloadProxy::make");
 	}
+	if( m_currentIov.payloadId == m_currentPayloadId ) return;
+	m_session.transaction().start(true);
+	loadPayload();
+	m_session.transaction().commit();
       }
 
       virtual void invalidateTransientCache() {

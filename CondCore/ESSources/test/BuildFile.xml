@@ -14,5 +14,8 @@
 <library   file="stubs/EfficiencyByLabelAnalyzer.cc" name="ExEfficiencyByLabelAnalyzer">
   <flags   EDM_PLUGIN="1"/>
 </library>
+<library   file="stubs/LumiTestReadAnalyzer.cc" name="LumiTestReadAnalyzer">
+  <flags   EDM_PLUGIN="1"/>
+</library>
 
 

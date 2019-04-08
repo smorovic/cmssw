@@ -82,8 +82,8 @@ int cond::ImportUtilities::execute(){
 
   std::cout <<"# destination tag is "<<tag<<std::endl;
 
-  size_t nimported = importIovs( inputTag, sourceSession, tag, destSession, begin, end, description, editingNote, override, reserialize, forceInsert );
-  std::cout <<"# "<<nimported<<" iov(s) imported. "<<std::endl;
+  //size_t nimported = importIovs( inputTag, sourceSession, tag, destSession, begin, end, description, editingNote, override, reserialize, forceInsert );
+  //std::cout <<"# "<<nimported<<" iov(s) imported. "<<std::endl;
 
   return 0;
 }

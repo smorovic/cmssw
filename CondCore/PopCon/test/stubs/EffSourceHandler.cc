@@ -44,21 +44,16 @@ void popcon::ExEffSource::getNewObjects() {
 			      << " - > getNewObjects\n" 
     //check whats already inside of database
 			      << "got offlineInfo"
-			      << tagInfo().name << ", size " 
-			      << tagInfo().size 
-			      << ", last object valid since " 
-			      << tagInfo().lastInterval.first << " token "   
-			      << tagInfo().lastPayloadToken << std::endl;
+			      << tagInfo().name << ", last object valid since " 
+			      << tagInfo().lastInterval.since << " payload hash "   
+			      << tagInfo().lastInterval.payloadId << std::endl;
   //
   //edm::LogInfo ("ExEffsSource")<< " ------ last entry info regarding the payload (if existing): " <<logDBEntry().usertext<< 
   //  "; last record with the correct tag (if existing) has been written in the db: " <<logDBEntry().destinationDB<< std::endl; 
 
-  if (tagInfo().size>0) {
-    Ref payload = lastPayload();
-    edm::LogInfo   ("ExEffsSource")<<" type of last payload  "<< 
-      typeid(value_type).name()<<std::endl;
-  }
-
+  Ref payload = lastPayload();
+  edm::LogInfo   ("ExEffsSource")<<" type of last payload  "<< 
+    typeid(value_type).name()<<std::endl;
 
   std::cout<<"since = "<< m_since <<std::endl;
   
@@ -74,7 +69,7 @@ void popcon::ExEffSource::getNewObjects() {
     return;
   }
    
-  if( (unsigned long long)m_since > tagInfo().lastInterval.first ) {
+  if( (unsigned long long)m_since > tagInfo().lastInterval.since ) {
     m_to_transfer.push_back(std::make_pair(p0,(unsigned long long)m_since));
   
     std::ostringstream ss;

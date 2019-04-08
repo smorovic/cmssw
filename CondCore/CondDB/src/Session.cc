@@ -20,19 +20,19 @@ namespace cond {
     }
     
     void Transaction::start( bool readOnly ){
-      m_session->startTransaction( readOnly );
+      if(m_session) m_session->startTransaction( readOnly );
     }
 
     void Transaction::commit(){
-      m_session->commitTransaction();
+      if(m_session) m_session->commitTransaction();
     }
 
     void Transaction::rollback(){
-      m_session->rollbackTransaction();
+      if(m_session) m_session->rollbackTransaction();
     }
 
     bool Transaction::isActive(){
-      return m_session->isTransactionActive();
+      return m_session ? m_session->isTransactionActive() : false;
     }
 
     Session::Session():
@@ -78,19 +78,18 @@ namespace cond {
       m_session->openDb();
     }
 
-    IOVProxy Session::readIov( const std::string& tag, bool full ){
+    IOVProxy Session::readIov( const std::string& tagName ){
       m_session->openIovDb();
       IOVProxy proxy( m_session );
-      proxy.load( tag, full );
+      proxy.load( tagName );
       return proxy;
     }
 
-    IOVProxy  Session::readIov( const std::string& tag,
-                                const boost::posix_time::ptime& snapshottime,
-                                bool full ){
+    IOVProxy Session::readIov( const std::string& tagName,
+			       const boost::posix_time::ptime& snapshottime ){
       m_session->openIovDb();
       IOVProxy proxy( m_session );
-      proxy.load( tag, snapshottime, full );
+      proxy.load( tagName, snapshottime );
       return proxy;
     }
 

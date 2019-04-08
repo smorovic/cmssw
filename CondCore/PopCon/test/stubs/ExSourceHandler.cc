@@ -44,23 +44,18 @@ void popcon::ExPedestalSource::getNewObjects() {
     << " - > getNewObjects\n"
     //check whats already inside of database
     << "got offlineInfo"
-    << tagInfo().name << ", size " << tagInfo().size    
-    << ", last object valid since " 
-    << tagInfo().lastInterval.first << " token "   
-    << tagInfo().lastPayloadToken << std::endl;
+    << tagInfo().name << ", last object valid since " 
+    << tagInfo().lastInterval.since << " hash "   
+    << tagInfo().lastInterval.payloadId << std::endl;
 
   //edm::LogInfo ("ExPedestalsSource")
   //  << " ------ last entry info regarding the payload (if existing): " <<logDBEntry().usertext 
   //  << "; last record with the correct tag (if existing) has been written in the db: " 
   //  <<logDBEntry().destinationDB<< std::endl; 
   
-  if (tagInfo().size>0) {
-    Ref payload = lastPayload();
-    edm::LogInfo   ("ExPedestalsSource")<<"size of last payload  "<< 
-      payload->m_pedestals.size()<<std::endl;
-    
-  }
-
+  Ref payload = lastPayload();
+  edm::LogInfo   ("ExPedestalsSource")<<"size of last payload  "<< 
+    payload->m_pedestals.size()<<std::endl;
  
   std::cout<<"first since = "<< m_since <<std::endl;
   

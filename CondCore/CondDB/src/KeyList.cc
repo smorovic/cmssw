@@ -21,11 +21,12 @@ namespace cond {
       for (size_t i=0; i<keys.size(); ++i) {
 	m_objects[i].reset();
 	if (keys[i]!=0) {
-	  auto p = m_proxy.find(keys[i]);
-	  if ( p!= m_proxy.end()) {
+          IOVArray keyIovs = m_proxy.selectAll();
+	  auto p = keyIovs.find(keys[i]);
+	  if ( p!= keyIovs.end()) {
 	    auto item = m_data.insert( std::make_pair( i, std::make_pair("",std::make_pair(cond::Binary(),cond::Binary()) ) ) );
-				       if( ! s.fetchPayloadData( (*p).payloadId, item.first->second.first, 
-								 item.first->second.second.first, item.first->second.second.second ) )
+	    if( ! s.fetchPayloadData( (*p).payloadId, item.first->second.first, 
+				      item.first->second.second.first, item.first->second.second.second ) )
 	      cond::throwException("The Iov contains a broken payload reference.","KeyList::load");    
 	  }
 	}

@@ -83,8 +83,9 @@ int run( const std::string& connectionString ){
     IOVProxy proxy = session.readIov( "MyNewIOV" );
     std::cout <<"> iov loaded size="<<proxy.loadedSize()<<std::endl;
     std::cout <<"> iov sequence size="<<proxy.sequenceSize()<<std::endl;
-    IOVProxy::Iterator iovIt = proxy.find( 57 );
-    if( iovIt == proxy.end() ){
+    IOVArray iovs = proxy.selectAll();
+    IOVArray::Iterator iovIt = iovs.find( 57 );
+    if( iovIt == iovs.end() ){
       std::cout <<">[0] not found!"<<std::endl;
     } else {
       cond::Iov_t val = *iovIt;
@@ -93,7 +94,7 @@ int run( const std::string& connectionString ){
       pay0->print();
       iovIt++;
     }
-    if(iovIt == proxy.end() ){
+    if(iovIt == iovs.end() ){
       std::cout<<"#[1] not found!"<<std::endl;
     } else {
       cond::Iov_t val =*iovIt;
@@ -101,8 +102,8 @@ int run( const std::string& connectionString ){
       std::shared_ptr<MyTestData> pay1 = session.fetchPayload<MyTestData>( val.payloadId );
       pay1->print();
     }
-    iovIt = proxy.find( 176 );
-    if( iovIt == proxy.end() ){
+    iovIt = iovs.find( 176 );
+    if( iovIt == iovs.end() ){
       std::cout <<"#[2] not found!"<<std::endl;
     } else {
       cond::Iov_t val = *iovIt;
@@ -111,7 +112,7 @@ int run( const std::string& connectionString ){
       pay2->print();
       iovIt++;
     }
-    if(iovIt == proxy.end() ){
+    if(iovIt == iovs.end() ){
       std::cout<<"#[3] not found!"<<std::endl;
     } else {
       cond::Iov_t val =*iovIt;
@@ -120,9 +121,10 @@ int run( const std::string& connectionString ){
       pay3->print();
     }
 
-    proxy = session.readIov( "StringData" ); 
-    auto iov2It = proxy.find( 1000022 );
-    if(iov2It == proxy.end() ){
+    proxy = session.readIov( "StringData" );
+    iovs = proxy.selectAll();
+    auto iov2It = iovs.find( 1000022 );
+    if(iov2It == iovs.end() ){
       std::cout<<"#[4] not found!"<<std::endl;
     } else {
       cond::Iov_t val =*iov2It;

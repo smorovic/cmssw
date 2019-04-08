@@ -15,23 +15,31 @@ using namespace cond::persistency;
 
 
 int readIov( IOVProxy& proxy, cond::Time_t targetTime, bool expectedOk ){
-  IOVProxy::Iterator iovIt = proxy.find( targetTime );
+  bool found = false;
+  cond::Iov_t iov;
+  try{ 
+    iov = proxy.getInterval( targetTime );
+    found = true;
+  } catch ( const Exception& e ){
+    std::cout <<"# IOV "<<targetTime<<" not found: "<<e.what()<<std::endl; 
+  }
   if( expectedOk ){
-    if( iovIt == proxy.end() ){
-      std::cout <<"#ERROR: no valid iov found for time "<<targetTime<<std::endl;
-      return -1;
+    if( found ) {
+      std::cout <<"#OK: found iov with since "<<iov.since<<" - till "<<iov.till<<" for time "<<targetTime<<std::endl;
+      return 0;
     } else {
-      std::cout <<"#OK: found iov with since "<<(*iovIt).since<<" - till "<<(*iovIt).till<<" for time "<<targetTime<<std::endl;
+      std::cout <<"#OK: no valid iov found for time "<<targetTime<<std::endl;
+      return -1;
     }
   } else {
-    if( iovIt == proxy.end() ){
-      std::cout <<"#OK: no valid iov found for time "<<targetTime<<std::endl;
-    } else {
-      std::cout <<"#ERROR: found iov="<<(*iovIt).since<<" for time "<<targetTime<<std::endl;
+    if( found ){
+      std::cout <<"#ERROR: found iov="<<iov.since<<" for time "<<targetTime<<std::endl;
       return -1;
+    } else {
+      std::cout <<"#OK: no valid iov found for time "<<targetTime<<std::endl;
+      return 0;
     }
   }
-  return 0;    
 }
 
 int run( const std::string& connectionString ){
@@ -80,8 +88,9 @@ int run( const std::string& connectionString ){
     readIov( proxy, 1499, true );
     readIov( proxy, 1500, true );
     readIov( proxy, 20000, true );
-    proxy.find( 101 );
-    for( const auto i : proxy ){
+    IOVArray iovs = proxy.selectAll();
+    iovs.find( 101 );
+    for( const auto i : iovs ){
       std::cout <<"# iov since "<<i.since<<" - till "<<i.till<<std::endl; 
     }    
     proxy = session.readIov( "MyTag2" );

@@ -68,13 +68,14 @@ int cond::Dump_LHCInfo::execute(){
 
   if( payloadHash.empty() ){
     cond::persistency::IOVProxy iovSeq = session.readIov( tag );
-    auto it = iovSeq.find( since );
-    if( it == iovSeq.end() ){
+    try{
+      auto iov = iovSeq.getInterval( since );
+      payloadHash = iov.payloadId;
+    } catch ( const cond::persistency::Exception& e ){
       std::cout <<"Could not find iov with since="<<since<<" in tag "<<tag<<std::endl;
       session.transaction().commit();
       return 2;
     }
-    payloadHash = (*it).payloadId;
   }
 
   std::shared_ptr<LHCInfo> payload = session.fetchPayload<LHCInfo>( payloadHash );

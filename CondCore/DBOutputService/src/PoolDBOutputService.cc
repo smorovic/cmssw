@@ -196,7 +196,6 @@ cond::service::PoolDBOutputService::createNewIOV( const std::string& firstPayloa
   if(!myrecord.m_isNewTag) {
     cond::throwException( myrecord.m_tag + " is not a new tag", "PoolDBOutputService::createNewIOV");
   }
-  std::string iovToken;
 
   try{
     // FIX ME: synchronization type and description have to be passed as the other parameters?
@@ -225,13 +224,10 @@ cond::service::PoolDBOutputService::createNewIOV( const std::string& firstPayloa
   if(!myrecord.m_isNewTag) {
     cond::throwException( myrecord.m_tag + " is not a new tag", "PoolDBOutputService::createNewIOV");
   }
-  std::string iovToken;
-  std::string payloadType("");
   try{
     // FIX ME: synchronization type and description have to be passed as the other parameters?
     cond::persistency::IOVEditor editor = m_session.createIovForPayload( firstPayloadId, myrecord.m_tag, myrecord.m_timetype, cond::SYNCH_ANY ); 
     editor.setDescription( "New Tag" );
-    payloadType = editor.payloadType();
     editor.insert( firstSinceTime, firstPayloadId );
     cond::UserLogInfo a=this->lookUpUserLogInfo(recordName);
     editor.flush( a.usertext );
@@ -255,10 +251,8 @@ cond::service::PoolDBOutputService::appendSinceTime( const std::string& payloadI
     cond::throwException(std::string("Cannot append to non-existing tag ") + myrecord.m_tag,
 		   "PoolDBOutputService::appendSinceTime");  
   }
-  std::string payloadType("");
   try{
     cond::persistency::IOVEditor editor = m_session.editIov( myrecord.m_tag ); 
-    payloadType = editor.payloadType();
     editor.insert( time, payloadId );
     cond::UserLogInfo a=this->lookUpUserLogInfo(recordName);
     editor.flush( a.usertext );
@@ -268,6 +262,31 @@ cond::service::PoolDBOutputService::appendSinceTime( const std::string& payloadI
 		   "PoolDBOutputService::appendSinceTime");
   }
   scope.close();
+}
+
+void cond::service::PoolDBOutputService::eraseSinceTime( const std::string& payloadId,
+							 cond::Time_t sinceTime,
+							 const std::string& recordName,
+							 bool withlogging ){
+  std::lock_guard<std::recursive_mutex> lock(m_mutex);
+  cond::persistency::TransactionScope scope( m_session.transaction() );
+  Record& myrecord=this->lookUpRecord(recordName);
+  if( myrecord.m_isNewTag ) {
+    cond::throwException(std::string("Cannot delete from non-existing tag ") + myrecord.m_tag,
+		   "PoolDBOutputService::appendSinceTime");  
+  }
+  try{
+    cond::persistency::IOVEditor editor = m_session.editIov( myrecord.m_tag ); 
+    editor.erase( sinceTime, payloadId );
+    cond::UserLogInfo a=this->lookUpUserLogInfo(recordName);
+    editor.flush( a.usertext );
+    
+  }catch(const std::exception& er){
+    cond::throwException(std::string(er.what()),
+			 "PoolDBOutputService::eraseSinceTime");
+  }
+  scope.close();
+
 }
 
 cond::service::PoolDBOutputService::Record& 
@@ -330,11 +349,8 @@ cond::service::PoolDBOutputService::tagInfo(const std::string& recordName,cond::
   Record& record = lookUpRecord(recordName);
   result.name=record.m_tag;
   //use iovproxy to find out.
-  cond::persistency::IOVProxy iov = m_session.readIov( record.m_tag );
-  result.size=iov.sequenceSize();
-  if (result.size>0) {
-    cond::Iov_t last = iov.getLast();
-    result.lastInterval = cond::ValidityInterval( last.since, last.till );
-    result.lastPayloadToken = last.payloadId;
+  if( m_session.existsIov( record.m_tag ) ){
+    cond::persistency::IOVProxy iov = m_session.readIov( record.m_tag );
+    result.lastInterval = iov.getLast();
   }
 }

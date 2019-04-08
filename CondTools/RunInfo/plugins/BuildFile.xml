@@ -30,3 +30,6 @@
 <library   file="LHCInfoPopConAnalyzer.cc" name="CondToolsLHCInfoPopConAnalyzer">
   <flags   EDM_PLUGIN="1"/>
 </library>
+<library   file="LumiTestPopConAnalyzer.cc" name="CondToolsLumiTestPopConAnalyzer">
+  <flags   EDM_PLUGIN="1"/>
+</library>

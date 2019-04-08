@@ -10,14 +10,6 @@
 #include <vector>
 #include <string>
 
-namespace cond {
-  class Summary;
-}
-
-#include "CondFormats/Common/interface/GenericSummary.h"
-
-
-
 namespace popcon {
 
   /** Online DB source handler, aims at returning the vector of data to be 
@@ -33,19 +25,7 @@ namespace popcon {
   public: 
     typedef T value_type;
     typedef PopConSourceHandler<T> self;
-    typedef cond::Time_t Time_t;
-    typedef cond::Summary Summary;
-    
-    struct Triplet {
-      value_type * payload;
-      Summary * summary;
-      Time_t time;
-    };
-    
-    typedef std::vector<Triplet> Container;
-    
-    typedef std::vector<std::pair<T*, cond::Time_t> > OldContainer;
-    
+    typedef std::vector<std::pair<value_type*, cond::Time_t> > Container;
     
     class Ref {
     public:
@@ -100,7 +80,7 @@ namespace popcon {
     
     // return last paylod of the tag
     Ref lastPayload() const {
-      return Ref(m_session,tagInfo().lastPayloadToken);
+      return Ref(m_session,tagInfo().lastInterval.payloadId);
     }
     
     // return last successful log entry for the tag in question
@@ -124,9 +104,8 @@ namespace popcon {
     
     Container const &  returnData() {
       getNewObjects();
-      if (!m_to_transfer.empty()) convertFromOld();
       sort();
-      return m_triplets;
+      return m_to_transfer;
     }
     
     std::string const & userTextLog() const { return m_userTextLog; }
@@ -139,27 +118,17 @@ namespace popcon {
     virtual std::string id() const=0;
     
     void sort() {
-      std::sort(m_triplets.begin(),m_triplets.end(),
+      std::sort(m_to_transfer.begin(),m_to_transfer.end(),
 		boost::bind(std::less<cond::Time_t>(),
-			    boost::bind(&Container::value_type::time,_1),
-			    boost::bind(&Container::value_type::time,_2)
+			    boost::bind(&Container::value_type::second,_1),
+			    boost::bind(&Container::value_type::second,_2)
 			    )
 		);
     }
-    
-    
-    // make sure to create a new one each time...
-    Summary * dummySummary(typename OldContainer::value_type const &) const {
-      return new cond::GenericSummary("not supplied");
-    }
-    
-    void convertFromOld() {
-      std::for_each( m_to_transfer.begin(), m_to_transfer.end(),
-		     boost::bind(&self::add, this,
-				 boost::bind(&OldContainer::value_type::first,_1),
-				 boost::bind(&self::dummySummary, this, _1),
-				 boost::bind(&OldContainer::value_type::second,_1)
-				 ));
+
+    void appendToTransfer( value_type* payload, cond::Time_t since ){
+      m_payloads.emplace_back( std::unique_ptr<value_type>( payload ) );
+      m_to_transfer.push_back( std::make_pair( payload, since ) );
     }
     
   protected:
@@ -168,12 +137,6 @@ namespace popcon {
       return m_session;
     }
     
-    int add(value_type * payload, Summary * summary, Time_t time) {
-      Triplet t = {payload,summary,time};
-      m_triplets.push_back(t);
-      return m_triplets.size();
-    }
-
   private:
     
     mutable cond::persistency::Session m_session;
@@ -181,20 +144,17 @@ namespace popcon {
     cond::TagInfo_t const * m_tagInfo;
     
     cond::LogDBEntry_t const * m_logDBEntry;
-    
+
+    std::vector<std::unique_ptr<value_type> > m_payloads;
 
   protected:
     
     //vector of payload objects and iovinfo to be transferred
     //class looses ownership of payload object
-    OldContainer m_to_transfer;
-
-    private:
-    Container m_triplets;
+    Container m_to_transfer;
 
   protected:
     std::string m_userTextLog;
-
 
   };
 }

@@ -140,6 +140,8 @@ namespace cond {
 		       const boost::posix_time::ptime& snapshotTime, std::vector<std::tuple<cond::Time_t,cond::Hash> >& iovs ) override;
 	void insertOne( const std::string& tag, cond::Time_t since, cond::Hash payloadHash, const boost::posix_time::ptime& insertTime) override;
 	void insertMany( const std::string& tag, const std::vector<std::tuple<cond::Time_t,cond::Hash,boost::posix_time::ptime> >& iovs ) override;
+	void eraseOne( const std::string& tag, cond::Time_t since, cond::Hash payloadId ) override;
+	void eraseMany( const std::string& tag, const std::vector<std::tuple<cond::Time_t,cond::Hash> >& iovs ) override;
 	void erase( const std::string& tag ) override;
       private:
 	coral::ISchema& m_schema;

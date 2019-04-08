@@ -75,6 +75,9 @@ namespace cond {
       void insert( cond::Time_t since, const cond::Hash& payloadHash, bool checkType=false );
       void insert( cond::Time_t since, const cond::Hash& payloadHash, const boost::posix_time::ptime& insertionTime, bool checkType=false ); 
 
+      // register a new deletion.
+      void erase( cond::Time_t since, const cond::Hash& payloadHash );
+
       // execute the update/intert queries and reset the buffer
       bool flush();
       bool flush( const boost::posix_time::ptime& operationTime );

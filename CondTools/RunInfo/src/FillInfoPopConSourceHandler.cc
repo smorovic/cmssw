@@ -33,22 +33,20 @@ void FillInfoPopConSourceHandler::getNewObjects() {
   Ref previousFill;
   
   //if a new tag is created, transfer fake fill from 1 to the first fill for the first time
-  if ( tagInfo().size == 0 ) {
+  if ( tagInfo().isEmpty() ) {
     edm::LogInfo( m_name ) << "New tag "<< tagInfo().name << "; from " << m_name << "::getNewObjects";
   } else {
     //check what is already inside the database
     edm::LogInfo( m_name ) << "got info for tag " << tagInfo().name 
-			   << ", IOVSequence token " << tagInfo().token
-			   << ": size " << tagInfo().size 
-			   << ", last object valid since " << tagInfo().lastInterval.first 
-			   << " ( "<< boost::posix_time::to_iso_extended_string( cond::time::to_boost( tagInfo().lastInterval.first ) )
+			   << ", last object valid since " << tagInfo().lastInterval.since 
+			   << " ( "<< boost::posix_time::to_iso_extended_string( cond::time::to_boost( tagInfo().lastInterval.since ) )
 			   << " ); from " << m_name << "::getNewObjects";
     //retrieve the last payload...
     previousFill = this->lastPayload();
     //checking its content
     edm::LogInfo( m_name ) << "The last payload in tag " << tagInfo().name 
-			   << " valid since " << tagInfo().lastInterval.first
-			   << " has token " << tagInfo().lastPayloadToken 
+			   << " valid since " << tagInfo().lastInterval.since
+			   << " has hash " << tagInfo().lastInterval.payloadId 
 			   << " and values:\n" << *previousFill
 			   << "from " << m_name << "::getNewObjects";
     if( m_firstFill <= previousFill->fillNumber() ) {
@@ -148,7 +146,7 @@ void FillInfoPopConSourceHandler::getNewObjects() {
   //initialize loop variables
   unsigned short previousFillNumber = 1, currentFill = m_firstFill;
   cond::Time_t previousFillEndTime = 0ULL, afterPreviousFillEndTime = 0ULL, beforeStableBeamStartTime = 0ULL;
-  if( tagInfo().size > 0 ) {
+  if( !tagInfo().isEmpty() ) {
     previousFillNumber = previousFill->fillNumber();
     previousFillEndTime = previousFill->endTime();
   }

@@ -7,18 +7,17 @@
 
 namespace popcon {
 
-  constexpr const char* const PopCon::s_version;
+  constexpr const char* const PopConBase::s_version;
 
-  PopCon::PopCon(const edm::ParameterSet& pset):
+  PopConBase::PopConBase(const edm::ParameterSet& pset):
     m_targetSession(),
-    m_targetConnectionString(pset.getUntrackedParameter< std::string >("targetDBConnectionString","")),
+    //m_targetConnectionString(pset.getUntrackedParameter< std::string >("targetDBConnectionString","")),
     m_authPath( pset.getUntrackedParameter<std::string>("authenticationPath","")),
     m_authSys( pset.getUntrackedParameter<int>("authenticationSystem",1)),
     m_record(pset.getParameter<std::string> ("record")),
     m_payload_name(pset.getUntrackedParameter<std::string> ("name","")),
     m_LoggingOn(pset.getUntrackedParameter< bool > ("loggingOn",true)),
-    m_close(pset.getUntrackedParameter< bool > ("closeIOV",false)),
-    m_lastTill(pset.getUntrackedParameter< bool > ("lastTill",false))
+    m_endOfValidity(pset.getUntrackedParameter< cond::Time_t > ("lastTill",cond::time::MAX_VAL))
     {
       //TODO set the policy (cfg or global configuration?)
       //Policy if corrupted data found
@@ -27,19 +26,21 @@ namespace popcon {
                               << "Please report any problem and feature request through the JIRA project CMSCONDDB.\n" ; 
     }
   
-  PopCon::~PopCon(){
+  PopConBase::~PopConBase(){
+    /**
     if( !m_targetConnectionString.empty() )  {
       m_targetSession.transaction().commit();
     }
+    **/
   }
  
-
-  cond::persistency::Session PopCon::initialize() {	
+  cond::persistency::Session PopConBase::initialize() {	
     edm::LogInfo ("PopCon")<<"payload name "<<m_payload_name<<std::endl;
     if(!m_dbService.isAvailable() ) throw Exception("DBService not available");
     const std::string & connectionStr = m_dbService->session().connectionString();
-    m_tag = m_dbService->tag(m_record);
-    m_tagInfo.name = m_tag;
+    m_tagInfo.name = m_dbService->tag(m_record);
+    m_targetSession = m_dbService->session();
+    /**
     if( m_targetConnectionString.empty() ) m_targetSession = m_dbService->session();
     else {
       cond::persistency::ConnectionPool connPool;
@@ -49,42 +50,70 @@ namespace popcon {
       m_targetSession = connPool.createSession( m_targetConnectionString );
       m_targetSession.transaction().start();
     }
-    if( m_targetSession.existsIov( m_tag ) ){
-      cond::persistency::IOVProxy iov = m_targetSession.readIov( m_tag );
-      m_tagInfo.name = m_tag;
-      m_tagInfo.size = iov.sequenceSize();
-      if( m_tagInfo.size>0 ){
-        cond::Iov_t last = iov.getLast();
-        m_tagInfo.lastInterval = cond::ValidityInterval( last.since, last.till );
-        m_tagInfo.lastPayloadToken = last.payloadId;
-      }
+    **/
+    if( m_targetSession.existsIov( m_tagInfo.name ) ){
+      cond::persistency::IOVProxy iov = m_targetSession.readIov( m_tagInfo.name );
+      //m_tagInfo.name = m_tag;
+      m_tagInfo.lastInterval = iov.getLast();
 
       edm::LogInfo ("PopCon") << "destination DB: " << connectionStr
-                              << ", target DB: " << ( m_targetConnectionString.empty() ? connectionStr : m_targetConnectionString ) << "\n"
-                              << "TAG: " << m_tag
-                              << ", last since/till: " <<  m_tagInfo.lastInterval.first
-                              << "/" << m_tagInfo.lastInterval.second
-                              << ", size: " << m_tagInfo.size << "\n" << std::endl;
+      //                              << ", target DB: " << ( m_targetConnectionString.empty() ? connectionStr : m_targetConnectionString ) << "\n"
+                              << "TAG: " << m_tagInfo.name
+                              << ", last since/till: " <<  m_tagInfo.lastInterval.since
+                              << "/" << m_tagInfo.lastInterval.till << std::endl;
     } else {
       edm::LogInfo ("PopCon") << "destination DB: " << connectionStr
-                              << ", target DB: " << ( m_targetConnectionString.empty() ? connectionStr : m_targetConnectionString ) << "\n"
-                              << "TAG: " << m_tag
+	//                              << ", target DB: " << ( m_targetConnectionString.empty() ? connectionStr : m_targetConnectionString ) << "\n"
+                              << "TAG: " << m_tagInfo.name
                               << "; First writer to this new tag." << std::endl;
     }
     return m_targetSession;
   }
+
+  void PopConBase::insertIov( cond::Hash payloadId, cond::Time_t since ){
+    m_dbService->appendSinceTime( payloadId, since, m_record, m_LoggingOn );
+  }
+
+  void PopConBase::eraseIov( cond::Hash payloadId, cond::Time_t since ){
+    m_dbService->eraseSinceTime( payloadId, since, m_record, m_LoggingOn );
+  }
+
+  const cond::TagInfo_t& PopConBase::tagInfo(){
+    return m_tagInfo;
+  }
+   
+  const cond::LogDBEntry_t& PopConBase::logDBEntry(){
+    return m_logDBEntry;
+  }
+
+  bool PopConBase::isLoggingOn(){
+    return m_LoggingOn;
+  }
+
+  void PopConBase::setLogHeader(const std::string& sourceId, const std::string& message){
+    m_dbService->setLogHeaderForRecord(m_record, sourceId, message);
+  }
   
-  
-  void PopCon::finalize(Time_t lastTill) {
-    
-    if (m_close) {
-      // avoid to close it before lastSince
-      if (m_lastTill>lastTill) lastTill=m_lastTill;
-      m_dbService->closeIOV(lastTill,m_record);
-    }
+  void PopConBase::finalize() {
+    /**
     if( !m_targetConnectionString.empty() )  {
+      if (m_endOfValidity) {
+	m_dbService->closeIOV(m_endOfValidity,m_record);
+      }
       m_targetSession.transaction().commit();
     }
+    **/
+    if (m_endOfValidity) {
+      m_dbService->closeIOV(m_endOfValidity,m_record);
+    }
+    m_dbService->postEndJob();
+  }
+
+  PopCon::PopCon(const edm::ParameterSet& pset):
+    PopConBase( pset ){
+  }
+
+  PopCon::~PopCon(){
   }
   
 }

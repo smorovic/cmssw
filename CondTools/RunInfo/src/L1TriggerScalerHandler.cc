@@ -30,13 +30,12 @@ void L1TriggerScalerHandler::getNewObjects() {
 	     << " - > getNewObjects\n" << 
   //check whats already inside of database
       "got offlineInfo"<<
-    tagInfo().name << ", size " << tagInfo().size 
-            << ", last object valid since " 
-	    << tagInfo().lastInterval.first << " token "   
-            << tagInfo().lastPayloadToken << std::endl;
+    tagInfo().name << ", last object valid since " 
+	    << tagInfo().lastInterval.since << " hash "   
+            << tagInfo().lastInterval.payloadId << std::endl;
   
 
-  if (tagInfo().size>0) {
+   if (!tagInfo().isEmpty()) {
     Ref payload = lastPayload();
     edm::LogInfo   ("L1TriggerScalerHandler")<<"size of last payload  "<< 
       payload->m_run.size()<<std::endl;

@@ -11,6 +11,7 @@
 
 #include "CondFormats/Common/interface/DropBoxMetadata.h"
 #include "CondFormats/Common/interface/BasicPayload.h"
+#include "CondFormats/Common/interface/LumiTestPayload.h"
 
 
 #include <vector>

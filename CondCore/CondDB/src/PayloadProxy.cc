@@ -30,19 +30,26 @@ namespace cond {
     }
 
     void BasePayloadProxy::reload(){
-      std::string tag = m_iovProxy.tag();
+      std::string tag = m_iovProxy.tagInfo().name;
       if( !tag.empty() ) loadTag( tag );
     }
     
-    ValidityInterval BasePayloadProxy::setIntervalFor(cond::Time_t time, bool load) {
-      if( !m_currentIov.isValidFor( time ) ){
+    ValidityInterval BasePayloadProxy::setIntervalFor(cond::Time_t target, bool load) {
+      if( !m_currentIov.isValidFor( target ) ){
 	m_currentIov.clear();
 	m_session.transaction().start(true);
-	auto it = m_iovProxy.find( time );
-	if( it != m_iovProxy.end() ) {
-	  m_currentIov = *it;
-	  if(load) loadPayload();
-	}
+	m_currentIov = m_iovProxy.getInterval( target );
+        if(load) loadPayload();
+	m_session.transaction().commit();
+      }
+      return ValidityInterval( m_currentIov.since, m_currentIov.till );
+    }
+
+    ValidityInterval BasePayloadProxy::setIntervalFor( Time_t target, Time_t defaultIovSize ){
+      if( !m_currentIov.isValidFor( target ) ){
+	m_currentIov.clear();
+	m_session.transaction().start(true);
+	m_currentIov = m_iovProxy.getInterval( target, defaultIovSize );
 	m_session.transaction().commit();
       }
       return ValidityInterval( m_currentIov.since, m_currentIov.till );

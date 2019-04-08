@@ -15,17 +15,17 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 namespace popcon{
-  template <typename S>
-  class PopConAnalyzer : public edm::EDAnalyzer {
+  template <typename Source, typename Populator>
+  class PopConGenericAnalyzer : public edm::EDAnalyzer {
   public:
-    typedef S SourceHandler;
+    typedef Source SourceHandler;
     
-    PopConAnalyzer(const edm::ParameterSet& pset) : 
+    PopConGenericAnalyzer(const edm::ParameterSet& pset) : 
       m_populator(pset),
       m_source(pset.getParameter<edm::ParameterSet>("Source")) {}
     
     
-    ~PopConAnalyzer() override{}
+    ~PopConGenericAnalyzer() override{}
     
   private:
     
@@ -43,9 +43,12 @@ namespace popcon{
     }
     
   private:
-    PopCon m_populator;
+    Populator m_populator;
     SourceHandler m_source;	
   };
+
+  template <typename S>
+  using PopConAnalyzer = PopConGenericAnalyzer<S,PopCon>; 
 
 }
 #endif

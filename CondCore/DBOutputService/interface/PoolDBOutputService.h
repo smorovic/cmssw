@@ -51,7 +51,7 @@ namespace cond{
       
       // 
       template<typename T>
-      void writeOne( T * payload, Time_t time, const std::string& recordName, bool withlogging=false ) {
+      Hash writeOne( T * payload, Time_t time, const std::string& recordName, bool withlogging=false ) {
         if( !payload ) throwException( "Provided payload pointer is invalid.","PoolDBOutputService::writeOne");
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 	if (!m_dbstarted) this->initDB();
@@ -61,7 +61,8 @@ namespace cond{
 	  createNewIOV(payloadId, payloadType, time, endOfTime(), recordName, withlogging);
         } else {
 	  appendSinceTime(payloadId, time, recordName, withlogging);
-        }	
+        }
+	return payloadId;
       }
 
       // close the IOVSequence setting lastTill
@@ -70,7 +71,7 @@ namespace cond{
 
       // 
       template<typename T>
-      void createNewIOV( T* firstPayloadObj,
+      Hash createNewIOV( T* firstPayloadObj,
 			 cond::Time_t firstSinceTime,
 			 cond::Time_t firstTillTime,
 			 const std::string& recordName,
@@ -78,12 +79,14 @@ namespace cond{
         if( !firstPayloadObj ) throwException( "Provided payload pointer is invalid.","PoolDBOutputService::createNewIOV");
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 	if (!m_dbstarted) this->initDB();
-        createNewIOV( m_session.storePayload( *firstPayloadObj ),
+        Hash payloadId = m_session.storePayload( *firstPayloadObj );
+        createNewIOV( payloadId,
 		      cond::demangledName(typeid(T)),
                       firstSinceTime,
                       firstTillTime,
                       recordName,
-                      withlogging);	
+                      withlogging);
+	return payloadId;
       }
             
       void createNewIOV( const std::string& firstPayloadId,
@@ -121,7 +124,14 @@ namespace cond{
                             const std::string& recordName,
                             bool withlogging=false);
      
-      //
+      // Remove the payload and its valid sinceTime from the database
+      // 
+      void eraseSinceTime( const std::string& payloadId,
+			   cond::Time_t sinceTime,
+			   const std::string& recordName,
+			   bool withlogging=false);
+     
+     //
       // Service time utility method 
       // return the infinity value according to the given timetype
       //

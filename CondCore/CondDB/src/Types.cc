@@ -22,9 +22,10 @@ namespace cond {
   }
 
   void Tag_t::clear(){
-    tag.clear();
+    name.clear();
     payloadType.clear();
     timeType = invalid;
+    synchronizationType = SYNCH_ANY; 
     endOfValidity = time::MIN_VAL;
     lastValidatedTime = time::MIN_VAL;
   }
