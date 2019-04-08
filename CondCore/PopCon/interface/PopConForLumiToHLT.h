@@ -71,7 +71,7 @@ namespace popcon {
 	// delete the new iov...
 	PopConBase::eraseIov( payloadId, targetTime ); 
         // for the moment, only detect the problem...
-	edm::LogWarning( MSGSOURCE ) << "Found a late update. History might be superseeded.";
+	edm::LogWarning( MSGSOURCE ) << "Found a late update. A revert was required.";
 	PopConBase::finalize();
       } 
     }

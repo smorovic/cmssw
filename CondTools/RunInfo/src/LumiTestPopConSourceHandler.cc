@@ -17,6 +17,8 @@ void LumiTestPopConSourceHandler::getNewObjects() {
   cond::LumiTestPayload* thePayload = new cond::LumiTestPayload;
   cond::auth::KeyGenerator gen;
   thePayload->m_data = gen.makeWithRandomSize( m_maxDataSize );
+  boost::posix_time::ptime creationTime = boost::posix_time::second_clock::local_time();
+  thePayload->m_creationTime = cond::time::from_boost( creationTime );  
   appendToTransfer( thePayload, 1 );
 }
 

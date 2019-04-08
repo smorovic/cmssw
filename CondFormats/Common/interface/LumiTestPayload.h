@@ -18,6 +18,7 @@ namespace cond {
 
   public:
     unsigned long long m_id;
+    unsigned long long m_creationTime; 
     std::string m_data;
   
   COND_SERIALIZABLE;
