@@ -14,6 +14,8 @@
 
 #include <curl/curl.h>
 
+#include <sys/utsname.h>
+
 namespace evf{
     class ExceptionGenerator : public edm::stream::EDAnalyzer<>
     {
@@ -25,9 +27,12 @@ namespace evf{
       ~ExceptionGenerator() override{};
       void beginRun(const edm::Run& r, const edm::EventSetup& iSetup) override;
       void analyze(const edm::Event & e, const edm::EventSetup& c) override;
+      void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
       void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
 
     private:
+      void getLumiTestPayload(edm::Event const* e, edm::LuminosityBlock const *lb,  edm::EventSetup const *es);
+
       int actionId_;
       unsigned int intqualifier_;
       double qualifier2_;
@@ -38,9 +43,10 @@ namespace evf{
       timeval tv_start_;
 
       std::mutex stream_mutex_;
-      std::map<bool> ls_handled_;
+      std::map<unsigned int, bool> ls_handled_;
 
       std::string url_;
+      struct utsname uts_;
     };
   }
 

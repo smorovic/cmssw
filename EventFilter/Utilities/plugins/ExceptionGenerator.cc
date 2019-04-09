@@ -11,6 +11,9 @@
 #include "FWCore/Utilities/interface/Exception.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
+#include "CondFormats/DataRecord/interface/LumiTestPayloadRcd.h"
+#include "CondFormats/Common/interface/LumiTestPayload.h"
+
 #include "boost/tokenizer.hpp"
 
 #include <cstdio>
@@ -140,6 +143,10 @@ namespace evf{
     timingHisto_->SetEntries(24934);
     
     curl_global_init(CURL_GLOBAL_ALL);
+
+
+
+    uname(&uts_);
   }
 
   void ExceptionGenerator::beginRun(const edm::Run& r, const edm::EventSetup& iSetup)
@@ -148,39 +155,73 @@ namespace evf{
     gettimeofday(&tv_start_,nullptr);
     std::lock_guard<std::mutex> guard(stream_mutex_);
     std::stringstream ss;
-    ss <<"http://es-local:9200/run_"<< r.run() << "/doc";
+    ss <<"http://es-cdaq.cms:9200/test_conddb/doc";
     url_ = ss.str();
+
+    edm::ESHandle<cond::LumiTestPayload> ps;
+    iSetup.get<LumiTestPayloadRcd>().get(ps);
+
   }
 
   void ExceptionGenerator::beginLuminosityBlock(edm::LuminosityBlock const &lb, edm::EventSetup const &es)
   {
-    //A = actual data
-    //ARecord = corresponding recotd object
-    auto ls = lb.luminosityBlock();
+    if (actionId_==17)
+      getLumiTestPayload(nullptr,&lb,&es);
+  }
+
+  void ExceptionGenerator::getLumiTestPayload(edm::Event const* e, edm::LuminosityBlock const *lb,  edm::EventSetup const *es) {
+
+
+    //check only once per LS
+    unsigned int ls;
+    unsigned long eid;
+    if (e) {
+      eid = e->id().event();
+      ls = e->id().luminosityBlock();
+    }
+    else if (lb) {
+      eid = 0;
+      ls = lb->luminosityBlock();
+    }
+    else {
+      eid = ls = 0;
+      assert(!(e==nullptr && lb==nullptr));
+    }
+
     {
       std::lock_guard<std::mutex> guard(stream_mutex_);
       if (ls_handled_.find(ls)!=ls_handled_.end()) return;
-      else ls_handled[ls]=true;
+      else ls_handled_[ls]=true;
     }
 
-    milliseconds ms1 = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
-    long pre = ms1.count();
+    //milliseconds ms1 = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+    //long pre = ms1.count();
 
-    edm::ESHandle<A> testHandle;
-    iSetup.get<ARecord>().get(testHandle);
+    edm::eventsetup::EventSetupRecordKey recordKey(edm::eventsetup::EventSetupRecordKey::TypeTag::findType("LumiTestPayloadRcd"));
+    if( recordKey.type() == edm::eventsetup::EventSetupRecordKey::TypeTag()) {
+      //record not found
+      edm::LogError("ExceptionGenerator") << "Record \"LumiTestPayloadRcd"<<"\" does not exist ";
+    }
+    edm::ESHandle<cond::LumiTestPayload> ps;
+    es->get<LumiTestPayloadRcd>().get(ps);
+    const cond::LumiTestPayload* payload=ps.product();
+    edm::LogInfo("ExceptionGenerator") << "Event "<< eid << " Lumi "<<ls <<" LumiTestPayload "<<payload->m_id;
+
+    long delta_ls = (long)ls - (long)payload->m_id;
 
     //unix timestamp (for example)
-    milliseconds ms2 = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
-    long post = ms2.count();
+    //milliseconds ms2 = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+    //long post = ms2.count();
 
-    auto initial_time = testHandle->getUnixTime();
+    //auto initial_time = testHandle->getUnixTime();
 
-    auto dt1 = ms1-initial_time;
-    auto dt2 = ms2-initial_time;
+    //auto dt1 = ms1-initial_time;
+    //auto dt2 = ms2-initial_time;
 
-    std stringstream ss;
-    ss <<"{\"doc_type\":\"condlatency\",\"MergingTimePerFile\":" << dt1 << ",\"MergingTime\":"<<dt2<<",\"ls\":"<< ls <<"}"; // todo: ,host;>>...
-    std::string data == ss.str();
+    std::stringstream ss;
+    //ss <<"{\"doc_type\":\"condlatency\",\"MergingTimePerFile\":" << dt1 << ",\"MergingTime\":"<<dt2<<",\"ls\":"<< ls <<"}"; // todo: ,host;>>...
+    ss <<"{\"host\":\""<< uts_.nodename << "\",\"pid\":"<< getpid() <<"\",\"delta_ls\":" << delta_ls << "\"ls\":"<< ls << ",\"doc_type\":\"condtest\""<<"}"; // todo: ,host;>>...
+    std::string data = ss.str();
 
     /* HTTP PUT please */ 
     CURL * curl = curl_easy_init();
@@ -310,6 +351,11 @@ namespace evf{
 	        }
               }
               break;
+            case 16:
+              {
+                getLumiTestPayload(&e,nullptr,&c); 
+                break;
+              }
             default:
               break;
 	    }
