@@ -11,6 +11,7 @@ namespace popcon {
     m_latencyInLumisections( pset.getUntrackedParameter<unsigned int>("latency",1)),
     m_preLoadConnectionString( pset.getUntrackedParameter<std::string>("preLoadConnectionString","")),
     m_pathForLastLumiFile( pset.getUntrackedParameter<std::string>("pathForLastLumiFile","")),
+    m_logFileName( pset.getUntrackedParameter<std::string>("logFileName","")),
     m_debug( pset.getUntrackedParameter<bool>( "debugLogging",false ) ){
   }
 
@@ -53,8 +54,13 @@ namespace popcon {
       if( !getLatestLumiFromDAQ( info ) ) throw Exception( "Can't get last Lumisection from DAQ.");
       lastLumiProcessed = boost::lexical_cast<unsigned long long>( info );
     } else {
+      
       std::ifstream lastLumiFile( m_pathForLastLumiFile );
-      lastLumiFile >> lastLumiProcessed;
+      if( lastLumiFile) { 
+	lastLumiFile >> lastLumiProcessed;
+      } else {
+	lastLumiProcessed = 1;
+      }
     }
     return lastLumiProcessed;
   }
@@ -75,8 +81,15 @@ namespace popcon {
     transaction.start(true);
     cond::persistency::IOVProxy proxy = session.readIov( tagInfo().name );
     auto iov = proxy.getInterval( targetTime );
+    std::cout <<" IOV found for target "<<targetTime<<" since "<<iov.since<<" hash "<<iov.payloadId<<std::endl;
     transaction.commit();
     return iov.since;
   }
+
+  void PopConForLumiToHLT::log( const std::string& tag, const std::string& message ){
+    std::ofstream logFile( m_logFileName, std::ios_base::app );
+    logFile << tag << " * " << boost::posix_time::to_simple_string( boost::posix_time::second_clock::local_time() ) <<" * "<<message<<std::endl;
+    logFile.close();
+  } 
     
 }

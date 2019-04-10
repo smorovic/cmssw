@@ -65,6 +65,7 @@ process.Test1 = cms.EDAnalyzer("LumiTestPopConAnalyzer",
                                preLoadConnectionString = cms.untracked.string('frontier://FrontierPrep/CMS_CONDITIONS'),
                                #preLoadConnectionString = cms.untracked.string('sqlite_file:cms_conditions.db'),
                                pathForLastLumiFile = cms.untracked.string('./last_time.txt'),
+                               logFileName = cms.untracked.string('./lumi_pop.log'),
                                Source = cms.PSet(
                                    maxDataSize = cms.untracked.uint32( 100 ),
                                    debug=cms.untracked.bool(False)

@@ -47,8 +47,6 @@ namespace edmtest
   };
   void
   LumiTestReadAnalyzer::beginRun(const edm::Run&, const edm::EventSetup& context){
-    edm::ESHandle<cond::LumiTestPayload> ps;
-    context.get<LumiTestPayloadRcd>().get(ps);
   }
   void
   LumiTestReadAnalyzer::beginJob(){

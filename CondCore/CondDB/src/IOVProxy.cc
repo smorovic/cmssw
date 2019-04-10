@@ -353,6 +353,7 @@ namespace cond {
 	if( defaultIovSize == 0 ) {
           retVal.clear();
 	} else {
+	  retVal.since = time;
 	  retVal.till = retVal.since+defaultIovSize-1;
 	  if( time > retVal.till ) retVal.till = time;
 	}
