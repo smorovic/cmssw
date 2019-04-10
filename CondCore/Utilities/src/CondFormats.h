@@ -263,6 +263,7 @@
 #include "CondFormats/PCLConfig/interface/AlignPCLThresholds.h"
 
 #include "CondFormats/Common/interface/BaseKeyed.h"
+#include "CondFormats/Common/interface/LumiTestPayload.h"
 
 #include "CondFormats/External/interface/DetID.h"
 #include "CondFormats/External/interface/EcalDetID.h"

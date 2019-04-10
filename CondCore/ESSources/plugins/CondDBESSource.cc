@@ -354,9 +354,11 @@ CondDBESSource::setIntervalFor( const edm::eventsetup::EventSetupRecordKey& iKey
   auto iR = m_refreshTimeForRecord.find( recordname );
   bool refreshThisRecord = (iR !=  m_refreshTimeForRecord.end());
   cond::Time_t defaultIovSize = cond::time::MAX_VAL;
+  cond::Time_t minDiffTime = 1;
   if( refreshThisRecord ) {
     lastTime = cond::time::lumiTime( m_lastRun, m_lastLumi ); 
     defaultIovSize = iR->second;
+    minDiffTime = defaultIovSize;
   }
   bool doRefresh = false;
   if( m_policy == REFRESH_EACH_RUN || m_policy == RECONNECT_EACH_RUN || refreshThisRecord) {
@@ -364,7 +366,7 @@ CondDBESSource::setIntervalFor( const edm::eventsetup::EventSetupRecordKey& iKey
     std::map<std::string,cond::Time_t>::iterator iRec = m_lastRecordRuns.find( recordname );
     if( iRec != m_lastRecordRuns.end() ){
       cond::Time_t lastRecordRun = iRec->second;
-      if( lastRecordRun != lastTime ){
+      if( lastTime - lastRecordRun > minDiffTime ){
         // a refresh is required!
         doRefresh = true;
         iRec->second = lastTime;
@@ -372,6 +374,7 @@ CondDBESSource::setIntervalFor( const edm::eventsetup::EventSetupRecordKey& iKey
 					 << "\" since there has been a transition from run/lumi "
 					 << lastRecordRun << " to run " << lastTime
 					 << "; from CondDBESSource::setIntervalFor";
+
       }
     } else {
       doRefresh = true;
@@ -514,6 +517,7 @@ CondDBESSource::setIntervalFor( const edm::eventsetup::EventSetupRecordKey& iKey
     
     recordValidity.first = std::max(recordValidity.first,validity.first);
     recordValidity.second = std::min(recordValidity.second,validity.second);
+
   }      
   
   if( m_policy == REFRESH_OPEN_IOVS ) {
@@ -526,7 +530,6 @@ CondDBESSource::setIntervalFor( const edm::eventsetup::EventSetupRecordKey& iKey
   }
   
   // to force refresh we set end-value to the minimum such an IOV can extend to: current run or lumiblock
-    
   if ( (!userTime) && recordValidity.second !=0 ) {
     edm::IOVSyncValue start = cond::time::toIOVSyncValue(recordValidity.first, timetype, true);
     edm::IOVSyncValue stop = doRefresh  ? cond::time::limitedIOVSyncValue (iTime, timetype)

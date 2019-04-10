@@ -12,9 +12,8 @@ namespace cond {
   public:
     LumiTestPayload():m_id(0),m_data(""){
     }
-    explicit LumiTestPayload( unsigned long long t ):m_id(t),m_data(""){
+    virtual ~LumiTestPayload(){
     }
-    virtual ~LumiTestPayload(){}
 
   public:
     unsigned long long m_id;

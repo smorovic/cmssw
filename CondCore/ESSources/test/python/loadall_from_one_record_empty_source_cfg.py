@@ -29,17 +29,17 @@ options.register('runNumber',
                  VarParsing.VarParsing.varType.int,
                  "Run number; default gives latest IOV")
 options.register('eventsPerLumi',
-                 3, #default value
+                 2, #default value
                  VarParsing.VarParsing.multiplicity.singleton,
                  VarParsing.VarParsing.varType.int,
                  "number of events per lumi")
 options.register('numberOfLumis',
-                 7, #default value
+                 20, #default value
                  VarParsing.VarParsing.multiplicity.singleton,
                  VarParsing.VarParsing.varType.int,
                  "number of lumisections per run")
 options.register('numberOfRuns',
-                 1, #default value
+                 2, #default value
                  VarParsing.VarParsing.multiplicity.singleton,
                  VarParsing.VarParsing.varType.int,
                  "number of runs in the job")
@@ -113,6 +113,7 @@ process.GlobalTag = cms.ESSource( "PoolDBESSource",
 #                                )
 
 process.source = cms.Source( "EmptySource",
+                             firstLuminosityBlock = cms.untracked.uint32(1),
                              firstRun = cms.untracked.uint32( options.runNumber ),
                              firstTime = cms.untracked.uint64( ( long( time.time() ) - 24 * 3600 ) << 32 ), #24 hours ago in nanoseconds
                              numberEventsInRun = cms.untracked.uint32( options.eventsPerLumi *  options.numberOfLumis ), # options.numberOfLumis lumi sections per run
@@ -131,19 +132,19 @@ process.prod = cms.EDAnalyzer("LumiTestReadAnalyzer",
 #                              verbose = cms.untracked.bool( True )
 #                              )
 
-process.escontent = cms.EDAnalyzer( "PrintEventSetupContent",
-                                    compact = cms.untracked.bool( True ),
-                                    printProviders = cms.untracked.bool( True )
-                                    )
+#process.escontent = cms.EDAnalyzer( "PrintEventSetupContent",
+#                                    compact = cms.untracked.bool( True ),
+#                                    printProviders = cms.untracked.bool( True )
+#                                    )
 
-process.esretrieval = cms.EDAnalyzer( "PrintEventSetupDataRetrieval",
-                                      printProviders = cms.untracked.bool( True )
-                                      )
+#process.esretrieval = cms.EDAnalyzer( "PrintEventSetupDataRetrieval",
+#                                      printProviders = cms.untracked.bool( True )
+#                                      )
 
 process.p = cms.Path( process.prod )
-process.esout = cms.EndPath( process.escontent + process.esretrieval )
-if process.schedule_() is not None:
-    process.schedule_().append( process.esout )
+#process.esout = cms.EndPath( process.escontent + process.esretrieval )
+#if process.schedule_() is not None:
+#    process.schedule_().append( process.esout )
 
 for name, module in six.iteritems(process.es_sources_()):
     print("ESModules> provider:%s '%s'" % ( name, module.type_() ))
