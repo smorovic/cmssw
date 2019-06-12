@@ -25,19 +25,21 @@ namespace evf{
 						   
       explicit ExceptionGenerator( const edm::ParameterSet&);
       ~ExceptionGenerator() override{};
+      void beginStream(edm::StreamID sid) override;
       void beginRun(const edm::Run& r, const edm::EventSetup& iSetup) override;
       void analyze(const edm::Event & e, const edm::EventSetup& c) override;
       void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
       void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
 
     private:
-      void getLumiTestPayload(edm::Event const* e, edm::LuminosityBlock const *lb,  edm::EventSetup const *es);
+      void getLumiTestPayload(edm::Event const* e, edm::LuminosityBlock const *lb,  edm::EventSetup const *es, bool writeToFile);
 
       int actionId_;
       unsigned int intqualifier_;
       double qualifier2_;
       std::string qualifier_;
       bool actionRequired_;
+      int sid_;
       std::string original_referrer_;
       TH1D* timingHisto_;
       timeval tv_start_;

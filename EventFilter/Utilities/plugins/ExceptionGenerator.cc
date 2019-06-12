@@ -11,6 +11,9 @@
 #include "FWCore/Utilities/interface/Exception.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "EventFilter/Utilities/interface/EvFDaqDirector.h"
+
 #include "CondFormats/DataRecord/interface/LumiTestPayloadRcd.h"
 #include "CondFormats/Common/interface/LumiTestPayload.h"
 
@@ -32,7 +35,8 @@ namespace evf{
     actionId_(pset.getUntrackedParameter<int>("defaultAction",-1)),
     intqualifier_(pset.getUntrackedParameter<int>("defaultQualifier",0)), 
     qualifier2_(pset.getUntrackedParameter<double>("secondQualifier",1)), 
-    actionRequired_(actionId_!=-1)
+    actionRequired_(actionId_!=-1),
+    sid_(-1)
   {
     // timing destribution from (https://twiki.cern.ch/twiki/bin/viewauth/CMS/HLTCpuTimingFAQ#2011_Most_Recent_Data)
     // /castor/cern.ch/user/d/dsperka/HLT/triggerSkim_HLTPhysics_run178479_68_188.root
@@ -149,6 +153,10 @@ namespace evf{
     uname(&uts_);
   }
 
+  void ExceptionGenerator::beginStream(edm::StreamID sid) {
+    sid_=sid.value();
+  }
+
   void ExceptionGenerator::beginRun(const edm::Run& r, const edm::EventSetup& iSetup)
   {
 
@@ -168,10 +176,12 @@ namespace evf{
   void ExceptionGenerator::beginLuminosityBlock(edm::LuminosityBlock const &lb, edm::EventSetup const &es)
   {
     if (actionId_==17)
-      getLumiTestPayload(nullptr,&lb,&es);
+      getLumiTestPayload(nullptr,&lb,&es,false);
+    if (actionId_==18)
+      getLumiTestPayload(nullptr,&lb,&es,true);
   }
 
-  void ExceptionGenerator::getLumiTestPayload(edm::Event const* e, edm::LuminosityBlock const *lb,  edm::EventSetup const *es) {
+  void ExceptionGenerator::getLumiTestPayload(edm::Event const* e, edm::LuminosityBlock const *lb,  edm::EventSetup const *es, bool writeToFile) {
 
 
     //check only once per LS
@@ -181,7 +191,6 @@ namespace evf{
     if (e) {
       eid = e->id().event();
       ls = e->id().luminosityBlock();
-      run = e->id().run();
     }
     else if (lb) {
       eid = 0;
@@ -237,26 +246,37 @@ namespace evf{
     std::string data = ss.str();
 
     /* HTTP PUT please */ 
-    CURL * curl = curl_easy_init();
-//    curl_easy_setopt(curl_, CURLOPT_UPLOAD, 1L); //?
-    curl_easy_setopt(curl, CURLOPT_POST, 1L);
-    curl_easy_setopt(curl, CURLOPT_URL, url_.c_str());
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data.c_str());
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, data.size());
+    if (writeToFile) {
+      std::stringstream fps;
+      fps << edm::Service<evf::EvFDaqDirector>()->baseRunDir() << "/" <<  "run" << std::setfill('0') << std::setw(6) << run << "/mon/"
+          << "procmon_ls" << std::setfill('0') << std::setw(4) << ls << "_pid" << std::setfill('0') << std::setw(5) << getpid()
+          << "_tid" << sid_ << ".jsn";
+      std::ofstream outputFile;
+      outputFile.open(fps.str().c_str());
+      outputFile << ss.str();
+      outputFile.close();
+    }
+    else { //write to elastic directly
+      CURL * curl = curl_easy_init();
+  //    curl_easy_setopt(curl_, CURLOPT_UPLOAD, 1L); //?
+      curl_easy_setopt(curl, CURLOPT_POST, 1L);
+      curl_easy_setopt(curl, CURLOPT_URL, url_.c_str());
+      curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data.c_str());
+      curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, data.size());
 
 
-    struct curl_slist *chunk = NULL;
-    chunk = curl_slist_append(chunk, "content-type:application/json");
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
+      struct curl_slist *chunk = NULL;
+      chunk = curl_slist_append(chunk, "content-type:application/json");
+      curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
-    CURLcode res = curl_easy_perform(curl);
-    /* Check for errors */ 
-    if(res != CURLE_OK)
-            fprintf(stderr, "curl_easy_perform() failed: %s\n",
-                            curl_easy_strerror(res));
+      CURLcode res = curl_easy_perform(curl);
+      /* Check for errors */ 
+      if(res != CURLE_OK)
+              fprintf(stderr, "curl_easy_perform() failed: %s\n",
+                              curl_easy_strerror(res));
 
-    curl_easy_cleanup(curl);
-
+      curl_easy_cleanup(curl);
+    }
   }
 
 
@@ -371,7 +391,7 @@ namespace evf{
               break;
             case 16:
               {
-                getLumiTestPayload(&e,nullptr,&c); 
+                getLumiTestPayload(&e,nullptr,&c,false); 
                 break;
               }
             default:
