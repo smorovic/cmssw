@@ -342,7 +342,7 @@ namespace cond {
       // for the till, the next element of the sequence has to be looked up
       cond::Time_t tillVal;
       if( next != m_data->iovSequence.end() ){
-        tillVal = cond::time::tillTimeFromNextSince(std::get<0>(*next), m_data->tagInfo.timeType );	
+        tillVal = cond::time::tillTimeFromNextSince(std::get<0>(*next), m_data->tagInfo.timeType );
       } else {
         tillVal = m_data->groupHigherIov;
       }
@@ -351,6 +351,7 @@ namespace cond {
       retVal.payloadId = std::get<1>(*iIov);
       if( retVal.till == cond::time::MAX_VAL && defaultIovSize != cond::time::MAX_VAL ){
 	if( defaultIovSize == 0 ) {
+	  // ???? why?
           retVal.clear();
 	} else {
 	  retVal.since = time;

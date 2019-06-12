@@ -98,11 +98,11 @@ namespace cond {
       return m_session->iovSchema().tagTable().select( tag );
     }
     
-    IOVProxy Session::iovProxy(){
-      m_session->openIovDb();
-      IOVProxy proxy( m_session );
-      return proxy;
-    }
+    //IOVProxy Session::iovProxy(){
+    //  m_session->openIovDb();
+    //  IOVProxy proxy( m_session );
+    //  return proxy;
+    //}
 
     bool Session::getIovRange( const std::string& tag, cond::Time_t begin, cond::Time_t end, 
 			    std::vector<std::tuple<cond::Time_t,cond::Hash> >& range ){
@@ -212,6 +212,15 @@ namespace cond {
       RunInfoProxy proxy( m_session );
       proxy.load( start, end );
       return proxy;
+    }
+
+    cond::RunInfo_t Session::getCurrentRun(){
+      if(!m_session->transaction.get())
+        throwException( "The transaction is not active.","Session::getRunInfo" );
+      RunInfoProxy proxy( m_session );
+      boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
+      proxy.load( now, now );
+      return proxy.get( now );
     }
 
     RunInfoEditor Session::editRunInfo(){

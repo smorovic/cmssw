@@ -147,7 +147,7 @@ namespace cond {
 			     cond::Binary& streamerInfoData );
 
       // internal functions. creates proxies without loading a specific tag.  
-      IOVProxy iovProxy();
+      //IOVProxy iovProxy();
       
       bool existsGlobalTag( const std::string& name );
 
@@ -162,6 +162,9 @@ namespace cond {
 
       // runinfo read only access
       RunInfoProxy getRunInfo( cond::Time_t start, cond::Time_t end );
+
+      // get the ongoing run
+      cond::RunInfo_t getCurrentRun();
 
       // runinfo write access
       RunInfoEditor editRunInfo();

@@ -366,7 +366,7 @@ CondDBESSource::setIntervalFor( const edm::eventsetup::EventSetupRecordKey& iKey
     std::map<std::string,cond::Time_t>::iterator iRec = m_lastRecordRuns.find( recordname );
     if( iRec != m_lastRecordRuns.end() ){
       cond::Time_t lastRecordRun = iRec->second;
-      if( lastTime - lastRecordRun > minDiffTime ){
+      if( lastTime - lastRecordRun >= minDiffTime ){
         // a refresh is required!
         doRefresh = true;
         iRec->second = lastTime;
@@ -508,7 +508,6 @@ CondDBESSource::setIntervalFor( const edm::eventsetup::EventSetupRecordKey& iKey
 
     //query the IOVSequence
     cond::ValidityInterval validity = (*pmIter).second->proxy()->setIntervalFor( abtime, defaultIovSize );
-    
     edm::LogInfo( "CondDBESSource" ) << "Validity coming from IOV sequence for record \"" << recordname
 				     << "\" and label \""<< pmIter->second->label()
 				     << "\": (" << validity.first << ", " << validity.second

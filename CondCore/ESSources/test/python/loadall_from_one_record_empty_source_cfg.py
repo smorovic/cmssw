@@ -7,9 +7,15 @@ from Configuration.AlCa.autoCond import autoCond
 import six
 
 options = VarParsing.VarParsing()
+options.register('processId',
+                 0,
+                 VarParsing.VarParsing.multiplicity.singleton,
+                 VarParsing.VarParsing.varType.int,
+                 "Process Id")
 options.register('connectionString',
                  #'sqlite_file:cms_conditions.db', #default value
-                 'oracle://cms_orcoff_prep/CMS_CONDITIONS', #default value
+                 'frontier://FrontierProd/CMS_CONDITIONS', #default value
+                 #'oracle://cms_orcon_prod/CMS_CONDITIONS',
                  VarParsing.VarParsing.multiplicity.singleton,
                  VarParsing.VarParsing.varType.string,
                  "CondDB Connection string")
@@ -24,7 +30,7 @@ options.register('refresh',
                  VarParsing.VarParsing.varType.int,
                  "Refresh type: default no refresh")
 options.register('runNumber',
-                 100, #default value, int limit -3
+                 115, #default value, int limit -3
                  VarParsing.VarParsing.multiplicity.singleton,
                  VarParsing.VarParsing.varType.int,
                  "Run number; default gives latest IOV")
@@ -39,7 +45,7 @@ options.register('numberOfLumis',
                  VarParsing.VarParsing.varType.int,
                  "number of lumisections per run")
 options.register('numberOfRuns',
-                 2, #default value
+                 1, #default value
                  VarParsing.VarParsing.multiplicity.singleton,
                  VarParsing.VarParsing.varType.int,
                  "number of runs in the job")
@@ -94,7 +100,7 @@ process.GlobalTag = cms.ESSource( "PoolDBESSource",
                                   toGet = cms.VPSet(cms.PSet(
                                       record = cms.string('LumiTestPayloadRcd'),
                                       tag = cms.string('lumi_test_v00'),
-                                      refreshTime = cms.uint64( 2 )
+                                      refreshTime = cms.uint64( 1 )
                                   )),
                                   RefreshAlways = cms.untracked.bool( refreshAlways ),
                                   RefreshOpenIOVs = cms.untracked.bool( refreshOpenIOVs ),
@@ -112,19 +118,24 @@ process.GlobalTag = cms.ESSource( "PoolDBESSource",
 #                                          )
 #                                )
 
-process.source = cms.Source( "EmptySource",
+process.source = cms.Source( "FileBasedEmptySource",
+                             interval = cms.uint32( 5 ),
+                             maxEvents = cms.uint32( 20000 ),
+                             pathForLastLumiFile = cms.string('/afs/cern.ch/user/c/condbpro/public/last_time.txt'),
                              firstLuminosityBlock = cms.untracked.uint32(1),
                              firstRun = cms.untracked.uint32( options.runNumber ),
                              firstTime = cms.untracked.uint64( ( long( time.time() ) - 24 * 3600 ) << 32 ), #24 hours ago in nanoseconds
-                             numberEventsInRun = cms.untracked.uint32( options.eventsPerLumi *  options.numberOfLumis ), # options.numberOfLumis lumi sections per run
+                             numberEventsInRun = cms.untracked.uint32( 1000 ), # options.numberOfLumis lumi sections per run
                              numberEventsInLuminosityBlock = cms.untracked.uint32( options.eventsPerLumi )
                              )
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32( options.eventsPerLumi *  options.numberOfLumis * options.numberOfRuns ) ) #options.numberOfRuns runs per job
+#process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32( options.eventsPerLumi *  options.numberOfLumis * options.numberOfRuns ) ) #options.numberOfRuns runs per job
 
 process.prod = cms.EDAnalyzer("LumiTestReadAnalyzer",
+                              processId = cms.untracked.uint32( options.processId ),
                               pathForLastLumiFile = cms.untracked.string("./last_time.txt"),
-                              pathForAllLumiFile = cms.untracked.string("./all_time.txt" )
+                              pathForAllLumiFile = cms.untracked.string("./all_time.txt" ),
+                              pathForErrorFile = cms.untracked.string("/build/gg/CMSSW_10_5_0/src/lumi_read_errors")
 )
 
 #process.get = cms.EDAnalyzer( "EventSetupRecordDataGetter",
