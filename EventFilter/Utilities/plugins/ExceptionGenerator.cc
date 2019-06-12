@@ -158,8 +158,10 @@ namespace evf{
     ss <<"http://es-cdaq.cms:9200/test_conddb/doc";
     url_ = ss.str();
 
-    edm::ESHandle<cond::LumiTestPayload> ps;
-    iSetup.get<LumiTestPayloadRcd>().get(ps);
+    if (actionId_==16 || actionId_==17) {
+      edm::ESHandle<cond::LumiTestPayload> ps;
+      iSetup.get<LumiTestPayloadRcd>().get(ps);
+    }
 
   }
 
@@ -175,16 +177,19 @@ namespace evf{
     //check only once per LS
     unsigned int ls;
     unsigned long eid;
+    unsigned long run;
     if (e) {
       eid = e->id().event();
       ls = e->id().luminosityBlock();
+      run = e->id().run();
     }
     else if (lb) {
       eid = 0;
       ls = lb->luminosityBlock();
+      run = lb->run();
     }
     else {
-      eid = ls = 0;
+      run = eid = ls = 0;
       assert(!(e==nullptr && lb==nullptr));
     }
 
@@ -205,9 +210,13 @@ namespace evf{
     edm::ESHandle<cond::LumiTestPayload> ps;
     es->get<LumiTestPayloadRcd>().get(ps);
     const cond::LumiTestPayload* payload=ps.product();
-    edm::LogInfo("ExceptionGenerator") << "Event "<< eid << " Lumi "<<ls <<" LumiTestPayload "<<payload->m_id;
+    auto m_id = payload->m_id;
+    auto pls = (m_id & 0xffffffff);
+    
+    edm::LogWarning("ExceptionGenerator") << "Event "<< eid << " Lumi "<<ls <<" payload_ls" << pls;
 
-    long delta_ls = (long)ls - (long)payload->m_id;
+    //long delta_ls = (long)ls - (long)payload->m_id;
+    long delta_ls = (long)ls - (long)pls;
 
     //unix timestamp (for example)
     //milliseconds ms2 = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
@@ -218,18 +227,27 @@ namespace evf{
     //auto dt1 = ms1-initial_time;
     //auto dt2 = ms2-initial_time;
 
+    timeval td;
+    gettimeofday(&td,nullptr);
+
     std::stringstream ss;
     //ss <<"{\"doc_type\":\"condlatency\",\"MergingTimePerFile\":" << dt1 << ",\"MergingTime\":"<<dt2<<",\"ls\":"<< ls <<"}"; // todo: ,host;>>...
-    ss <<"{\"host\":\""<< uts_.nodename << "\",\"pid\":"<< getpid() <<"\",\"delta_ls\":" << delta_ls << "\"ls\":"<< ls << ",\"doc_type\":\"condtest\""<<"}"; // todo: ,host;>>...
+    ss <<"{\"host\":\""<< uts_.nodename << "\",\"pid\":"<< getpid() <<",\"run\":" <<  run <<",\"delta_ls\":" << delta_ls << ",\"ls\":"<< ls << ",\"doc_type\":\"condtest\""
+       << ",\"date\":" << ((unsigned long long)(td.tv_sec)*1000 + (unsigned long long)(td.tv_usec/1000))  <<",\"m_id\":\""<< m_id << "\"}"; // todo: ,host;>>...
     std::string data = ss.str();
 
     /* HTTP PUT please */ 
     CURL * curl = curl_easy_init();
 //    curl_easy_setopt(curl_, CURLOPT_UPLOAD, 1L); //?
-    curl_easy_setopt(curl, CURLOPT_PUT, 1L);
+    curl_easy_setopt(curl, CURLOPT_POST, 1L);
     curl_easy_setopt(curl, CURLOPT_URL, url_.c_str());
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data.c_str());
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, data.size());
+
+
+    struct curl_slist *chunk = NULL;
+    chunk = curl_slist_append(chunk, "content-type:application/json");
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
     CURLcode res = curl_easy_perform(curl);
     /* Check for errors */ 
