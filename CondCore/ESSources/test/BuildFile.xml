@@ -2,6 +2,7 @@
 <use   name="CondFormats/Calibration"/>
 <use   name="FWCore/Framework"/>
 <use   name="CondFormats/DataRecord"/>
+<use   name="CondCore/CondDB"/>
 <library   file="stubs/PedestalsAnalyzer.cc" name="PedestalsAnalyzer">
   <flags   EDM_PLUGIN="1"/>
 </library>

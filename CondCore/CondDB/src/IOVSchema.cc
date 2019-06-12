@@ -187,6 +187,7 @@ namespace cond {
       }
       q.addOrderClause<SINCE>( false );
       q.addOrderClause<INSERTION_TIME>( false );
+      q.limitReturnedRows( 1 );
       for ( auto row : q ) {
         since = std::get<0>(row);
         hash = std::get<1>(row);
