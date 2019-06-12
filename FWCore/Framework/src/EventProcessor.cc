@@ -1193,6 +1193,7 @@ namespace edm {
       iovQueue_.push([this,iHolder,lumiWork,iSync]() mutable {
         try {
           SendSourceTerminationSignalIfException sentry(actReg_.get());
+          ServiceRegistry::Operate operate(serviceToken_);
           espController_->eventSetupForInstance(iSync);
           sentry.completedSuccessfully();
         } catch(...) {
