@@ -248,7 +248,7 @@ namespace evf{
     /* HTTP PUT please */ 
     if (writeToFile) {
       std::stringstream fps;
-      fps << edm::Service<evf::EvFDaqDirector>()->baseRunDir() << "/" <<  "run" << std::setfill('0') << std::setw(6) << run << "/mon/"
+      fps << edm::Service<evf::EvFDaqDirector>()->baseRunDir() << "/mon/"
           << "procmon_ls" << std::setfill('0') << std::setw(4) << ls << "_pid" << std::setfill('0') << std::setw(5) << getpid()
           << "_tid" << sid_ << ".jsn";
       std::ofstream outputFile;
