@@ -22,6 +22,7 @@ namespace evf {
       mInvalid = 0,
       mIdle,
       mFwkOvhSrc,
+      mFwkOvhModAcq,
       mFwkOvhMod,
       mFwkEoL,
       mInput,

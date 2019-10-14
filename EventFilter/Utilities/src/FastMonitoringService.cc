@@ -145,6 +145,9 @@ namespace evf {
     reg.watchPreSourceEvent(this, &FastMonitoringService::preSourceEvent);  //source (with streamID of requestor)
     reg.watchPostSourceEvent(this, &FastMonitoringService::postSourceEvent);
 
+    reg.watchPreModuleEventAcquire(this, &FastMonitoringService::preModuleEventAcquire);    //should be stream
+    reg.watchPostModuleEventAcquire(this, &FastMonitoringService::postModuleEventAcquire);  //
+
     reg.watchPreModuleEvent(this, &FastMonitoringService::preModuleEvent);    //should be stream
     reg.watchPostModuleEvent(this, &FastMonitoringService::postModuleEvent);  //
 
@@ -623,6 +626,15 @@ namespace evf {
 
   void FastMonitoringService::postSourceEvent(edm::StreamID sid) {
     microstate_[sid.value()] = &reservedMicroStateNames[mFwkOvhSrc];
+  }
+
+  void FastMonitoringService::preModuleEventAcquire(edm::StreamContext const& sc, edm::ModuleCallingContext const& mcc) {
+    microstate_[sc.streamID().value()] = (void*)(mcc.moduleDescription());
+  }
+
+  void FastMonitoringService::postModuleEventAcquire(edm::StreamContext const& sc, edm::ModuleCallingContext const& mcc) {
+    //microstate_[sc.streamID().value()] = (void*)(mcc.moduleDescription());
+    microstate_[sc.streamID().value()] = &reservedMicroStateNames[mFwkOvhModAcq];
   }
 
   void FastMonitoringService::preModuleEvent(edm::StreamContext const& sc, edm::ModuleCallingContext const& mcc) {

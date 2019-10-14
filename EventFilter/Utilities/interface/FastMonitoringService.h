@@ -153,6 +153,8 @@ namespace evf {
     void postEvent(edm::StreamContext const&);
     void preSourceEvent(edm::StreamID);
     void postSourceEvent(edm::StreamID);
+    void preModuleEventAcquire(edm::StreamContext const&, edm::ModuleCallingContext const&);
+    void postModuleEventAcquire(edm::StreamContext const&, edm::ModuleCallingContext const&);
     void preModuleEvent(edm::StreamContext const&, edm::ModuleCallingContext const&);
     void postModuleEvent(edm::StreamContext const&, edm::ModuleCallingContext const&);
     void preStreamEarlyTermination(edm::StreamContext const&, edm::TerminationOrigin);

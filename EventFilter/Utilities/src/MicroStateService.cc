@@ -6,7 +6,8 @@ namespace evf {
       edm::ModuleDescription("Dummy", "Invalid"),
       edm::ModuleDescription("Dummy", "Idle"),
       edm::ModuleDescription("Dummy", "FwkOvhSrc"),
-      edm::ModuleDescription("Dummy", "FwkOvhMod"),
+      edm::ModuleDescription("Dummy", "FwkOvhModAcq"),//set post acuqire (in case of external processing)
+      edm::ModuleDescription("Dummy", "FwkOvhMod"),//set post produce, analyze or filter
       edm::ModuleDescription("Dummy", "FwkEoL"),
       edm::ModuleDescription("Dummy", "Input"),
       edm::ModuleDescription("Dummy", "DQM"),
