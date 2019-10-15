@@ -15,7 +15,6 @@
 #include <boost/thread.hpp>
 
 #include "EventFilter/Utilities/interface/MicroStateService.h"
-//#include "EventFilter/Utilities/interface/FastMonitoringThread.h"
 
 #include <string>
 #include <vector>
@@ -57,6 +56,21 @@ namespace evf {
   class FastMonitoringThread;
 
   namespace FastMonState {
+
+    enum Microstate {
+      mInvalid = 0,
+      mIdle,
+      mFwkOvhSrc,
+      mFwkOvhModAcq,
+      mFwkOvhMod,
+      mFwkEoL,
+      mInput,
+      mDqm,
+      mBoL,
+      mEoL,
+      mGlobEoL,
+      mCOUNT
+    };
 
     enum Macrostate {
       sInit = 0,
@@ -149,10 +163,10 @@ namespace evf {
 
   public:
     // the names of the states - some of them are never reached in an online app
+    static const edm::ModuleDescription reservedMicroStateNames[FastMonState::mCOUNT];
     static const std::string macroStateNames[FastMonState::MCOUNT];
     static const std::string inputStateNames[FastMonState::inCOUNT];
     // Reserved names for microstates
-    // moved into base class in EventFilter/Utilities for compatibility with MicroStateServiceClassic
     static const std::string nopath_;
     FastMonitoringService(const edm::ParameterSet&, edm::ActivityRegistry&);
     ~FastMonitoringService() override;
@@ -194,8 +208,8 @@ namespace evf {
     void setExceptionDetected(unsigned int ls);
 
     //this is still needed for use in special functions like DQM which are in turn framework services
-    void setMicroState(MicroStateService::Microstate) override;
-    void setMicroState(edm::StreamID, MicroStateService::Microstate) override;
+    void setMicroState(FastMonState::Microstate);
+    void setMicroState(edm::StreamID, FastMonState::Microstate);
 
     void accumulateFileSize(unsigned int lumi, unsigned long fileSize);
     void startedLookingForFile();
