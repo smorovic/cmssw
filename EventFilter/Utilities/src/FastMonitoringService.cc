@@ -17,6 +17,7 @@
 #include "FWCore/Utilities/interface/UnixSignalHandlers.h"
 
 #include "FWCore/ServiceRegistry/interface/ModuleCallingContext.h"
+#include "FWCore/ServiceRegistry/interface/PathsAndConsumesOfModulesBase.h"
 #include "DataFormats/Provenance/interface/ModuleDescription.h"
 using namespace jsoncollector;
 
@@ -233,7 +234,7 @@ namespace evf {
       nThreads_ = 1;
   }
 
-  void FastMonitoringService::preBeginJob(edm::PathsAndConsumesOfModulesBase const&, edm::ProcessContext const& pc) {
+  void FastMonitoringService::preBeginJob(edm::PathsAndConsumesOfModulesBase const& pathsInfo, edm::ProcessContext const& pc) {
     // FIND RUN DIRECTORY
     // The run dir should be set via the configuration of EvFDaqDirector
 
@@ -312,18 +313,23 @@ namespace evf {
       //path (mini) state
       encPath_.emplace_back(0);
       encPath_[i].update(static_cast<const void*>(&nopath_));
-      eventCountForPathInit_.push_back(0);
-      firstEventId_.push_back(0);
-      collectedPathList_.push_back(new std::atomic<bool>(false));
+
+      for (auto& path : pathsInfo.paths()) {
+        encPath_[i].updatePreinit(path);
+      }
+      for (auto& endPath : pathsInfo.endPaths()) {
+        encPath_[i].updatePreinit(endPath);
+      }
+
     }
     //for (unsigned int i=0;i<nThreads_;i++)
     //  threadMicrostate_.push_back(&reservedMicroStateNames[mInvalid]);
 
     //initial size until we detect number of bins
     fmt_.m_data.macrostateBins_ = FastMonitoringThread::MCOUNT;
-    fmt_.m_data.ministateBins_ = 0;
     fmt_.m_data.microstateBins_ = 0;
     fmt_.m_data.inputstateBins_ = FastMonitoringThread::inCOUNT;
+    fmt_.m_data.ministateBins_ = encPath_[0].vecsize();
 
     lastGlobalLumi_ = 0;
     isInitTransition_ = true;
@@ -423,6 +429,9 @@ namespace evf {
 
     std::string inputLegendStrJson = makeInputLegendaJson();
     FileIO::writeStringToFile(inputLegendFileJson_, inputLegendStrJson);
+
+    std::string pathLegendStrJson = makePathLegendaJson();
+    FileIO::writeStringToFile(pathLegendFileJson_, pathLegendStrJson);
 
     macrostate_ = FastMonitoringThread::sJobReady;
 
@@ -577,31 +586,7 @@ namespace evf {
   }
 
   void FastMonitoringService::prePathEvent(edm::StreamContext const& sc, edm::PathContext const& pc) {
-    //make sure that all path names are retrieved before allowing ministate to change
-    //hack: assume memory is synchronized after ~50 events seen by each stream
-    if (UNLIKELY(eventCountForPathInit_[sc.streamID()] < 50) &&
-        false == collectedPathList_[sc.streamID()]->load(std::memory_order_acquire)) {
-      //protection between stream threads, as well as the service monitoring thread
-      std::lock_guard<std::mutex> lock(fmt_.monlock_);
-
-      if (firstEventId_[sc.streamID()] == 0)
-        firstEventId_[sc.streamID()] = sc.eventID().event();
-      if (sc.eventID().event() == firstEventId_[sc.streamID()]) {
-        encPath_[sc.streamID()].update((void*)&pc.pathName());
-        return;
-      } else {
-        //finished collecting path names
-        collectedPathList_[sc.streamID()]->store(true, std::memory_order_seq_cst);
-        fmt_.m_data.ministateBins_ = encPath_[sc.streamID()].vecsize();
-        if (!pathLegendWritten_) {
-          std::string pathLegendStrJson = makePathLegendaJson();
-          FileIO::writeStringToFile(pathLegendFileJson_, pathLegendStrJson);
-          pathLegendWritten_ = true;
-        }
-      }
-    } else {
-      ministate_[sc.streamID()] = &(pc.pathName());
-    }
+    ministate_[sc.streamID()] = &(pc.pathName());
   }
 
   void FastMonitoringService::preEvent(edm::StreamContext const& sc) {}
@@ -612,7 +597,6 @@ namespace evf {
     ministate_[sc.streamID()] = &nopath_;
 
     (*(fmt_.m_data.processed_[sc.streamID()]))++;
-    eventCountForPathInit_[sc.streamID()].m_value++;
 
     //fast path counter (events accumulated in a run)
     unsigned long res = totalEventsProcessed_.fetch_add(1, std::memory_order_relaxed);
@@ -780,7 +764,7 @@ namespace evf {
     }
 
     for (unsigned int i = 0; i < nStreams_; i++) {
-      fmt_.m_data.ministateEncoded_[i] = encPath_[i].encode(ministate_[i]);
+      fmt_.m_data.ministateEncoded_[i] = encPath_[i].encodeString(ministate_[i]);
       fmt_.m_data.microstateEncoded_[i] = encModule_.encode(microstateCopy[i]);
     }
 

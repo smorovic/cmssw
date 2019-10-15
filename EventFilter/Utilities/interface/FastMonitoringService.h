@@ -59,7 +59,7 @@ namespace evf {
     ContainableAtomic() : m_value{} {}
     ContainableAtomic(T iValue) : m_value(iValue) {}
     ContainableAtomic(ContainableAtomic<T> const& iOther) : m_value(iOther.m_value.load()) {}
-    ContainableAtomic<T>& operator=(const void* iValue) {
+    ContainableAtomic<T>& operator=(T iValue) {
       m_value.store(iValue, std::memory_order_relaxed);
       return *this;
     }
@@ -69,6 +69,7 @@ namespace evf {
   };
 
   class FastMonitoringService : public MicroStateService {
+
     struct Encoding {
       Encoding(unsigned int res) : reserved_(res), current_(reserved_), currentReserved_(0) {
         if (reserved_)
@@ -80,10 +81,33 @@ namespace evf {
           delete[] dummiesForReserved_;
       }
       //trick: only encode state when sending it over (i.e. every sec)
-      int encode(const void* add) {
+      int encode(const void* add) const {
         std::unordered_map<const void*, int>::const_iterator it = quickReference_.find(add);
         return (it != quickReference_.end()) ? (*it).second : 0;
       }
+
+      //this allows to init path list in beginJob, but strings used later are not in the same memory
+      //position. Therefore path address lookup will be updated when snapshot (encode) is called
+      //with this we can remove ugly path legend update in preEventPath, but will still need a check
+      //that any event has been processed (any path will do)
+      int encodeString(const std::string * add) {
+        std::unordered_map<const void*, int>::const_iterator it = quickReference_.find((void*)add);
+        if (it == quickReference_.end()) {
+          //try to match by string content (encode only used
+          auto it = quickReferencePreinit_.find(*add);
+          if (it == quickReferencePreinit_.end())
+            return 0;
+          else {
+            //overwrite pointer in decoder and add to reference
+            decoder_[(*it).second]=(void*)add;
+            quickReference_[(void*)add]=(*it).second;
+            quickReferencePreinit_.erase(it);
+            return encode((void*)add);
+          }
+        }
+        return (*it).second;
+      }
+
       const void* decode(unsigned int index) { return decoder_[index]; }
       void fillReserved(const void* add, unsigned int i) {
         //	  translation_[*name]=current_;
@@ -107,8 +131,17 @@ namespace evf {
         decoder_.push_back(add);
         current_++;
       }
+
+      void updatePreinit(std::string const& add) {
+        //	  translation_[*name]=current_;
+        quickReferencePreinit_[add] = current_;
+        decoder_.push_back((void*)&add);
+        current_++;
+      }
+
       unsigned int vecsize() { return decoder_.size(); }
       std::unordered_map<const void*, int> quickReference_;
+      std::unordered_map<std::string, int> quickReferencePreinit_;
       std::vector<const void*> decoder_;
       unsigned int reserved_;
       int current_;
@@ -194,11 +227,8 @@ namespace evf {
     void dowork() {  // the function to be called in the thread. Thread completes when function returns.
       monInit_.exchange(true, std::memory_order_acquire);
       while (!fmt_.m_stoprequest) {
-        edm::LogInfo("FastMonitoringService")
-            << "Current states: Ms=" << fmt_.m_data.fastMacrostateJ_.value()
-            << " ms=" << encPath_[0].encode(ministate_[0]) << " us=" << encModule_.encode(microstate_[0])
-            << " is=" << inputStateNames[inputState_] << " iss=" << inputStateNames[inputSupervisorState_] << std::endl;
 
+        std::vector<std::vector<unsigned int>> lastEnc;
         {
           std::lock_guard<std::mutex> lock(fmt_.monlock_);
 
@@ -223,9 +253,28 @@ namespace evf {
                 fmt_.jsonMonitor_->outputCSV(fastPath_, CSV);
             }
           }
-
+          //copy vector
+          lastEnc.emplace_back(fmt_.m_data.ministateEncoded_);
+          lastEnc.emplace_back(fmt_.m_data.microstateEncoded_);
           snapCounter_++;
         }
+
+        std::stringstream accum;
+        std::function<void(std::vector<unsigned int>)> f = [&](std::vector<unsigned int> p) {
+          for (unsigned int i = 0; i < nStreams_; i++) {
+            if (i==0)  accum << "[" << p[i] << ",";
+            else if (i<=nStreams_-1) accum << p[i] << ",";
+            else accum << p[i] << "]";
+          }
+        };
+
+        accum << "Current states: Ms=" << fmt_.m_data.fastMacrostateJ_.value() << " ms=";
+        f(lastEnc[0]);
+        accum <<  " us=";
+        f(lastEnc[1]);
+        accum <<  " is=" << inputStateNames[inputState_] << " iss=" << inputStateNames[inputSupervisorState_];
+        edm::LogInfo("FastMonitoringService") << accum.str();
+
         ::sleep(sleepTime_);
       }
     }
@@ -260,7 +309,7 @@ namespace evf {
     std::atomic<FastMonitoringThread::Macrostate> macrostate_;
 
     //per stream
-    std::vector<ContainableAtomic<const void*>> ministate_;
+    std::vector<ContainableAtomic<const std::string*>> ministate_;
     std::vector<ContainableAtomic<const void*>> microstate_;
     std::vector<ContainableAtomic<const void*>> threadMicrostate_;
 
@@ -280,9 +329,7 @@ namespace evf {
     //to disable this behavior, set #ATOMIC_LEVEL 0 or 1 in DataPoint.h
     std::vector<std::atomic<bool>*> streamCounterUpdating_;
 
-    std::vector<unsigned long> firstEventId_;
     std::vector<std::atomic<bool>*> collectedPathList_;
-    std::vector<ContainableAtomic<unsigned int>> eventCountForPathInit_;
     std::vector<bool> pathNamesReady_;
 
     std::filesystem::path workingDirectory_, runDirectory_;
@@ -296,7 +343,6 @@ namespace evf {
     std::string pathLegendFile_;
     std::string pathLegendFileJson_;
     std::string inputLegendFileJson_;
-    bool pathLegendWritten_ = false;
     unsigned int nOutputModules_ = 0;
 
     std::atomic<bool> monInit_;
