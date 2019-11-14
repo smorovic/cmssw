@@ -14,11 +14,17 @@ options.register('processId',
                  "Process Id")
 options.register('connectionString',
                  #'sqlite_file:cms_conditions.db', #default value
-                 'frontier://FrontierProd/CMS_CONDITIONS', #default value
+                 #'frontier://FrontierProd/CMS_CONDITIONS', #default value
+                 'frontier://FrontierPrep/CMS_CONDITIONS',
                  #'oracle://cms_orcon_prod/CMS_CONDITIONS',
                  VarParsing.VarParsing.multiplicity.singleton,
                  VarParsing.VarParsing.varType.string,
                  "CondDB Connection string")
+options.register('tag',
+                 'test_gg_2019-10-14_00',
+                 VarParsing.VarParsing.multiplicity.singleton,
+                 VarParsing.VarParsing.varType.string,
+                 "tag for record LumiTestPayloadRcd")
 options.register('snapshotTime',
                  '', #default value
                  VarParsing.VarParsing.multiplicity.singleton,
@@ -64,10 +70,14 @@ options.parseArguments()
 
 process = cms.Process("TEST")
 
-process.MessageLogger = cms.Service( "MessageLogger",
-                                     destinations = cms.untracked.vstring( 'detailedInfo' ),
-                                     detailedInfo = cms.untracked.PSet( threshold = cms.untracked.string( 'INFO' ) ),
-                                     )
+process.MessageLogger = cms.Service("MessageLogger",
+                                    cout = cms.untracked.PSet(threshold = cms.untracked.string('INFO')),
+                                    destinations = cms.untracked.vstring('cout')
+                                    )
+#process.MessageLogger = cms.Service( "MessageLogger",
+#                                     destinations = cms.untracked.vstring( 'detailedInfo' ),
+#                                     detailedInfo = cms.untracked.PSet( threshold = cms.untracked.string( 'INFO' ) ),
+#                                     )
 
 CondDBParameters = cms.PSet( authenticationPath = cms.untracked.string( '/build/gg/' ),
                              authenticationSystem = cms.untracked.int32( 0 ),
@@ -99,7 +109,7 @@ process.GlobalTag = cms.ESSource( "PoolDBESSource",
                                   snapshotTime = cms.string( options.snapshotTime ),
                                   toGet = cms.VPSet(cms.PSet(
                                       record = cms.string('LumiTestPayloadRcd'),
-                                      tag = cms.string('lumi_test_v00'),
+                                      tag = cms.string( options.tag ),
                                       refreshTime = cms.uint64( 1 )
                                   )),
                                   RefreshAlways = cms.untracked.bool( refreshAlways ),
@@ -120,8 +130,8 @@ process.GlobalTag = cms.ESSource( "PoolDBESSource",
 
 process.source = cms.Source( "FileBasedEmptySource",
                              interval = cms.uint32( 5 ),
-                             maxEvents = cms.uint32( 20000 ),
-                             pathForLastLumiFile = cms.string('/afs/cern.ch/user/c/condbpro/public/last_time.txt'),
+                             maxEvents = cms.uint32( 2 ),
+                             pathForLastLumiFile = cms.string('/build/gg/lumi_cond_test/last_time.txt'),
                              firstLuminosityBlock = cms.untracked.uint32(1),
                              firstRun = cms.untracked.uint32( options.runNumber ),
                              firstTime = cms.untracked.uint64( ( long( time.time() ) - 24 * 3600 ) << 32 ), #24 hours ago in nanoseconds
@@ -133,9 +143,9 @@ process.source = cms.Source( "FileBasedEmptySource",
 
 process.prod = cms.EDAnalyzer("LumiTestReadAnalyzer",
                               processId = cms.untracked.uint32( options.processId ),
-                              pathForLastLumiFile = cms.untracked.string("./last_time.txt"),
+                              pathForLastLumiFile = cms.untracked.string("/build/gg/lumi_cond_test/last_time.txt"),
                               pathForAllLumiFile = cms.untracked.string("./all_time.txt" ),
-                              pathForErrorFile = cms.untracked.string("/build/gg/CMSSW_10_5_0/src/lumi_read_errors")
+                              pathForErrorFile = cms.untracked.string("./lumi_read_errors")
 )
 
 #process.get = cms.EDAnalyzer( "EventSetupRecordDataGetter",

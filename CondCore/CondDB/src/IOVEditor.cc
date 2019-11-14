@@ -239,22 +239,27 @@ namespace cond {
 	}
 	// insert the new iovs
 	m_session->iovSchema().iovTable().insertMany( m_data->tag, m_data->iovBuffer );
+	ret = true;
+      }
+      if( !m_data->deleteBuffer.empty() ){ 
         // delete the specified iovs
 	m_session->iovSchema().iovTable().eraseMany( m_data->tag, m_data->deleteBuffer );
-	if( m_session->iovSchema().tagLogTable().exists() ){
-	  std::stringstream msg;
-          if( m_data->iovBuffer.size() ) msg << m_data->iovBuffer.size() << " iov(s) inserted";
-          if( msg.str().size() ) msg << "; ";
-	  else  msg <<"."; 
-	  if( m_data->deleteBuffer.size() ) msg << m_data->deleteBuffer.size() << " iov(s) deleted.";
+	ret = true;
+      }
+      if( m_session->iovSchema().tagLogTable().exists() ){
+	std::stringstream msg;
+	if( m_data->iovBuffer.size() ) msg << m_data->iovBuffer.size() << " iov(s) inserted";
+	if( msg.str().size() ) msg << "; ";
+	else  msg <<"."; 
+	if( m_data->deleteBuffer.size() ) msg << m_data->deleteBuffer.size() << " iov(s) deleted.";
+	if( ret ){
 	  m_session->iovSchema().tagLogTable().insert(  m_data->tag,  operationTime, cond::getUserName(), cond::getHostName(), cond::getCommand(), 
 							msg.str(),lt );
 	}
-        m_data->iovBuffer.clear();
-        m_data->deleteBuffer.clear();
-        m_data->changes.clear();
-	ret = true;
       }
+      m_data->iovBuffer.clear();
+      m_data->deleteBuffer.clear();
+      m_data->changes.clear();
       return ret;
     }
     

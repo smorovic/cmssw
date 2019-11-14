@@ -25,7 +25,7 @@ devdbwriter_user_name = 'cms_cond_general_w'
 logger = logging.getLogger(__name__)
 
 # frontier services
-PRO ='PromptProd'
+PRO ='FrontierProd'
 ARC ='FrontierArc'
 INT ='FrontierInt'
 DEV ='FrontierPrep'
@@ -499,7 +499,7 @@ def make_url(database='pro',read_only = True):
 
     officialdbs = { 
         # frontier 
-        'pro' :         ('frontier','PromptProd',             { 'R': schema_name }, ),
+        'pro' :         ('frontier','FrontierProd',             { 'R': schema_name }, ),
         'arc' :         ('frontier','FrontierArc',            { 'R': schema_name }, ),
         'int' :         ('frontier','FrontierInt',            { 'R': schema_name }, ),
         'dev' :         ('frontier','FrontierPrep',           { 'R': schema_name }, ),

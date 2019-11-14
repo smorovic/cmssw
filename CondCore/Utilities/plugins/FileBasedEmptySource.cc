@@ -18,7 +18,7 @@ namespace cond {
   private:
     unsigned int m_interval;
     unsigned long long m_eventId;
-    unsigned int m_maxEvents;
+    unsigned int m_eventsPerLumi;
     std::string m_pathForLastLumiFile;
     unsigned int m_currentRun;
     unsigned int m_currentLumi;
@@ -39,7 +39,7 @@ namespace cond{
     edm::ProducerSourceBase(pset,desc,true),
     m_interval(  pset.getParameter<unsigned int>("interval") ),
     m_eventId( 0 ),
-    m_maxEvents( pset.getParameter<unsigned int>("maxEvents" ) ),
+    m_eventsPerLumi( pset.getUntrackedParameter<unsigned int>("numberEventsInLuminosityBlock" ) ),
     m_pathForLastLumiFile( pset.getParameter<std::string>("pathForLastLumiFile") ),
     m_currentRun( 0 ),
     m_currentLumi( 0 ),
@@ -63,18 +63,14 @@ namespace cond{
 	return false;
       } 
     }
-    m_eventId += 1;
-    if( m_eventId > m_maxEvents ){
-      std::cout <<"Max events reached..."<<std::endl;
-      return false;
-    }
     auto t = cond::time::unpack( lastLumi );
     unsigned int runId = t.first;
     unsigned int lumiId = t.second;
+    //std::cout <<"###### setRunAndEventInfo Run: "<<runId<<" lumi: "<<lumiId<<std::endl;
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
     if( runId == m_currentRun && lumiId == m_currentLumi ){
-      if( now > m_currentLumiTime + boost::posix_time::seconds( 26 ) ) {
-	std::cout <<"No new lumisection found..."<<std::endl;
+      m_eventId += 1;
+      if( m_eventId >= m_eventsPerLumi ){
 	return false;
       }
     } else {
@@ -83,6 +79,7 @@ namespace cond{
       m_currentLumiTime = now;
       m_eventId = 1;
     }
+    std::cout <<"###### setRunAndEventInfo Run: "<<runId<<" lumi: "<<lumiId<<" event id: "<<m_eventId<<" time:"<<boost::posix_time::to_simple_string(now)<<std::endl;
     time = cond::time::from_boost(now);
     id = edm::EventID(runId, lumiId, m_eventId);
     usleep(20000);
@@ -104,6 +101,7 @@ namespace cond{
     auto t = cond::time::unpack( lastLumi );
     unsigned int runId = t.first;
     unsigned int lumiId = t.second;
+    std::cout <<"###### initialize Run: "<<runId<<" lumi: "<<lumiId<<std::endl;
     m_currentRun = runId;
     m_currentLumi = lumiId;
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();

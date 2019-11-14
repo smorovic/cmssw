@@ -15,6 +15,7 @@ Toy EDProducers and EDProducts for testing purposes only.
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/Framework/interface/EventSetup.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 #include "CondFormats/DataRecord/interface/LumiTestPayloadRcd.h"
 #include "CondFormats/Common/interface/LumiTestPayload.h"
@@ -59,15 +60,16 @@ namespace edmtest
   }
   void
   LumiTestReadAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& context){
+    static constexpr const char* const MSGSOURCE = "LumiTestReadAnalyzer:";
     edm::eventsetup::EventSetupRecordKey recordKey(edm::eventsetup::EventSetupRecordKey::TypeTag::findType("LumiTestPayloadRcd"));
     if( recordKey.type() == edm::eventsetup::EventSetupRecordKey::TypeTag()) {
       //record not found
-      std::cout <<"Record \"LumiTestPayloadRcd"<<"\" does not exist "<<std::endl;
+      edm::LogError(MSGSOURCE)<< "Record \"LumiTestPayloadRcd\" does not exist ";
     }
     edm::ESHandle<cond::LumiTestPayload> ps;
     context.get<LumiTestPayloadRcd>().get(ps);
     const cond::LumiTestPayload* payload=ps.product();
-    std::cout<<"Event "<<e.id().event()<<" Run "<<e.id().run()<<" Lumi "<<e.id().luminosityBlock()<<" Time "<<e.time().value()<<
+    edm::LogInfo(MSGSOURCE) << "Event "<<e.id().event()<<" Run "<<e.id().run()<<" Lumi "<<e.id().luminosityBlock()<<" Time "<<e.time().value()<<
       " LumiTestPayload id "<<payload->m_id<<" data size "<<payload->m_data.size()<<std::endl;
     cond::Time_t target = cond::time::lumiTime( e.id().run(), e.id().luminosityBlock());
     cond::Time_t found = payload->m_id;
@@ -75,13 +77,14 @@ namespace edmtest
       boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
       std::stringstream msg;
       msg << "On time "<<boost::posix_time::to_iso_extended_string(now)<<" Target "<<target<<"; found "<<found;
+      edm::LogWarning( MSGSOURCE)<< msg.str();
       std::cout <<"ERROR ( process "<<m_processId<<" ) : "<<msg.str()<<std::endl;
       std::cout <<"### dumping in file "<<m_pathForErrorFile<<std::endl;
       {  
 	std::ofstream errorFile( m_pathForErrorFile, std::ios_base::app );
 	errorFile << msg.str()<<std::endl;
       }
-      throw std::runtime_error( msg.str() );
+      //throw std::runtime_error( msg.str() );
     } else {
       std::cout <<"Info: read was ok."<<std::endl;
     }

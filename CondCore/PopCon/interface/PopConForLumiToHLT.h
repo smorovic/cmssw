@@ -40,6 +40,7 @@ namespace popcon {
     std::string m_lastLumiUrl;
     std::string m_preLoadConnectionString;
     std::string m_pathForLastLumiFile;
+    unsigned int m_writeTransactionDelay = 0;
     bool m_debug;
   };
 
@@ -56,12 +57,8 @@ namespace popcon {
     cond::persistency::IOVProxy proxy = session.readIov( tagInfo().name );
     auto iov = proxy.getInterval( targetTime );
     auto payload = session.fetchPayload<PayloadType>( iov.payloadId );
-    std::cout <<" connection: "<<session.connectionString()<<" target: "<<targetTime<<" since: "<<iov.since<<" payload: "<<payload->m_id<<std::endl;
     if( payload->m_id != targetTime ) {
-      std::stringstream msg;
-      msg <<"Expected payload id:"<<targetTime<<" found:"<< payload->m_id;
-      std::cout << msg.str() <<std::endl;
-      //throw Exception( msg.str() );
+      edm::LogWarning( MSGSOURCE ) <<"Expected payload id:"<<targetTime<<" found:"<< payload->m_id;
     }
     transaction.commit();
     return iov.since;
@@ -73,9 +70,6 @@ namespace popcon {
     typedef typename Source::Container Container;
     
     cond::persistency::Session mainSession = initialize();
-    // remove me
-    //std::string oracleConnectionString = mainSession.connectionString();
-    // 
     std::pair<Container const *, std::string const> ret = source(mainSession,
   								 tagInfo(),logDBEntry()); 
     Container const & payloads = *ret.first;
@@ -95,81 +89,43 @@ namespace popcon {
 	// this check is not required if the policy update is kept as the general for synch=offline, express, primpt, hlt, mc
 	targetTime > lastSince ){
       auto p = payloads.back();
-      //auto t0 = std::chrono::high_resolution_clock::now();
+      auto t0 = std::chrono::high_resolution_clock::now();
       // insert the new lumisection...
-      /** remove me - this is only for the cond::LumiTestPayload class **/
+      /***** remove me - this is only for the cond::LumiTestPayload class **/
       edm::LogInfo( MSGSOURCE ) << "Attaching id "<< targetTime  << " to the payload(s).";
-      const_cast<PayloadType*>(p.first)->m_id = targetTime; 
+      const_cast<PayloadType*>(p.first)->m_id = targetTime;
+      /*********************************************************************/ 
+      edm::LogInfo( MSGSOURCE ) << "Updating lumisection "<<targetTime;
       cond::Hash payloadId = PopConBase::writeOne<PayloadType>( p.first, targetTime );
+      if( m_writeTransactionDelay ){
+	edm::LogWarning( MSGSOURCE ) << "Waiting "<<m_writeTransactionDelay<<" before commit the changes...";
+	::sleep( m_writeTransactionDelay );
+      }
       PopConBase::finalize();
-      //auto t1 = std::chrono::high_resolution_clock::now();
+      auto t1 = std::chrono::high_resolution_clock::now();
+      auto w_lat = std::chrono::duration_cast<std::chrono::microseconds>( t1 - t0 ).count();
+      edm::LogInfo( MSGSOURCE ) << "Update has taken "<< w_lat <<" microsecs.";
       // check for late updates...
       cond::Time_t lastProcessed = getLastLumiProcessed();
       edm::LogInfo( MSGSOURCE ) << "Last lumisection processed after update: "<<lastProcessed;
       // check the pre-loaded iov
       edm::LogInfo( MSGSOURCE ) << "Preloading lumisection "<<targetTime;
-      //auto t2 = std::chrono::high_resolution_clock::now();
-      ::sleep( 2 );
-      //std::string oracleConnectionString = mainSession.connectionString();
-      //cond::persistency::Session oracleSession = connect( oracleConnectionString, targetTime );
-      //doPreLoadConditions<PayloadType>( oracleSession, targetTime );
+      auto t2 = std::chrono::high_resolution_clock::now();
       cond::Time_t sinceTime = preLoadConditions<PayloadType>( m_preLoadConnectionString, targetTime );
-      {
-	boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
-	std::ofstream logFile( "lumi_write.txt", std::ios_base::app );
-        logFile << "Time "<<boost::posix_time::to_iso_extended_string(now)<<" Target "<<targetTime<<" hash "<<payloadId<<" Preload since "<<sinceTime<<std::endl;
-      }
-      //auto t3 = std::chrono::high_resolution_clock::now();
-      //cond::persistency::Session frontierSession = connect( m_preLoadConnectionString );
-      //doPreLoadConditions<PayloadType>( frontierSession, targetTime );
-      //std::string oracleConnectionString = mainSession.connectionString(); 
-      //cond::persistency::Session oracleSession = connect( oracleConnectionString, targetTime );                                     
-      //doPreLoadConditions<PayloadType>( oracleSession, targetTime );                                                                  
-      /**
-      {
-	preLoadConditions<PayloadType>( m_preLoadConnectionString, targetTime );
-	auto t4 = std::chrono::high_resolution_clock::now();
-	cond::persistency::Session oracleSession = connect( oracleConnectionString, targetTime );
-	doPreLoadConditions<PayloadType>( oracleSession, targetTime );
-	auto t5 = std::chrono::high_resolution_clock::now();
-	doPreLoadConditions<PayloadType>( oracleSession, targetTime );
-	auto t6 = std::chrono::high_resolution_clock::now();
-	auto wlatency = std::chrono::duration_cast<std::chrono::microseconds>( t1 - t0 ).count();
-	auto r0_latency = std::chrono::duration_cast<std::chrono::microseconds>( t3 - t2 ).count();
-	auto r1_latency = std::chrono::duration_cast<std::chrono::microseconds>( t4 - t3 ).count();
-	auto wrlatency = std::chrono::duration_cast<std::chrono::microseconds>( t3 - t0 ).count();
-	auto or0_latency = std::chrono::duration_cast<std::chrono::microseconds>( t5 - t4 ).count();
-	auto or1_latency = std::chrono::duration_cast<std::chrono::microseconds>( t6 - t5 ).count();
-	std::stringstream ss;
-	ss << " "<<std::to_string(targetTime)<<" w:"<<std::to_string( wlatency ) <<" wr:"<< std::to_string( wrlatency );
-	log( "upload_full", ss.str() );
-        ss.str(std::string());
-        ss << " "<<std::to_string(targetTime)<<" r0:"<<std::to_string( r0_latency ) <<" r1:"<< std::to_string( r1_latency );
-	log( "preload_frontier", ss.str() );
-        ss.str(std::string());
-        ss << " "<<std::to_string(targetTime)<<" or0:"<<std::to_string( or0_latency ) <<" or1:"<< std::to_string( or1_latency );
-	log( "preload_oracle", ss.str() );
-      }
-      **/
-      edm::LogInfo( MSGSOURCE ) << "Since time found for target lumi ("<<targetTime<<"): "<<sinceTime;
-      cond::Time_t lastProcessedAfterUpdate = getLastLumiProcessed();
-      if( lastProcessedAfterUpdate >= targetTime ){
-	std::stringstream msg;
-	msg <<"Update for target lumisection "<<targetTime<<" has been completed late: current lumisection is "<< lastProcessedAfterUpdate;
-	throw Exception( msg.str() );
-      }
+      auto t3 = std::chrono::high_resolution_clock::now();
+      edm::LogInfo( MSGSOURCE ) << "Iov for preloaded lumisection "<<targetTime<<" is "<<sinceTime;
+      auto p_lat = std::chrono::duration_cast<std::chrono::microseconds>( t3 - t2 ).count();
+      edm::LogInfo( MSGSOURCE ) << "Preload has taken "<< p_lat <<" microsecs.";
       if( sinceTime < targetTime ){
-	std::stringstream msg;
-	msg << "Preload failed: expected since "<<targetTime<<"; found "<<sinceTime<<std::endl;
-	throw Exception( msg.str() ); 
-	// delete the new iov...
-	//PopConBase::eraseIov( payloadId, targetTime ); 
-        // for the moment, only detect the problem...
-	//edm::LogWarning( MSGSOURCE ) << "Found a late update. A revert was required.";
-	//PopConBase::finalize();
-      } 
+	edm::LogWarning( MSGSOURCE ) << "Found a late update for lumisection "<<targetTime<<"(found since "<<sinceTime<<"). A revert is required.";
+	PopConBase::eraseIov( payloadId, targetTime );
+	PopConBase::finalize();
+      }
+      auto t4 = std::chrono::high_resolution_clock::now();
+      auto t_lat = std::chrono::duration_cast<std::chrono::microseconds>( t4 - t0 ).count();
+      edm::LogInfo( MSGSOURCE ) << "Total update time: "<<t_lat<<" microsecs.";
     } else {
-      std::cout <<"### nothing to do: payloads "<<payloads.size()<<" targetTime "<<targetTime<<" lastSince "<<lastSince<<std::endl;
+      edm::LogInfo( MSGSOURCE ) << "Nothing to do: payloads "<<payloads.size()<<" targetTime "<<targetTime<<" lastSince "<<lastSince;
     }
   }
  
