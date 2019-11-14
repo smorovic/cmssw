@@ -12,6 +12,7 @@ namespace popcon {
     m_lastLumiUrl( pset.getUntrackedParameter<std::string>("lastLumiUrl","")),
     m_preLoadConnectionString( pset.getUntrackedParameter<std::string>("preLoadConnectionString","")),
     m_pathForLastLumiFile( pset.getUntrackedParameter<std::string>("pathForLastLumiFile","")),
+    m_writeTransactionDelay( pset.getUntrackedParameter<unsigned int>("writeTransactionDelay",0)),
     m_debug( pset.getUntrackedParameter<bool>( "debugLogging",false ) ){
   }
 
@@ -48,17 +49,30 @@ namespace popcon {
     CURL *curl;
     CURLcode res;
     std::string htmlBuffer;
+    char errbuf[ CURL_ERROR_SIZE ];
     
     curl = curl_easy_init();
     bool ret = false;
     if(curl) {
-      curl_easy_setopt(curl, CURLOPT_URL, urlString);
+      struct curl_slist *chunk = NULL;
+      chunk = curl_slist_append(chunk, "content-type:document/plain");
+      curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
+      curl_easy_setopt(curl, CURLOPT_URL, urlString.c_str());
       curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, getHtmlCallback);
       curl_easy_setopt(curl, CURLOPT_WRITEDATA, &htmlBuffer);
+      curl_easy_setopt( curl, CURLOPT_ERRORBUFFER, errbuf );
       res = curl_easy_perform(curl);
       if(CURLE_OK == res) {
 	info = htmlBuffer;
         ret = true;
+      } else {
+	size_t len = strlen(errbuf);
+	fprintf(stderr, "\nlibcurl: (%d) ", res);
+	if(len)
+	  fprintf(stderr, "%s%s", errbuf,
+		  ((errbuf[len - 1] != '\n') ? "\n" : ""));
+	else
+	  fprintf(stderr, "%s\n", curl_easy_strerror(res));
       }
       curl_easy_cleanup(curl);
     }

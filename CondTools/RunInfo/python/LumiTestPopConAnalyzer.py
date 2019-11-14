@@ -7,7 +7,8 @@ from CondCore.CondDB.CondDB_cfi import *
 options = VarParsing.VarParsing()
 options.register( 'destinationConnection'
                 #, 'sqlite_file:cms_conditions.db' #default value
-                , 'oracle://cms_orcon_prod/CMS_CONDITIONS' #default value
+                #, 'oracle://cms_orcon_prod/CMS_CONDITIONS' #default value
+                ,'oracle://cms_orcoff_prep/CMS_CONDITIONS'
                 , VarParsing.VarParsing.multiplicity.singleton
                 , VarParsing.VarParsing.varType.string
                 , "Connection string to the DB where payloads will be possibly written."
@@ -23,6 +24,12 @@ options.register( 'runNumber'
                 , VarParsing.VarParsing.multiplicity.singleton
                 , VarParsing.VarParsing.varType.int
                 , "Run number to be uploaded."
+                  )
+options.register( 'transDelay'
+                , 0 #default value                                                                                                                               
+                , VarParsing.VarParsing.multiplicity.singleton
+                , VarParsing.VarParsing.varType.int
+                , "Write transaction delay."
                   )
 options.register( 'logFile'
                 , 'lumi_pop.log'
@@ -46,7 +53,7 @@ options.parseArguments()
 
 CondDBConnection = CondDB.clone( connect = cms.string( options.destinationConnection ) )
 CondDBConnection.DBParameters.messageLevel = cms.untracked.int32( options.messageLevel )
-CondDBConnection.DBParameters.authenticationPath = cms.untracked.string( '/data/O2O' )
+CondDBConnection.DBParameters.authenticationPath = cms.untracked.string( '/build/gg' )
 
 process.MessageLogger = cms.Service("MessageLogger",
                                     cout = cms.untracked.PSet(threshold = cms.untracked.string('INFO')),
@@ -79,13 +86,15 @@ process.Test1 = cms.EDAnalyzer("LumiTestPopConAnalyzer",
                                SinceAppendMode = cms.bool(True),
                                record = cms.string('LumiTestRcd'),
                                name = cms.untracked.string('LumiTest'),
-                               latency = cms.untracked.uint32( 2 ),
-                               preLoadConnectionString = cms.untracked.string('frontier://FrontierProd/CMS_CONDITIONS'),
+                               latency = cms.untracked.uint32( 1 ),
+                               #preLoadConnectionString = cms.untracked.string('frontier://FrontierProd/CMS_CONDITIONS'),
+                               preLoadConnectionString = cms.untracked.string('frontier://FrontierPrep/CMS_CONDITIONS'),
                                runNumber = cms.untracked.uint32( options.runNumber ),
                                #lastLumiUrl = cms.untracked.string( 'http://ru-c2e14-11-01.cms:11100/urn:xdaq-application:lid=52/getLatestLumiSection' ),
                                #preLoadConnectionString = cms.untracked.string('oracle://cms_orcoff_prep/CMS_CONDITIONS'),
                                #preLoadConnectionString = cms.untracked.string('sqlite_file:cms_conditions.db'),
-                               pathForLastLumiFile = cms.untracked.string('/afs/cern.ch/user/c/condbpro/public/last_time.txt'),
+                               pathForLastLumiFile = cms.untracked.string('/build/gg/lumi_cond_test/last_time.txt'),
+                               writeTransactionDelay = cms.untracked.uint32( options.transDelay ),
                                Source = cms.PSet(
                                    maxDataSize = cms.untracked.uint32( options.dataSize ),
                                    debug=cms.untracked.bool(False)
