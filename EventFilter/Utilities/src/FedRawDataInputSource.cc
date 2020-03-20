@@ -165,10 +165,9 @@ FedRawDataInputSource::~FedRawDataInputSource() {
   quit_threads_ = true;
 
   //delete any remaining open files
-  for (auto it = filesToDelete_.begin(); it != filesToDelete_.end(); it++) {
-    std::string fileToDelete = it->second->fileName_;
-    it->second.release();
-  }
+  for (auto it = filesToDelete_.begin(); it != filesToDelete_.end(); it++)
+    it->second.reset();
+  
   if (startedSupervisorThread_) {
     readSupervisorThread_->join();
   } else {
@@ -355,7 +354,7 @@ inline evf::EvFDaqDirector::FileStatus FedRawDataInputSource::getNextEvent() {
     if (status == evf::EvFDaqDirector::runEnded) {
       if (fms_)
         fms_->setInState(evf::FastMonitoringThread::inRunEnd);
-      currentFile_.release();
+      currentFile_.reset();
       return status;
     } else if (status == evf::EvFDaqDirector::runAbort) {
       throw cms::Exception("FedRawDataInputSource::getNextEvent")
@@ -373,7 +372,7 @@ inline evf::EvFDaqDirector::FileStatus FedRawDataInputSource::getNextEvent() {
         status = evf::EvFDaqDirector::noFile;
       }
 
-      currentFile_.release();
+      currentFile_.reset();
       return status;
     } else if (status == evf::EvFDaqDirector::newFile) {
       currentFileIndex_++;
@@ -396,7 +395,7 @@ inline evf::EvFDaqDirector::FileStatus FedRawDataInputSource::getNextEvent() {
       }
     //immediately delete empty file
     std::string currentName = currentFile_->fileName_;
-    currentFile_.release();
+    currentFile_.reset();
     return evf::EvFDaqDirector::noFile;
   }
 
@@ -423,7 +422,7 @@ inline evf::EvFDaqDirector::FileStatus FedRawDataInputSource::getNextEvent() {
     } else {
       //in single-thread and stream jobs, events are already processed
       std::string currentName = currentFile_->fileName_;
-      currentFile_.release();
+      currentFile_.reset();
     }
     return evf::EvFDaqDirector::noFile;
   }
@@ -666,7 +665,6 @@ void FedRawDataInputSource::read(edm::EventPrincipal& eventPrincipal) {
       }
       if (!fileIsBeingProcessed) {
         std::string fileToDelete = it->second->fileName_;
-        //it->second.release();
         it = filesToDelete_.erase(it);
       } else
         it++;
