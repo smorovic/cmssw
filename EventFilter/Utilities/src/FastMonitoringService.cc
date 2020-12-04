@@ -761,7 +761,7 @@ namespace evf {
 
         lastEnc.emplace_back(fmt_->m_data.ministateEncoded_);
         lastEnc.emplace_back(fmt_->m_data.microstateEncoded_);
- 
+
         if (fastMonIntervals_ && (snapCounter_ % fastMonIntervals_) == 0) {
           if (filePerFwkStream_) {
             std::vector<std::string> CSVv;

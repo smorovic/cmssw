@@ -51,8 +51,8 @@ public:
 protected:
   Next checkNext() override;
   void read(edm::EventPrincipal& eventPrincipal) override;
-  void FedRawDataInputSource::setMonState(evf::FastMonState::InputState state);
-  void FedRawDataInputSource::setMonStateSup(evf::FastMonState::InputState state);
+  void setMonState(evf::FastMonState::InputState state);
+  void setMonStateSup(evf::FastMonState::InputState state);
 
 private:
   void rewind_() override;

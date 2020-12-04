@@ -49,7 +49,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-using evf::FastMonState;
+using namespace evf::FastMonState;
 
 FedRawDataInputSource::FedRawDataInputSource(edm::ParameterSet const& pset, edm::InputSourceDescription const& desc)
     : edm::RawInputSource(pset, desc),
@@ -561,7 +561,7 @@ inline evf::EvFDaqDirector::FileStatus FedRawDataInputSource::getNextEvent() {
         //rewind to header start position
         currentFile_->rewindChunk(FRDHeaderVersionSize[detectedFRDversion_]);
         //copy event to a chunk start and move pointers
-        
+
         setMonState(inWaitChunk);
 
         chunkEnd = currentFile_->advance(dataPosition, FRDHeaderVersionSize[detectedFRDversion_] + msgSize);
