@@ -12,8 +12,6 @@
 
 #include <filesystem>
 
-#include <boost/thread.hpp>
-
 #include "EventFilter/Utilities/interface/MicroStateService.h"
 
 #include <string>
@@ -27,7 +25,6 @@
   this is an evolution of the MicroStateService intended to be run standalone in cmsRun or similar
   As such, it has to independently create a monitoring thread and run it in each forked process, which needs 
   to be arranged following the standard CMSSW procedure.
-  We try to use boost threads for uniformity with the rest of the framework, even if they suck a bit.
   A legenda for use by the monitoring process in the DAQ needs to be generated as soon as convenient - since 
   no access to the EventProcessor is granted, this needs to wait until after beginJob is executed.
   At the same time, we try to spare time in the monitoring by avoiding even a single string lookup and using the 
@@ -61,7 +58,6 @@ namespace evf {
       mInvalid = 0,
       mIdle,
       mFwkOvhSrc,
-      mFwkOvhModAcq,
       mFwkOvhMod,
       mFwkEoL,
       mInput,
@@ -231,11 +227,6 @@ namespace evf {
   private:
     void doSnapshot(const unsigned int ls, const bool isGlobalEOL);
 
-    //void doStreamEOLSnapshot(const unsigned int ls, const unsigned int streamID) {
-      //pick up only event count here
-    //  fmt_->jsonMonitor_->snapStreamAtomic(ls, streamID);
-    //}
-
     void snapshotRunner();
 
     //the actual monitoring thread is held by a separate class object for ease of maintenance
@@ -263,13 +254,6 @@ namespace evf {
     unsigned int lastGlobalLumi_;
     std::atomic<bool> isInitTransition_;
     unsigned int lumiFromSource_;
-
-    //global state
-
-    //per stream
-    //std::vector<ContainableAtomic<const std::string*>> ministate_;
-    //std::vector<ContainableAtomic<const void*>> microstate_;
-    //std::vector<ContainableAtomic<const void*>> threadMicrostate_;
 
     //variables measuring source statistics (global)
     //unordered_map is not used because of very few elements stored concurrently

@@ -35,7 +35,6 @@ namespace evf {
       edm::ModuleDescription("Dummy", "Invalid"),
       edm::ModuleDescription("Dummy", "Idle"),
       edm::ModuleDescription("Dummy", "FwkOvhSrc"),
-      edm::ModuleDescription("Dummy", "FwkOvhModAcq"),//set post acuqire (in case of external processing)
       edm::ModuleDescription("Dummy", "FwkOvhMod"),//set post produce, analyze or filter
       edm::ModuleDescription("Dummy", "FwkEoL"),
       edm::ModuleDescription("Dummy", "Input"),
@@ -215,6 +214,10 @@ namespace evf {
     for (int i = 0; i < fmt_->m_data.encModule_.current_; i++)
       legendaVector.append(
           Json::Value((static_cast<const edm::ModuleDescription*>(fmt_->m_data.encModule_.decode(i)))->moduleLabel()));
+    //duplicate modules adding a list for acquire states (not all modules actually have it)
+    for (int i = 0; i < fmt_->m_data.encModule_.current_; i++)
+      legendaVector.append(
+          Json::Value((static_cast<const edm::ModuleDescription*>(fmt_->m_data.encModule_.decode(i)))->moduleLabel()+"__ACQ"));
     Json::Value valReserved(nReservedModules);
     Json::Value valSpecial(nSpecialModules);
     Json::Value valOutputModules(nOutputModules_);
@@ -319,6 +322,7 @@ namespace evf {
     for (unsigned int i = 0; i < nStreams_; i++) {
       fmt_->m_data.ministate_.emplace_back(&nopath_);
       fmt_->m_data.microstate_.emplace_back(&reservedMicroStateNames[FastMonState::mInvalid]);
+      fmt_->m_data.microstateAcqFlag_.push_back(0);
 
       //for synchronization
       streamCounterUpdating_.push_back(new std::atomic<bool>(false));
@@ -450,7 +454,8 @@ namespace evf {
 
     //update number of entries in module histogram
     std::lock_guard<std::mutex> lock(fmt_->monlock_);
-    fmt_->m_data.microstateBins_ = fmt_->m_data.encModule_.vecsize();
+    //double the size to add post-acquire states
+    fmt_->m_data.microstateBins_ = fmt_->m_data.encModule_.vecsize()*2;
   }
 
   void FastMonitoringService::postEndJob() {
@@ -615,7 +620,6 @@ namespace evf {
     //fast path counter (events accumulated in a run)
     unsigned long res = totalEventsProcessed_.fetch_add(1, std::memory_order_relaxed);
     fmt_->m_data.fastPathProcessedJ_ = res + 1;
-    //fmt_->m_data.fastPathProcessedJ_ = totalEventsProcessed_.load(std::memory_order_relaxed);
   }
 
   void FastMonitoringService::preSourceEvent(edm::StreamID sid) {
@@ -631,16 +635,16 @@ namespace evf {
   }
 
   void FastMonitoringService::postModuleEventAcquire(edm::StreamContext const& sc, edm::ModuleCallingContext const& mcc) {
-    //microstate_[sc.streamID().value()] = (void*)(mcc.moduleDescription());
-    fmt_->m_data.microstate_[sc.streamID().value()] = &reservedMicroStateNames[FastMonState::mFwkOvhModAcq];
+    //fmt_->m_data.microstate_[sc.streamID().value()] = (void*)(mcc.moduleDescription());
+    fmt_->m_data.microstateAcqFlag_[sc.streamID().value()] = 1;
   }
 
   void FastMonitoringService::preModuleEvent(edm::StreamContext const& sc, edm::ModuleCallingContext const& mcc) {
     fmt_->m_data.microstate_[sc.streamID().value()] = (void*)(mcc.moduleDescription());
+    fmt_->m_data.microstateAcqFlag_[sc.streamID().value()] = 0;
   }
 
   void FastMonitoringService::postModuleEvent(edm::StreamContext const& sc, edm::ModuleCallingContext const& mcc) {
-    //microstate_[sc.streamID().value()] = (void*)(mcc.moduleDescription());
     fmt_->m_data.microstate_[sc.streamID().value()] = &reservedMicroStateNames[FastMonState::mFwkOvhMod];
   }
 
@@ -810,6 +814,7 @@ namespace evf {
     fmt_->m_data.fastMacrostateJ_ = fmt_->m_data.macrostate_;
 
     std::vector<const void*> microstateCopy(fmt_->m_data.microstate_.begin(), fmt_->m_data.microstate_.end());
+    std::vector<unsigned char> microstateAcqCopy(fmt_->m_data.microstateAcqFlag_.begin(), fmt_->m_data.microstateAcqFlag_.end());
 
     if (!isInitTransition_) {
       auto itd = avgLeadTime_.find(ls);
@@ -836,7 +841,10 @@ namespace evf {
 
     for (unsigned int i = 0; i < nStreams_; i++) {
       fmt_->m_data.ministateEncoded_[i] = fmt_->m_data.encPath_[i].encodeString(fmt_->m_data.ministate_[i]);
-      fmt_->m_data.microstateEncoded_[i] = fmt_->m_data.encModule_.encode(microstateCopy[i]);
+      if (microstateAcqCopy[i])
+        fmt_->m_data.microstateEncoded_[i] = fmt_->m_data.microstateBins_ + fmt_->m_data.encModule_.encode(microstateCopy[i]);
+      else
+        fmt_->m_data.microstateEncoded_[i] = fmt_->m_data.encModule_.encode(microstateCopy[i]);
     }
 
     bool inputStatePerThread = false;
