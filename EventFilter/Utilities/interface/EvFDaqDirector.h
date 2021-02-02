@@ -71,7 +71,9 @@ namespace evf {
     void preBeginJob(edm::PathsAndConsumesOfModulesBase const&, edm::ProcessContext const&);
     void preBeginRun(edm::GlobalContext const& globalContext);
     void postEndRun(edm::GlobalContext const& globalContext);
+    void preStreamBeginLumi(edm::StreamContext const& sc);
     void preGlobalEndLumi(edm::GlobalContext const& globalContext);
+    void postEvent(edm::StreamContext const& sc);
     void overrideRunNumber(unsigned int run) { run_ = run; }
     std::string& baseRunDir() { return run_dir_; }
     std::string& buBaseRunDir() { return bu_run_dir_; }
@@ -218,6 +220,7 @@ namespace evf {
     std::string hltSourceDirectory_;
 
     unsigned int startFromLS_ = 1;
+    std::vector<unsigned int> processed_;
 
     std::string hostname_;
     std::string run_string_;

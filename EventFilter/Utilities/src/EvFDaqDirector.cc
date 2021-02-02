@@ -316,6 +316,7 @@ namespace evf {
 
     nThreads_ = bounds.maxNumberOfStreams();
     nStreams_ = bounds.maxNumberOfThreads();
+    processed_ = std::vector<unsigned int>(nStreams, 0);
   }
 
   void EvFDaqDirector::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -372,6 +373,15 @@ namespace evf {
       std::string filename = bu_run_dir_ + "/bu.lock";
       removeFile(filename);
     }
+  }
+
+  void EvFDaqDirector::preStreamBeginLumi(edm::StreamContext const& sc) {
+    unsigned int sid = sc.streamID().value();
+    processed_[sid] = 0;
+  }
+
+  void EvFDaqDirector::postEvent(edm::StreamContext const& sc) {
+    processed_[sc.streamID().value()]++;
   }
 
   void EvFDaqDirector::preGlobalEndLumi(edm::GlobalContext const& globalContext) {
