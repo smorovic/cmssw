@@ -30,6 +30,9 @@
 #include <iostream>
 #include <vector>
 
+//TODO: #include "fast-lzma.h" (when available in cmsdist)
+#include "IOPool/Streamer/src/fast-lzma2.h"
+
 namespace edm {
 
   /**
@@ -235,6 +238,13 @@ namespace edm {
                                        compression_level,
                                        reserveSize);
         break;
+      case FL2:
+        dest_size = compressBufferFL2((unsigned char *)data_buffer.rootbuf_.Buffer(),
+                                       data_buffer.curr_event_size_,
+                                       data_buffer.comp_buf_,
+                                       compression_level,
+                                       reserveSize);
+        break;
       case ZSTD:
         dest_size = compressBufferZSTD((unsigned char *)data_buffer.rootbuf_.Buffer(),
                                        data_buffer.curr_event_size_,
@@ -308,8 +318,8 @@ namespace edm {
     // what are these magic numbers? (jbk)
     unsigned int hdr_size = addHeader ? 4 : 0;
     unsigned long dest_size = (unsigned long)(double(inputSize) * 1.01 + 1.0) + 12;
-    if (outputBuffer.size() < dest_size + reserveSize)
-      outputBuffer.resize(dest_size + reserveSize);
+    if (outputBuffer.size() < dest_size + reserveSize + hdr_size)
+      outputBuffer.resize(dest_size + reserveSize + hdr_size);
 
     // compression 1-9
     uint32_t dict_size_est = inputSize / 4;
@@ -358,7 +368,7 @@ namespace edm {
     stream.avail_in = (size_t)(inputSize);
 
     stream.next_out = (uint8_t *)(&tgt[hdr_size]);
-    stream.avail_out = (size_t)(dest_size - hdr_size);
+    stream.avail_out = (size_t)(dest_size);
 
     returnStatus = lzma_code(&stream, LZMA_FINISH);
 
@@ -382,6 +392,58 @@ namespace edm {
 
     return stream.total_out + hdr_size;
   }
+
+  //this is based on ROOT R__zipLZMA
+  unsigned int StreamSerializer::compressBufferFL2(unsigned char *inputBuffer,
+                                                    unsigned int inputSize,
+                                                    std::vector<unsigned char> &outputBuffer,
+                                                    int compressionLevel,
+                                                    unsigned int reserveSize,
+                                                    bool addHeader) {
+    // what are these magic numbers? (jbk)
+    unsigned int hdr_size = addHeader ? 4 : 0;
+
+    // compression 1-9
+    //uint32_t dict_size_est = inputSize / 4;
+
+    FL2_CCtx* fcs = FL2_createCCtx();
+    if (fcs == NULL)
+      throw cms::Exception("StreamSerializer", "compressBufferFL2") << "Can not create context";
+
+    FL2_CCtx_setParameter(fcs, FL2_p_compressionLevel, compressionLevel);
+    unsigned long dest_size = FL2_compressBound(inputSize);
+
+    if (outputBuffer.size() < dest_size + reserveSize + hdr_size)
+      outputBuffer.resize(dest_size + reserveSize + hdr_size);
+
+    unsigned char *tgt = &outputBuffer[reserveSize];
+
+    if (compressionLevel > FL2_maxCLevel())
+      compressionLevel = FL2_maxCLevel();
+
+    //opt_lzma2.dict_size = dict_size_est;
+
+    auto cSize = FL2_compressCCtx(fcs, (uint8_t *)(&tgt[hdr_size]) , dest_size, (const uint8_t *)inputBuffer, inputSize, 0);
+    if (FL2_isError(cSize)) {
+      FL2_freeCCtx(fcs);
+      throw cms::Exception("StreamSerializer", "compressBufferFL2") << "FL2 compression error: " << FL2_getErrorName(cSize);
+    }
+    FL2_freeCCtx(fcs);
+
+    //Add compression-specific header at the buffer start. This will be used to detect LZMA(2) format after streamer header
+    if (addHeader) {
+      tgt[0] = 'X'; /* Signature of LZMA from XZ Utils */
+      tgt[1] = 'Z';
+      tgt[2] = 0;
+      tgt[3] = 0;  //let's put offset to 4, not 3
+    }
+
+    FDEBUG(1) << " FL2 original size = " << inputSize << " final size = " << cSize
+              << " ratio = " << double(cSize) / double(inputSize) << std::endl;
+
+    return cSize + hdr_size;
+  }
+
 
   unsigned int StreamSerializer::compressBufferZSTD(unsigned char *inputBuffer,
                                                     unsigned int inputSize,

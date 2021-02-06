@@ -63,7 +63,7 @@ struct SerializeDataBuffer {
 class EventMsgBuilder;
 class InitMsgBuilder;
 namespace edm {
-  enum StreamerCompressionAlgo { UNCOMPRESSED = 0, ZLIB = 1, LZMA = 2, ZSTD = 4 };
+  enum StreamerCompressionAlgo { UNCOMPRESSED = 0, ZLIB = 1, LZMA = 2, FL2 = 3, ZSTD = 4 };
 
   class EventForOutput;
   class ModuleCallingContext;
@@ -106,6 +106,13 @@ namespace edm {
                                            int compressionLevel,
                                            unsigned int reserveSize,
                                            bool addHeader = true);
+
+    static unsigned int compressBufferFL2(unsigned char *inputBuffer,
+                                          unsigned int inputSize,
+                                          std::vector<unsigned char> &outputBuffer,
+                                          int compressionLevel,
+                                          unsigned int reserveSize,
+                                          bool addHeader = true);
 
     static unsigned int compressBufferZSTD(unsigned char *inputBuffer,
                                            unsigned int inputSize,

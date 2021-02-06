@@ -51,6 +51,9 @@ namespace edm {
       } else if (compressionAlgoStr_ == "LZMA") {
         compressionAlgo_ = LZMA;
         minCompressionLevel = 0;
+      } else if (compressionAlgoStr_ == "FL2") {
+        compressionAlgo_ = FL2;
+        minCompressionLevel = 1;
       } else if (compressionAlgoStr_ == "ZSTD") {
         compressionAlgo_ = ZSTD;
         maxCompressionLevel = 20;
@@ -272,7 +275,7 @@ namespace edm {
     desc.addUntracked<bool>("use_compression", true)
         ->setComment("If True, compression will be used to write streamer file.");
     desc.addUntracked<std::string>("compression_algorithm", "ZLIB")
-        ->setComment("Compression algorithm to use: UNCOMPRESSED, ZLIB, LZMA or ZSTD");
+        ->setComment("Compression algorithm to use: UNCOMPRESSED, ZLIB, LZMA, FL2 or ZSTD");
     desc.addUntracked<int>("compression_level", 1)->setComment("Compression level to use on serialized ROOT events");
     desc.addUntracked<int>("lumiSection_interval", 0)
         ->setComment(
