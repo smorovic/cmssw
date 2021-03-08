@@ -37,6 +37,9 @@
 #include <iostream>
 #include <set>
 
+//TODO: #include "fast-lzma.h" (when available in cmsdist)
+#include "IOPool/Streamer/src/fast-lzma2.h"
+
 namespace edm {
   namespace {
     int const init_size = 1024 * 1024;
@@ -209,6 +212,12 @@ namespace edm {
       // compressed
       if (isBufferLZMA((unsigned char const*)eventView.eventData(), eventView.eventLength())) {
         dest_size = uncompressBufferLZMA(const_cast<unsigned char*>((unsigned char const*)eventView.eventData()),
+                                         eventView.eventLength(),
+                                         dest_,
+                                         origsize);
+
+      } else if (isBufferFL2((unsigned char const*)eventView.eventData(), eventView.eventLength())) {
+        dest_size = uncompressBufferFL2(const_cast<unsigned char*>((unsigned char const*)eventView.eventData()),
                                          eventView.eventLength(),
                                          dest_,
                                          origsize);
@@ -427,6 +436,50 @@ namespace edm {
 
     return uncompressedSize;
   }
+
+  bool StreamerInputSource::isBufferFL2(unsigned char const* inputBuffer, unsigned int inputSize) {
+    if (inputSize >= 4 && !strcmp((const char*)inputBuffer, "FL2"))
+      return true;
+    else
+      return false;
+  }
+
+  unsigned int StreamerInputSource::uncompressBufferFL2(unsigned char* inputBuffer,
+                                                         unsigned int inputSize,
+                                                         std::vector<unsigned char>& outputBuffer,
+                                                         unsigned int expectedFullSize,
+                                                         bool hasHeader) {
+    unsigned long origSize = expectedFullSize;
+    unsigned long uncompressedSize = expectedFullSize * 1.1;
+    FDEBUG(1) << "Uncompress: original size = " << origSize << ", compressed size = " << inputSize << std::endl;
+    outputBuffer.resize(uncompressedSize);
+
+    FL2_DCtx* dctx = FL2_createDCtx();
+
+    size_t hdrSize = hasHeader ? 4 : 0;
+    size_t const regenSize = FL2_decompressDCtx(dctx,
+        (uint8_t*)&outputBuffer[0], (size_t)expectedFullSize,
+        (const uint8_t*)(inputBuffer + hdrSize), inputSize - hdrSize);
+
+    if (FL2_isError(regenSize)) {
+      FL2_freeDCtx(dctx);
+      throw cms::Exception("StreamDeserializationFL2", "FL2 stream decoder error.") << 
+           "failed on size " << (unsigned)(inputSize-hdrSize) << ": " << FL2_getErrorName(regenSize);
+    }
+
+    FL2_freeDCtx(dctx);
+    uncompressedSize = regenSize;
+
+    FDEBUG(10) << " original size = " << origSize << " final size = " << uncompressedSize << std::endl;
+    if (origSize != uncompressedSize) {
+      // we throw an error and return without event! null pointer
+      throw cms::Exception("StreamDeserialization", "LZMA uncompression error")
+          << "mismatch event lengths should be" << origSize << " got " << uncompressedSize << "\n";
+    }
+
+    return uncompressedSize;
+  }
+
 
   bool StreamerInputSource::isBufferZSTD(unsigned char const* inputBuffer, unsigned int inputSize) {
     if (inputSize >= 4 && !strcmp((const char*)inputBuffer, "ZS"))

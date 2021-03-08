@@ -52,8 +52,11 @@ private:
   unsigned int width;
   unsigned int injected_errors_per_million_events;
   unsigned int tcdsFEDID_;
+  bool fillRandom_;
+
   unsigned int modulo_error_events;
   unsigned int fakeLs_ = 0;
+  FILE* urandom_fp_ = nullptr;
 };
 
 #endif

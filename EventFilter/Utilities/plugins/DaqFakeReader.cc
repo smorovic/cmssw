@@ -37,17 +37,23 @@ DaqFakeReader::DaqFakeReader(const edm::ParameterSet& pset)
       width(pset.getUntrackedParameter<unsigned int>("width", 1024)),
       injected_errors_per_million_events(pset.getUntrackedParameter<unsigned int>("injectErrPpm", 0)),
       tcdsFEDID_(pset.getUntrackedParameter<unsigned int>("tcdsFEDID", 1024)),
+      fillRandom_(pset.getUntrackedParameter<bool>("fillRandom", false)),
       modulo_error_events(injected_errors_per_million_events ? 1000000 / injected_errors_per_million_events
                                                              : 0xffffffff) {
   // mean = pset.getParameter<float>("mean");
   if (tcdsFEDID_ < FEDNumbering::MINTCDSuTCAFEDID)
     throw cms::Exception("DaqFakeReader::DaqFakeReader")
         << " TCDS FED ID lower than " << FEDNumbering::MINTCDSuTCAFEDID;
+  if (fillRandom_)
+    urandom_fp_ = fopen("/dev/urandom", "r");
   produces<FEDRawDataCollection>();
 }
 
 //______________________________________________________________________________
-DaqFakeReader::~DaqFakeReader() {}
+DaqFakeReader::~DaqFakeReader() {
+  if (urandom_fp_ != nullptr)
+    fclose(urandom_fp_);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // implementation of member functions
@@ -101,6 +107,8 @@ void DaqFakeReader::fillFEDs(
     FEDRawData& feddata = data.FEDData(fedId);
     // Allocate space for header+trailer+payload
     feddata.resize(size + 16);
+    if (fillRandom_)
+      fread(feddata.data() + 8, 1, size, urandom_fp_);
 
     // Generate header
     FEDHeader::set(feddata.data(),
@@ -126,6 +134,10 @@ void DaqFakeReader::fillTCDSFED(EventID& eID, FEDRawDataCollection& data, uint32
   FEDRawData& feddata = data.FEDData(fedId);
   uint32_t size = sizeof(tcds::Raw_v1);
   feddata.resize(size + 16);
+
+  //fill with randoms
+  if (fillRandom_)
+    fread(feddata.data() + 8, 1, size, urandom_fp_);
 
   uint64_t orbitnr = 0;
   uint16_t bxid = 0;

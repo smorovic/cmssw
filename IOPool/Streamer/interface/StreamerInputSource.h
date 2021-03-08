@@ -52,6 +52,11 @@ namespace edm {
     bool isBufferLZMA(unsigned char const* inputBuffer, unsigned int inputSize);
 
     /**
+     * Detect if buffer starts with "FL2\0" which means it is compressed in fast-lzma2 format
+     */
+    bool isBufferFL2(unsigned char const* inputBuffer, unsigned int inputSize);
+
+    /**
      * Detect if buffer starts with "Z\0" which means it is compressed in ZStandard format
      */
     bool isBufferZSTD(unsigned char const* inputBuffer, unsigned int inputSize);
@@ -70,6 +75,12 @@ namespace edm {
                                          unsigned int expectedFullSize);
 
     static unsigned int uncompressBufferLZMA(unsigned char* inputBuffer,
+                                             unsigned int inputSize,
+                                             std::vector<unsigned char>& outputBuffer,
+                                             unsigned int expectedFullSize,
+                                             bool hasHeader = true);
+
+    static unsigned int uncompressBufferFL2(unsigned char* inputBuffer,
                                              unsigned int inputSize,
                                              std::vector<unsigned char>& outputBuffer,
                                              unsigned int expectedFullSize,
