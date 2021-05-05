@@ -53,6 +53,14 @@ options.register ('runkey',
           VarParsing.VarParsing.varType.string,
           "Run Keys of CMS")
 
+# Parameter for frontierKey
+
+options.register ('frontierKey',
+          'InValid',
+          VarParsing.VarParsing.multiplicity.singleton,
+          VarParsing.VarParsing.varType.string,
+          "Frontier Key for CondDB module in DQM")
+
 options.parseArguments()
 
 # Fix to allow scram to compile
