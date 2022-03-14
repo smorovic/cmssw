@@ -282,7 +282,7 @@ CondDBESSource::CondDBESSource(const edm::ParameterSet& iConfig)
       if (tagSnapshotTime == boost::posix_time::time_from_string(std::string(cond::time::MAX_TIMESTAMP)))
         tagSnapshotTime = boost::posix_time::ptime();
 
-      proxy->lateInit(nsess, tag, tagSnapshotTime, it->second.recordLabel(), connStr, &m_queue, &m_mutex);
+      proxy->lateInit(nsess, tag, tagSnapshotTime, it->second.recordLabel(), connStr);
     }
   }
 

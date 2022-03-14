@@ -9,6 +9,7 @@
 
 // user include files
 #include "FWCore/Framework/interface/ESSourceDataProxyTemplate.h"
+#include "FWCore/Framework/interface/ESSourceConcurrentDataProxyTemplate.h"
 #include "FWCore/Framework/interface/DataKey.h"
 
 #include "CondCore/CondDB/interface/IOVProxy.h"
@@ -25,12 +26,10 @@ namespace cond {
 }  // namespace cond
 
 template <class RecordT, class DataT, typename Initializer = cond::DefaultInitializer<DataT>>
-class DataProxy : public edm::eventsetup::ESSourceDataProxyTemplate<DataT> {
-public:
-  explicit DataProxy(std::shared_ptr<cond::persistency::PayloadProxy<DataT>> pdata,
-                     edm::SerialTaskQueue* iQueue,
-                     std::mutex* iMutex)
-      : edm::eventsetup::ESSourceDataProxyTemplate<DataT>(iQueue, iMutex), m_data{pdata} {}
+class DataProxy : public edm::eventsetup::ESSourceConcurrentDataProxyTemplate<DataT> {
+        public:
+          explicit DataProxy(std::shared_ptr<cond::persistency::PayloadProxy<DataT>> pdata)
+                : m_data{pdata} {}
   //DataProxy(); // stop default
   const DataProxy& operator=(const DataProxy&) = delete;  // stop default
 
@@ -79,9 +78,7 @@ namespace cond {
                           const std::string& tag,
                           const boost::posix_time::ptime& snapshotTime,
                           std::string const& il,
-                          std::string const& cs,
-                          edm::SerialTaskQueue* queue,
-                          std::mutex* mutex) = 0;
+                          std::string const& cs) = 0;
 
     virtual void initConcurrentIOVs(unsigned int nConcurrentIOVs) = 0;
 
@@ -139,9 +136,7 @@ public:
                 const std::string& tag,
                 const boost::posix_time::ptime& snapshotTime,
                 std::string const& il,
-                std::string const& cs,
-                edm::SerialTaskQueue* queue,
-                std::mutex* mutex) override {
+                std::string const& cs) override {
     setSession(iSession);
     // set the IOVProxy
     loadTag(tag, snapshotTime);
@@ -149,7 +144,7 @@ public:
     // how many we will need.
     m_proxies.push_back(std::make_shared<cond::persistency::PayloadProxy<DataT>>(
         &currentIov(), &session(), &requests(), m_source.empty() ? (const char*)nullptr : m_source.c_str()));
-    m_edmProxies.push_back(std::make_shared<DataProxy>(m_proxies[0], queue, mutex));
+    m_edmProxies.push_back(std::make_shared<DataProxy>(m_proxies[0]));
     addInfo(il, cs, tag);
   }
 
@@ -158,12 +153,10 @@ public:
     // multiple IOVs to run concurrently.
     if (m_proxies.size() != nConcurrentIOVs) {
       assert(m_proxies.size() == 1);
-      auto queue = m_edmProxies.front()->queue();
-      auto mutex = m_edmProxies.front()->mutex();
       for (unsigned int i = 1; i < nConcurrentIOVs; ++i) {
         m_proxies.push_back(std::make_shared<cond::persistency::PayloadProxy<DataT>>(
             &currentIov(), &session(), &requests(), m_source.empty() ? (const char*)nullptr : m_source.c_str()));
-        m_edmProxies.push_back(std::make_shared<DataProxy>(m_proxies[i], queue, mutex));
+        m_edmProxies.push_back(std::make_shared<DataProxy>(m_proxies[i]));
         // This does nothing except in the special case of a KeyList PayloadProxy.
         // They all need to have copies of the same IOVProxy object.
         m_proxies[i]->initKeyList(*m_proxies[0]);
