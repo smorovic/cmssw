@@ -195,16 +195,6 @@ namespace edm {
     unsigned long origsize = eventView.origDataSize();
     unsigned long dest_size;  //(should be >= eventView.origDataSize())
 
-    uint32_t adler32_chksum = cms::Adler32((char const*)eventView.eventData(), eventView.eventLength());
-    //std::cout << "Adler32 checksum of event = " << adler32_chksum << std::endl;
-    //std::cout << "Adler32 checksum from header = " << eventView.adler32_chksum() << " "
-    //          << "host name = " << eventView.hostName() << " len = " << eventView.hostName_len() << std::endl;
-    if ((uint32)adler32_chksum != eventView.adler32_chksum()) {
-      // skip event (based on option?) or throw exception?
-      throw cms::Exception("StreamDeserialization", "Checksum error")
-          << " chksum from event = " << adler32_chksum << " from header = " << eventView.adler32_chksum()
-          << " host name = " << eventView.hostName() << std::endl;
-    }
     if (origsize != 78 && origsize != 0) {
       // compressed
       if (isBufferLZMA((unsigned char const*)eventView.eventData(), eventView.eventLength())) {
@@ -230,6 +220,14 @@ namespace edm {
       unsigned char const* from = (unsigned char const*)eventView.eventData();
       std::copy(from, from + dest_size, pos);
     }
+
+    uint32_t adler32_chksum = cms::Adler32((char const*)&dest_[0];, origsize);
+    if ((uint32)adler32_chksum != eventView.adler32_chksum()) {
+      throw cms::Exception("StreamDeserialization", "Checksum error")
+          << " chksum from event = " << adler32_chksum << " from header = " << eventView.adler32_chksum()
+          << " host name = " << eventView.hostName() << std::endl;
+    }
+
     //TBuffer xbuf(TBuffer::kRead, dest_size,
     //             (char const*) &dest[0],kFALSE);
     //TBuffer xbuf(TBuffer::kRead, eventView.eventLength(),

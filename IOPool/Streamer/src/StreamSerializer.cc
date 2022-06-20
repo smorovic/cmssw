@@ -256,8 +256,7 @@ namespace edm {
     data_buffer.curr_space_used_ = dest_size;
 
     // calculate the adler32 checksum and fill it into the struct
-    data_buffer.adler32_chksum_ = cms::Adler32((char *)data_buffer.bufferPointer(), data_buffer.curr_space_used_);
-    //std::cout << "Adler32 checksum of event = " << data_buffer.adler32_chksum_ << std::endl;
+    data_buffer.adler32_chksum_ = cms::Adler32((char *)data_buffer.rootbuf_.Buffer(), data_buffer.rootbuf_.Length());
 
     return data_buffer.curr_space_used_;
   }
