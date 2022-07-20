@@ -24,6 +24,12 @@ struct SerializeDataBuffer {
   typedef std::vector<char> SBuffer;
   static constexpr int init_size = 0;  //will be allocated on first event
   static constexpr unsigned int reserve_size = 50000;
+  
+  uint32_t run = 0;
+  uint32_t ls = 0;
+  uint64_t event = 0;
+  std::vector<unsigned char> hltbits;
+  std::vector<bool> l1bits;
 
   SerializeDataBuffer()
       : comp_buf_(reserve_size + init_size),
@@ -82,12 +88,16 @@ namespace edm {
                           ThinnedAssociationsHelper const &thinnedAssociationsHelper,
                           SendJobHeader::ParameterSetMap const &psetMap);
 
-    int serializeEvent(SerializeDataBuffer &data_buffer,
-                       EventForOutput const &event,
-                       ParameterSetID const &selectorConfig,
-                       StreamerCompressionAlgo compressionAlgo,
-                       int compression_level,
-                       unsigned int reserveSize) const;
+    void serializeEvent(SerializeDataBuffer &data_buffer,
+                        EventForOutput const &event,
+                        ParameterSetID const &selectorConfig,
+                        StreamerCompressionAlgo compressionAlgo,
+                        int compression_level) const;
+
+    int completeSerializeEvent(SerializeDataBuffer &data_buffer,
+                               StreamerCompressionAlgo compressionAlgo,
+                               int compression_level,
+                               unsigned int reserveSize) const;
 
     /**
      * Compresses the data in the specified input buffer into the

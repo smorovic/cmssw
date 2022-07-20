@@ -127,14 +127,14 @@ namespace edm {
    the caller will need to copy the data from this object to its final
    destination in the EventMsgBuilder.
 
+  */
 
-   */
-  int StreamSerializer::serializeEvent(SerializeDataBuffer &data_buffer,
+  void StreamSerializer::serializeEvent(SerializeDataBuffer &data_buffer,
                                        EventForOutput const &event,
                                        ParameterSetID const &selectorConfig,
                                        StreamerCompressionAlgo compressionAlgo,
-                                       int compression_level,
-                                       unsigned int reserveSize) const {
+                                       int compression_level) const {
+
     EventSelectionIDVector selectionIDs = event.eventSelectionIDs();
     selectionIDs.push_back(selectorConfig);
     SendEvent se(event.eventAuxiliary(), event.processHistory(), selectionIDs, event.branchListIndexes());
@@ -212,13 +212,19 @@ namespace edm {
         data_.ptr_ = data_buffer.ptr_; // ROOT may have reset our data pointer!!!!
         }
 #endif
-    // std::copy(rootbuf_.Buffer(),rootbuf_.Buffer()+rootbuf_.Length(),
-    // eventMessage.eventAddr());
-    // eventMessage.setEventLength(rootbuf.Length());
+
+  }
+
+
+  int StreamSerializer::completeSerializeEvent(SerializeDataBuffer &data_buffer,
+                                       StreamerCompressionAlgo compressionAlgo,
+                                       int compression_level,
+                                       unsigned int reserveSize) const {
 
     // compress before return if we need to
     // should test if compressed already - should never be?
     //   as double compression can have problems
+ 
     unsigned int dest_size = 0;
     switch (compressionAlgo) {
       case ZLIB:

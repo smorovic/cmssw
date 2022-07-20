@@ -201,25 +201,36 @@ namespace edm {
     //std::cout << "\n";
   }
 
-  std::unique_ptr<EventMsgBuilder> StreamerOutputModuleCommon::serializeEvent(
+
+  void StreamerOutputModuleCommon::serializeEvent(
       SerializeDataBuffer& sbuf,
       EventForOutput const& e,
       Handle<TriggerResults> const& triggerResults,
       ParameterSetID const& selectorCfg) {
+
+    //store event info
+    sbuf.ls = e.luminosityBlock();
+    sbuf.run = e.id().run(),
+    sbuf.event = e.id().event(),
+
+    serializer_.serializeEvent(sbuf, e, selectorCfg, compressionAlgo_, compressionLevel_);
+
+    //fill hltbits
+    setHltMask(e, triggerResults, sbuf.hltbits);
+  }
+
+  std::unique_ptr<EventMsgBuilder> StreamerOutputModuleCommon::buildEventMsg(SerializeDataBuffer& sbuf) {
+
     constexpr unsigned int reserve_size = SerializeDataBuffer::reserve_size;
-    //Lets Build the Event Message first
 
     //Following is strictly DUMMY Data for L! Trig and will be replaced with actual
     // once figured out, there is no logic involved here.
-    std::vector<bool> l1bit = {true, true, false};
+    sbuf.l1bits = {true, true, false};
     //End of dummy data
-
-    std::vector<unsigned char> hltbits;
-    setHltMask(e, triggerResults, hltbits);
 
     uint32 lumi;
     if (lumiSectionInterval_ == 0) {
-      lumi = e.luminosityBlock();
+      lumi = sbuf.ls;
     } else {
       struct timeval now;
       struct timezone dummyTZ;
@@ -231,7 +242,7 @@ namespace edm {
         lumi = static_cast<uint32>(timeInSec / lumiSectionInterval_) + 1;
     }
 
-    serializer_.serializeEvent(sbuf, e, selectorCfg, compressionAlgo_, compressionLevel_, reserve_size);
+    serializer_.completeSerializeEvent(sbuf, compressionAlgo_, compressionLevel_, reserve_size);
 
     // resize header_buf_ to reserved size on first written event
     if (sbuf.header_buf_.size() < reserve_size)
@@ -239,13 +250,13 @@ namespace edm {
 
     auto msg = std::make_unique<EventMsgBuilder>(&sbuf.header_buf_[0],
                                                  sbuf.comp_buf_.size(),
-                                                 e.id().run(),
-                                                 e.id().event(),
+                                                 sbuf.run,
+                                                 sbuf.event,
                                                  lumi,
                                                  outputModuleId_,
                                                  0,
-                                                 l1bit,
-                                                 (uint8*)&hltbits[0],
+                                                 sbuf.l1bits,
+                                                 (uint8*)&sbuf.hltbits[0],
                                                  hltsize_,
                                                  (uint32)sbuf.adler32_chksum(),
                                                  host_name_);

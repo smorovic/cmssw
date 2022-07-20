@@ -136,7 +136,8 @@ process.streamB = cms.OutputModule("GlobalEvFOutputModule",
 )
 
 process.streamDQM = cms.OutputModule("GlobalEvFOutputModule",
-    SelectEvents = cms.untracked.PSet(SelectEvents = cms.vstring( 'HLT_Physics', 'HLT_Muon' ))
+    SelectEvents = cms.untracked.PSet(SelectEvents = cms.vstring( 'HLT_Physics', 'HLT_Muon' )),
+    forceAsyncCompression = cms.untracked.bool( True )
 )
 
 process.streamD = cms.OutputModule("EventStreamFileWriter",

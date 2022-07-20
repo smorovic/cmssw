@@ -54,7 +54,8 @@ namespace edm {
   void StreamerOutputModuleBase::write(EventForOutput const& e) {
     Handle<TriggerResults> const& triggerResults = getTriggerResults(trToken_, e);
 
-    std::unique_ptr<EventMsgBuilder> msg = serializeEvent(*getSerializerBuffer(), e, triggerResults, selectorConfig());
+    serializeEvent(*getSerializerBuffer(),e, triggerResults, selectorConfig());
+    std::unique_ptr<EventMsgBuilder> msg = buildEventMsg(*getSerializerBuffer());
     doOutputEvent(*msg);  // You can't use msg in StreamerOutputModuleBase after this point
   }
 

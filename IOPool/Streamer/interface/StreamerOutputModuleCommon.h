@@ -34,12 +34,16 @@ namespace edm {
                                                       ParameterSetID const& toplevel,
                                                       SendJobHeader::ParameterSetMap const* psetMap);
 
-    std::unique_ptr<EventMsgBuilder> serializeEvent(SerializeDataBuffer& sbuf,
-                                                    EventForOutput const& e,
-                                                    Handle<TriggerResults> const& triggerResults,
-                                                    ParameterSetID const& selectorCfg);
+    void serializeEvent(SerializeDataBuffer& sbuf,
+                        EventForOutput const& e,
+                        Handle<TriggerResults> const& triggerResults,
+                        ParameterSetID const& selectorCfg);
+
+    std::unique_ptr<EventMsgBuilder> buildEventMsg(SerializeDataBuffer& sbuf);
 
     SerializeDataBuffer* getSerializerBuffer();
+
+    bool useAsyncCompression() const {return useAsyncCompression_;}
 
   protected:
     std::unique_ptr<SerializeDataBuffer> serializerBuffer_;
@@ -55,6 +59,7 @@ namespace edm {
     bool useCompression_;
     std::string compressionAlgoStr_;
     int compressionLevel_;
+    bool useAsyncCompression_ = false;
 
     StreamerCompressionAlgo compressionAlgo_;
 

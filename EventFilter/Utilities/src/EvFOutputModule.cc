@@ -242,8 +242,8 @@ namespace evf {
 
     //auto lumiWriter = const_cast<EvFOutputEventWriter*>(luminosityBlockCache(e.getLuminosityBlock().index() ));
     auto lumiWriter = luminosityBlockCache(e.getLuminosityBlock().index());
-    std::unique_ptr<EventMsgBuilder> msg = jsonWriter_->streamerCommon_.serializeEvent(
-        *jsonWriter_->streamerCommon_.getSerializerBuffer(), e, triggerResults, selectorConfig());
+    jsonWriter_->streamerCommon_.serializeEvent(*jsonWriter_->streamerCommon_.getSerializerBuffer(), e, triggerResults, selectorConfig());
+    std::unique_ptr<EventMsgBuilder> msg = jsonWriter_->streamerCommon_.buildEventMsg(*jsonWriter_->streamerCommon_.getSerializerBuffer());
     lumiWriter->incAccepted();
     lumiWriter->doOutputEvent(*msg);  //msg is written and discarded at this point
   }

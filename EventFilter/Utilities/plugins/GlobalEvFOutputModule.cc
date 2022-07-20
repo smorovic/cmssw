@@ -79,6 +79,22 @@ namespace evf {
       });
     }
 
+    void doCompleteOutputEventAsync(edm::StreamerOutputModuleCommon* streamerCommon, edm::WaitingTaskHolder iHolder) {
+      throttledCheck();
+      auto group = iHolder.group();
+      writeQueue_.push(*group, [holder = std::move(iHolder), streamerCommon , this]() {
+        try {
+          auto tmp = holder;
+          std::unique_ptr<EventMsgBuilder> msg = streamerCommon->buildEventMsg(*(streamerCommon->getSerializerBuffer()));
+          doOutputEvent(*msg);  //msg is written and discarded at this point
+          //tmp.doneWaiting();
+        } catch (...) {
+          auto tmp = holder;
+          tmp.doneWaiting(std::current_exception());
+        }
+      });
+    }
+
     inline void throttledCheck() {
       unsigned int counter = 0;
       while (edm::Service<evf::EvFDaqDirector>()->inputThrottled() && !discarded_) {
@@ -186,6 +202,7 @@ namespace evf {
 
     edm::ParameterSet const& ps_;
     std::string streamLabel_;
+    bool forceAsyncCompression_;
     edm::EDGetTokenT<edm::TriggerResults> trToken_;
     edm::EDGetTokenT<edm::SendJobHeader::ParameterSetMap> psetToken_;
 
@@ -288,6 +305,7 @@ namespace evf {
         GlobalEvFOutputModuleType(ps),
         ps_(ps),
         streamLabel_(ps.getParameter<std::string>("@module_label")),
+        forceAsyncCompression_(ps.getUntrackedParameter<bool>("forceAsyncCompression", false)),
         trToken_(consumes<edm::TriggerResults>(edm::InputTag("TriggerResults"))),
         psetToken_(consumes<edm::SendJobHeader::ParameterSetMap, edm::InRun>(
             ps.getUntrackedParameter<edm::InputTag>("psetMap"))) {
@@ -337,6 +355,7 @@ namespace evf {
     GlobalEvFOutputModuleType::fillDescription(desc);
     desc.addUntracked<edm::InputTag>("psetMap", {"hltPSetMap"})
         ->setComment("Optionally allow the map of ParameterSets to be calculated externally.");
+    desc.addUntracked<bool>("forceAsyncCompression", false);
     descriptions.add("globalEvfOutputModule", desc);
   }
 
@@ -437,12 +456,23 @@ namespace evf {
     edm::Handle<edm::TriggerResults> const& triggerResults = getTriggerResults(trToken_, e);
 
     auto streamerCommon = streamCache(id);
-    std::unique_ptr<EventMsgBuilder> msg =
-        streamerCommon->serializeEvent(*streamerCommon->getSerializerBuffer(), e, triggerResults, selectorConfig());
 
     auto lumiWriter = luminosityBlockCache(e.getLuminosityBlock().index());
-    const_cast<evf::GlobalEvFOutputEventWriter*>(lumiWriter)
-        ->doOutputEventAsync(std::move(msg), iHolder.makeWaitingTaskHolderAndRelease());
+
+    if (forceAsyncCompression_ || streamerCommon->useAsyncCompression()) {
+      //serialize here, but apply compression and writeout in async tasks before holder is released (serializer buffer is in use until the last step)
+      streamerCommon->serializeEvent(*streamerCommon->getSerializerBuffer(), e, triggerResults, selectorConfig()); 
+      const_cast<evf::GlobalEvFOutputEventWriter*>(lumiWriter)
+          ->doCompleteOutputEventAsync(streamerCommon, iHolder.makeWaitingTaskHolderAndRelease());
+    }
+    else {
+      //synchronous serialization and compression, only writeout to the file is handed to the serial task queue
+      streamerCommon->serializeEvent(*streamerCommon->getSerializerBuffer(), e, triggerResults, selectorConfig());
+      std::unique_ptr<EventMsgBuilder> msg = streamerCommon->buildEventMsg(*streamerCommon->getSerializerBuffer());
+
+      const_cast<evf::GlobalEvFOutputEventWriter*>(lumiWriter)
+          ->doOutputEventAsync(std::move(msg), iHolder.makeWaitingTaskHolderAndRelease());
+    }
   }
   void GlobalEvFOutputModule::write(edm::EventForOutput const&) {}
 
