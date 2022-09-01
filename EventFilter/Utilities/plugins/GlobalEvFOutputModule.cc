@@ -32,6 +32,8 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include <sys/stat.h>
+#include <string>
+#include <sstream>
 #include <filesystem>
 #include <boost/algorithm/string.hpp>
 
@@ -43,8 +45,8 @@ namespace evf {
 
   class GlobalEvFOutputEventWriter {
   public:
-    explicit GlobalEvFOutputEventWriter(std::string const& filePath, unsigned int ls)
-        : filePath_(filePath), ls_(ls), accepted_(0), stream_writer_events_(new StreamerOutputFile(filePath)) {}
+    explicit GlobalEvFOutputEventWriter(std::string const& filePath, unsigned int ls, bool separateEvents)
+        : filePath_(filePath), ls_(ls), separateEvents_(separateEvents), accepted_(0), stream_writer_events_(new StreamerOutputFile(filePath)) {}
 
     ~GlobalEvFOutputEventWriter() {}
 
@@ -53,13 +55,20 @@ namespace evf {
       return (discarded_ || edm::Service<evf::EvFDaqDirector>()->lumisectionDiscarded(ls_));
     }
 
-    void doOutputEvent(EventMsgBuilder const& msg) {
+    void doOutputEvent(EventMsgBuilder const& msg, uint64_t eventId) {
       EventMsgView eview(msg.startAddress());
-      stream_writer_events_->write(eview);
+      if UNLIKELY (separateEvents_) {
+        std::stringstream fname;
+        fname << std::filesystem::path(filePath_).stem() << "_event" << eventId << ".dat";
+        std::unique_ptr<StreamerOutputFile> new_file_writer = std::make_unique<StreamerOutputFile>(fname.str());
+        new_file_writer->write(eview);
+      } else {
+        stream_writer_events_->write(eview);
+      }
       incAccepted();
     }
 
-    void doOutputEventAsync(std::unique_ptr<EventMsgBuilder> msg, edm::WaitingTaskHolder iHolder) {
+    void doOutputEventAsync(std::unique_ptr<EventMsgBuilder> msg, edm::WaitingTaskHolder iHolder, uint64_t eventId) {
       throttledCheck();
       discardedCheck();
       if (discarded_) {
@@ -68,10 +77,10 @@ namespace evf {
         return;
       }
       auto group = iHolder.group();
-      writeQueue_.push(*group, [holder = std::move(iHolder), msg = msg.release(), this]() {
+      writeQueue_.push(*group, [holder = std::move(iHolder), msg = msg.release(), eventId, this]() {
         try {
           std::unique_ptr<EventMsgBuilder> own(msg);
-          doOutputEvent(*msg);  //msg is written and discarded at this point
+          doOutputEvent(*msg, eventId);  //msg is written and discarded at this point
         } catch (...) {
           auto tmp = holder;
           tmp.doneWaiting(std::current_exception());
@@ -114,6 +123,7 @@ namespace evf {
   private:
     std::string filePath_;
     const unsigned ls_;
+    bool separateEvents_;
     std::atomic<unsigned long> accepted_;
     edm::propagate_const<std::unique_ptr<StreamerOutputFile>> stream_writer_events_;
     edm::SerialTaskQueue writeQueue_;
@@ -186,6 +196,7 @@ namespace evf {
 
     edm::StreamerOutputModuleCommon::Parameters commonParameters_;
     std::string streamLabel_;
+    bool separateEvents_;
     edm::EDGetTokenT<edm::TriggerResults> trToken_;
     edm::EDGetTokenT<edm::SendJobHeader::ParameterSetMap> psetToken_;
 
@@ -288,6 +299,7 @@ namespace evf {
         GlobalEvFOutputModuleType(ps),
         commonParameters_(edm::StreamerOutputModuleCommon::parameters(ps)),
         streamLabel_(ps.getParameter<std::string>("@module_label")),
+        separateEvents_(ps.getUntrackedParameter<bool>("separateEvents")),
         trToken_(consumes<edm::TriggerResults>(edm::InputTag("TriggerResults"))),
         psetToken_(consumes<edm::SendJobHeader::ParameterSetMap, edm::InRun>(
             ps.getUntrackedParameter<edm::InputTag>("psetMap"))) {
@@ -335,6 +347,7 @@ namespace evf {
     edm::ParameterSetDescription desc;
     edm::StreamerOutputModuleCommon::fillDescription(desc);
     GlobalEvFOutputModuleType::fillDescription(desc);
+    desc.addUntracked<bool>("separateEvents", false)->setComment("Split events into separate data files");
     desc.addUntracked<edm::InputTag>("psetMap", {"hltPSetMap"})
         ->setComment("Optionally allow the map of ParameterSets to be calculated externally.");
     descriptions.add("globalEvfOutputModule", desc);
@@ -429,7 +442,7 @@ namespace evf {
       edm::LuminosityBlockForOutput const& iLB) const {
     auto openDatFilePath = edm::Service<evf::EvFDaqDirector>()->getOpenDatFilePath(iLB.luminosityBlock(), streamLabel_);
 
-    return std::make_shared<GlobalEvFOutputEventWriter>(openDatFilePath, iLB.luminosityBlock());
+    return std::make_shared<GlobalEvFOutputEventWriter>(openDatFilePath, iLB.luminosityBlock(), separateEvents_);
   }
 
   void GlobalEvFOutputModule::acquire(edm::StreamID id,
@@ -443,7 +456,7 @@ namespace evf {
 
     auto lumiWriter = luminosityBlockCache(e.getLuminosityBlock().index());
     const_cast<evf::GlobalEvFOutputEventWriter*>(lumiWriter)
-        ->doOutputEventAsync(std::move(msg), iHolder.makeWaitingTaskHolderAndRelease());
+        ->doOutputEventAsync(std::move(msg), iHolder.makeWaitingTaskHolderAndRelease(), e.id().event());
   }
   void GlobalEvFOutputModule::write(edm::EventForOutput const&) {}
 

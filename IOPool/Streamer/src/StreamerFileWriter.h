@@ -15,6 +15,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <filesystem>
 
 namespace edm {
   class ParameterSetDescription;
@@ -38,7 +39,12 @@ namespace edm {
     uint32 get_adler32() const { return stream_writer_->adler32(); }
 
   private:
-    edm::propagate_const<std::unique_ptr<StreamerOutputFile>> stream_writer_;
+    std::filesystem::path fileName_;
+    bool separateEvents_;
+    bool prependInitMsg_;
+    unsigned int padding_;
+    std::unique_ptr<StreamerOutputFile> stream_writer_;
+    std::vector<char> iniBuf_;
   };
 }  // namespace edm
 #endif
