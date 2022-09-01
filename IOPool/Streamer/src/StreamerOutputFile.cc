@@ -54,6 +54,15 @@ void StreamerOutputFile::write(const InitMsgBuilder& inview) {
   return write(tmpView);
 }
 
+void StreamerOutputFile::writeBuf(char* buf, size_t size) {
+  bool ret = streamerfile_->write((const char*)buf, size);
+  if (ret) {
+    throw cms::Exception("OutputFile", "write(InitMsgView)")
+        << "Error writing streamer header data to " << streamerfile_->fileName() << ".  Possibly the output disk "
+        << "is full?" << std::endl;
+  }
+}
+
 void StreamerOutputFile::write(const InitMsgView& inview) {
   writeStart(inview);
   bool ret = streamerfile_->write((const char*)inview.descData(), inview.size() - inview.headerSize(), true);

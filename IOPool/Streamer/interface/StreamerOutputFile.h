@@ -56,6 +56,8 @@ public:
 
   void close() { streamerfile_->close(); }
 
+  void writeBuf(char* buf, size_t size);
+
 private:
   void writeEventHeader(const EventMsgView& ineview);
   void writeStart(const InitMsgView& inview);
