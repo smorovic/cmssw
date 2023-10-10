@@ -286,6 +286,7 @@ edm::RawInputSource::Next FedRawDataInputSource::checkNext() {
     }
     case evf::EvFDaqDirector::newLumi: {
       //std::cout << "--------------NEW LUMI---------------" << std::endl;
+      edm::LogError("FedSource") << "--------------NEW LUMI " << currentLumiSection_ << " returned---------------";
       return Next::kEvent;
     }
     default: {
@@ -908,6 +909,7 @@ void FedRawDataInputSource::readSupervisor() {
             stop = true;
             break;
           }
+	  edm::LogError("FedSource") << " current LS:" << currentLumiSection << "  new lsRaw:" << lsFromRaw << "  ls:" << ls;
           if (!getLSFromFilename_)
             ls = lsFromRaw;
         }
@@ -973,11 +975,14 @@ void FedRawDataInputSource::readSupervisor() {
       if (getLSFromFilename_) {
         if (ls > currentLumiSection) {
           if (!useFileBroker_) {
+	    std::cout << " queuing new LS ......" << std::endl;
             //file locking
             //setMonStateSup(inSupNewLumi);
             currentLumiSection = ls;
             std::unique_ptr<InputFile> inf(new InputFile(evf::EvFDaqDirector::newLumi, currentLumiSection));
             fileQueue_.push(std::move(inf));
+	    //TEST
+	    if (currentLumiSection != 0) usleep(10000000);
           } else {
             //new file service
             if (currentLumiSection == 0 && !alwaysStartFromFirstLS_) {

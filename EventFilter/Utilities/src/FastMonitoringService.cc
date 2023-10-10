@@ -493,6 +493,8 @@ namespace evf {
   }
 
   void FastMonitoringService::preGlobalBeginLumi(edm::GlobalContext const& gc) {
+    unsigned int lumiTest = gc.luminosityBlockID().luminosityBlock();
+    edm::LogError("FMS") << "PRE GLOBAL Lumi BEGIN. LUMI -: " << lumiTest;
     timeval lumiStartTime;
     gettimeofday(&lumiStartTime, nullptr);
     unsigned int newLumi = gc.luminosityBlockID().luminosityBlock();
@@ -504,6 +506,7 @@ namespace evf {
 
   void FastMonitoringService::preGlobalEndLumi(edm::GlobalContext const& gc) {
     unsigned int lumi = gc.luminosityBlockID().luminosityBlock();
+    edm::LogError("FMS") << "PRE GLOBAL Lumi ended. LUMI -: " << lumi;
     LogDebug("FastMonitoringService") << "Lumi ended. Writing JSON information. LUMI -: " << lumi;
     timeval lumiStopTime;
     gettimeofday(&lumiStopTime, nullptr);
@@ -588,6 +591,8 @@ namespace evf {
   }
 
   void FastMonitoringService::postGlobalEndLumi(edm::GlobalContext const& gc) {
+    //unsigned int lumiTest = gc.luminosityBlockID().luminosityBlock();
+    //edm::LogError("FMS") << "POST GLOBAL Lumi ended. LUMI -: " << lumiTest;
     std::lock_guard<std::mutex> lock(fmt_->monlock_);
     unsigned int lumi = gc.luminosityBlockID().luminosityBlock();
     //LS monitoring snapshot with input source data has been taken in previous callback
@@ -601,6 +606,9 @@ namespace evf {
 
   void FastMonitoringService::preStreamBeginLumi(edm::StreamContext const& sc) {
     unsigned int sid = sc.streamID().value();
+
+    //unsigned int lumi = sc.eventID().luminosityBlock();
+    //edm::LogError("FMS") << "PRE Stream Begin LUMI -: " << lumi << " stream:" << sc;
 
     std::lock_guard<std::mutex> lock(fmt_->monlock_);
     fmt_->m_data.streamLumi_[sid] = sc.eventID().luminosityBlock();
@@ -618,6 +626,10 @@ namespace evf {
 
   void FastMonitoringService::preStreamEndLumi(edm::StreamContext const& sc) {
     unsigned int sid = sc.streamID().value();
+
+    //unsigned int lumi = sc.eventID().luminosityBlock();
+    //edm::LogError("FMS") << "PRE Stream End LUMI -: " << lumi << " stream:" << sc;
+
     std::lock_guard<std::mutex> lock(fmt_->monlock_);
 
     //update processed count to be complete at this time
@@ -628,6 +640,10 @@ namespace evf {
     fmt_->m_data.microstate_[sid] = &reservedMicroStateNames[FastMonState::mEoL];
   }
   void FastMonitoringService::postStreamEndLumi(edm::StreamContext const& sc) {
+
+    //unsigned int lumi = sc.eventID().luminosityBlock();
+    //edm::LogError("FMS") << "POST Stream End LUMI -: " << lumi << " stream:" << sc;
+
     fmt_->m_data.microstate_[sc.streamID().value()] = &reservedMicroStateNames[FastMonState::mFwkEoL];
   }
 
