@@ -3,6 +3,7 @@
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ServiceRegistry/interface/ActivityRegistry.h"
+#include "FWCore/ServiceRegistry/interface/StreamContext.h"
 #include "DataFormats/Provenance/interface/EventID.h"
 #include "DataFormats/Provenance/interface/LuminosityBlockID.h"
 #include "DataFormats/Provenance/interface/Timestamp.h"
@@ -20,6 +21,7 @@
 #include <queue>
 #include <sstream>
 #include <unordered_map>
+#include "oneapi/tbb/task_arena.h"
 
 /*Description
   this is an evolution of the MicroStateService intended to be run in standalone multi-threaded cmsRun jobs
@@ -200,10 +202,6 @@ namespace evf {
     void preSourceEarlyTermination(edm::TerminationOrigin);
     void setExceptionDetected(unsigned int ls);
 
-    //this is still needed for use in special functions like DQM which are in turn framework services
-    void setMicroState(FastMonState::Microstate);
-    void setMicroState(edm::StreamID, FastMonState::Microstate);
-
     void accumulateFileSize(unsigned int lumi, unsigned long fileSize);
     void startedLookingForFile();
     void stoppedLookingForFile(unsigned int lumi);
@@ -224,6 +222,14 @@ namespace evf {
     void setInState(FastMonState::InputState inputState) { inputState_ = inputState; }
     void setInStateSup(FastMonState::InputState inputState) { inputSupervisorState_ = inputState; }
 
+    unsigned int getTID(edm::StreamContext const& sc) const {
+      return tbbMonitoringMode_ ? tbb::this_task_arena::current_thread_index() : sc.streamID().value();
+    }
+
+    unsigned int getTID(edm::StreamID const& sid) const {
+      return tbbMonitoringMode_ ? tbb::this_task_arena::current_thread_index() : sid.value();
+    }
+
   private:
     void doSnapshot(const unsigned int ls, const bool isGlobalEOL);
 
@@ -239,7 +245,9 @@ namespace evf {
     std::atomic<FastMonState::InputState> inputSupervisorState_{FastMonState::InputState::inInit};
 
     unsigned int nStreams_;
+    unsigned int nMonThreads_;
     unsigned int nThreads_;
+    bool tbbMonitoringMode_;
     int sleepTime_;
     unsigned int fastMonIntervals_;
     unsigned int snapCounter_ = 0;
