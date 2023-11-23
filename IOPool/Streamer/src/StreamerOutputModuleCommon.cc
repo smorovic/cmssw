@@ -227,8 +227,13 @@ namespace edm {
       double timeInSec =
           static_cast<double>(now.tv_sec) + (static_cast<double>(now.tv_usec) / 1000000.0) - timeInSecSinceUTC;
       // what about overflows?
-      if (lumiSectionInterval_ > 0)
+      if (lumiSectionInterval_ > 0) {
+	//decrease lumisection number from 1
         lumi = static_cast<uint32>(timeInSec / lumiSectionInterval_) + 1;
+      } else {
+	//start decreasing lumisection number from 1000 if parameter is negative
+	lumi = static_cast<uint32>(std::max(1000 - (int)(timeInSec / -lumiSectionInterval_), 1));
+      }
     }
 
     serializer_.serializeEvent(sbuf, e, selectorCfg, compressionAlgo_, compressionLevel_, reserve_size);
