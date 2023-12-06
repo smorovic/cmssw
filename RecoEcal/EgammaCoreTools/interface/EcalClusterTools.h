@@ -99,6 +99,10 @@ public:
                     const EcalRecHitCollection *recHits,
                     const CaloTopology *topology);
 
+  static float e2x2MaxFrom3x3(const reco::BasicCluster &cluster,
+                              const EcalRecHitCollection *recHits,
+                              const CaloTopology *topology);
+
   static float e3x2(const reco::BasicCluster &cluster,
                     const EcalRecHitCollection *recHits,
                     const CaloTopology *topology);
@@ -501,6 +505,22 @@ float EcalClusterToolsT<noZS>::e2x2(const reco::BasicCluster &cluster,
   max_E = std::max(max_E, matrixEnergy(cluster, recHits, topology, id, {0, 1, 0, 1}));
   max_E = std::max(max_E, matrixEnergy(cluster, recHits, topology, id, {0, 1, -1, 0}));
   return max_E;
+}
+
+//s4 or e2x2Max
+template <bool noZS>
+float EcalClusterToolsT<noZS>::e2x2MaxFrom3x3(const reco::BasicCluster &cluster,
+                                    const EcalRecHitCollection *recHits,
+                                    const CaloTopology *topology) {
+  DetId id = getMaximum(cluster.hitsAndFractions(), recHits).first;
+  std::list<float> energies;
+  float max2x2 = 0.;
+  for (size_t i=-1; i < 1; i++)
+    for (size_t j=-1; j < 1; j++) {
+        float e2x2 =  matrixEnergy(cluster, recHits, topology, id, {i, i + 1, j, j + 1});
+	max2x2 = std::max(max2x2, e2x2);
+  }
+  return max2x2;
 }
 
 template <bool noZS>

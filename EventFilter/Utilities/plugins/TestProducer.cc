@@ -9,7 +9,7 @@
 #include "DataFormats/EgammaReco/interface/SuperCluster.h"
 #include "DataFormats/EgammaReco/interface/SuperClusterFwd.h"
 #include "DataFormats/Common/interface/AssociationMap.h"
-//#include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
+
 
 
   TestProducer::TestProducer(edm::ParameterSet const& config) :
@@ -17,9 +17,12 @@
       tokenR9_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagR9"))), //cms.InputTag( 'hltEgammaR9IDUnseeded','r95x5' )
       tokenHoE_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagHoE"))), //cms.InputTag( "hltEgammaHoverE" )
       tokenSigmaiEtaiEta_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagSigmaiEtaiEta"))), //('hltEgammaClusterShapeUnseeded','sigmaIEtaIEta5x5NoiseCleaned' or 'sigmaIEtaIEta5x5' only)
-      tokenIso_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagIso"))) //cms.InputTag( "hltEgammaEcalPFClusterIsoUnseeded" ) or cms.InputTag( "hltEgammaHollowTrackIsoUnseeded" ) ?
-  {
+      tokenIso_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagIso"))), //cms.InputTag( "hltEgammaEcalPFClusterIsoUnseeded" ) or cms.InputTag( "hltEgammaHollowTrackIsoUnseeded" ) ?
 
+      ecalRechitEBToken_(consumes(config.getParameter<edm::InputTag>("ecalRechitEB"))),
+      ecalRechitEEToken_(consumes(config.getParameter<edm::InputTag>("ecalRechitEE"))),
+      ecalClusterToolsESGetTokens_(consumesCollector())
+  {
     produces<std::vector<float>>();
   }
 
@@ -63,6 +66,8 @@
     edm::Handle<reco::RecoEcalCandidateIsolationMap> isoMap;
     event.getByToken(tokenIso_, isoMap);
 
+    auto const& ecalClusterToolsESData = ecalClusterToolsESGetTokens_.get(setup);
+    EcalClusterLazyTools lazyTools(event, ecalClusterToolsESData, ecalRechitEBToken_, ecalRechitEEToken_);
 
     // look at all photons, check cuts and add to filter object
     for (unsigned int i = 0; i < recoecalcands.size(); i++) {
@@ -87,6 +92,9 @@
         scEnergy = 0.;
       if (scEt < 0.)
         scEt = 0.; /* first and second order terms assume non-negative energies */
+
+      //calculate maximum energy 2x2 cluster in 4x4
+      float s4 = lazyTools.s4(*(ref->superCluster()->seed()));
 
       //TODO: calculate S4 -> possibly make a new egamma producer and/or implement S4 in EcalLazyTools which needs access to rechits
 

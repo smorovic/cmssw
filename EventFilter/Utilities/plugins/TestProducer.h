@@ -11,6 +11,8 @@
 #include "DataFormats/HLTReco/interface/TriggerFilterObjectWithRefs.h"
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidateIsolation.h"
 
+#include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
+#include "RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h"
 namespace edm {
   class ConfigurationDescriptions;
 }
@@ -29,6 +31,11 @@ private:
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenHoE_;
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenSigmaiEtaiEta_;
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenIso_;
+
+  const edm::EDGetTokenT<EcalRecHitCollection> ecalRechitEBToken_;
+  const edm::EDGetTokenT<EcalRecHitCollection> ecalRechitEEToken_;
+  const EcalClusterLazyTools::ESGetTokens ecalClusterToolsESGetTokens_;
+
 };
 
 #endif
