@@ -34,7 +34,7 @@
     desc.add<edm::InputTag>("inputTagSigmaiEtaiEta");
   }
 
-  void TestProducer::produce(edm::StreamID sid, edm::Event& event, edm::EventSetup const& setup) const {
+  void TestProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
 
     // Ref to Candidate object to be recorded in filter object
     edm::Ref<reco::RecoEcalCandidateCollection> ref;
