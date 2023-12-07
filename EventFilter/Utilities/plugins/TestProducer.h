@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include <FWCore/Framework/interface/global/EDProducer.h>
+#include <FWCore/Framework/interface/stream/EDProducer.h>
 #include <FWCore/Framework/interface/Event.h>
 #include <FWCore/ParameterSet/interface/ParameterSet.h>
 #include <FWCore/Utilities/interface/InputTag.h>
@@ -17,15 +17,16 @@ namespace edm {
   class ConfigurationDescriptions;
 }
 
-class TestProducer : public edm::global::EDProducer<> {
+class TestProducer : public edm::stream::EDProducer<> {
 public:
   explicit TestProducer(edm::ParameterSet const &);
   ~TestProducer() override {}
 
-  void produce(edm::StreamID, edm::Event &, edm::EventSetup const &) const final;
   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
 
 private:
+  void produce(edm::Event &, edm::EventSetup const &) override;
+
   edm::EDGetTokenT<trigger::TriggerFilterObjectWithRefs> candToken_;
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenR9_;
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenHoE_;
