@@ -515,8 +515,8 @@ float EcalClusterToolsT<noZS>::e2x2MaxFrom3x3(const reco::BasicCluster &cluster,
   DetId id = getMaximum(cluster.hitsAndFractions(), recHits).first;
   std::list<float> energies;
   float max2x2 = 0.;
-  for (size_t i=-1; i < 1; i++)
-    for (size_t j=-1; j < 1; j++) {
+  for (int i=-1; i < 1; i++)
+    for (int j=-1; j < 1; j++) {
         float e2x2 =  matrixEnergy(cluster, recHits, topology, id, {i, i + 1, j, j + 1});
 	max2x2 = std::max(max2x2, e2x2);
   }

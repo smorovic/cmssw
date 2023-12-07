@@ -8,6 +8,7 @@
   <use name="FWCore/Sources"/>
   <use name="FWCore/Utilities"/>
   <use name="IOPool/Streamer"/>
+  <use name="RecoEcal/EgammaCoreTools"/>
   <use name="CLHEP"/>
   <use name="boost"/>
   <use name="root"/>
