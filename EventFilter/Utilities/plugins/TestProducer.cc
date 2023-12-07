@@ -12,7 +12,7 @@
 
 
 
-  TestProducer::TestProducer(edm::ParameterSet const& config) :
+TestProducer::TestProducer(edm::ParameterSet const& config) :
       candToken_(consumes<trigger::TriggerFilterObjectWithRefs>(config.getParameter<edm::InputTag>("candTag"))),
       tokenR9_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagR9"))), //cms.InputTag( 'hltEgammaR9IDUnseeded','r95x5' )
       tokenHoE_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagHoE"))), //cms.InputTag( "hltEgammaHoverE" )
@@ -93,17 +93,22 @@
       if (scEt < 0.)
         scEt = 0.; /* first and second order terms assume non-negative energies */
 
-      //calculate maximum energy 2x2 cluster in 4x4
+      //calculate maximum energy 2x2 cluster in 3x3
       float s4 = lazyTools.s4(*(ref->superCluster()->seed()));
 
       //TODO: calculate S4 -> possibly make a new egamma producer and/or implement S4 in EcalLazyTools which needs access to rechits
 
-      //TODO: do MVA
-      std::cout << EtaSC << " " << PhiSC << " " << r9 << " " << hoe << " " << siEtaiEta << " " << iso << " " << rawE << " " << etaW << " " << phiW << " " << scEt << std::endl;
+      //TODO: do MVA calculation with cand pairs
+      std::cout << EtaSC << " " << PhiSC << " " << r9 << " " << hoe << " "
+	        << siEtaiEta << " " << iso << " " << rawE << " " << etaW << " "
+		<< phiW << " " << scEt << " " << s4 << std::endl;
+    }
+
+    //TODO :nsert here MVA results into a vector pushed here
+    std::unique_ptr<std::vector<float>> pi(new std::vector<float>());
+    event.put(std::move(pi));
+
   }
 
-  //TODO :nsert here MVA results
-  std::unique_ptr<std::vector<float>> pi(new std::vector<float>());
-  event.put(std::move(pi));
-
-}  // namespace evf
+#include "FWCore/Framework/interface/MakerMacros.h"
+DEFINE_FWK_MODULE(TestProducer);
