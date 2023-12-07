@@ -100,10 +100,10 @@
 
       //TODO: do MVA
       std::cout << EtaSC << " " << PhiSC << " " << r9 << " " << hoe << " " << siEtaiEta << " " << iso << " " << rawE << " " << etaW << " " << phiW << " " << scEt << std::endl;
-
-      //TODO :nsert here MVA result
-      std::unique_ptr<std::vector<float>> pi(new std::vector<float>());
-      event.put(std::move(pi));
   }
+
+  //TODO :nsert here MVA results
+  std::unique_ptr<std::vector<float>> pi(new std::vector<float>());
+  event.put(std::move(pi));
 
 }  // namespace evf
