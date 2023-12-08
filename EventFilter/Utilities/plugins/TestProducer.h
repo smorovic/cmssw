@@ -17,17 +17,18 @@ namespace edm {
   class ConfigurationDescriptions;
 }
 
-class TestProducer : public edm::stream::EDProducer<> {
+class MVATestProducer : public edm::stream::EDProducer<> {
 public:
-  explicit TestProducer(edm::ParameterSet const &);
-  ~TestProducer() override {}
+  explicit MVATestProducer(edm::ParameterSet const &);
+  ~MVATestProducer() override {}
 
   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
 
 private:
   void produce(edm::Event &, edm::EventSetup const &) override;
 
-  edm::EDGetTokenT<trigger::TriggerFilterObjectWithRefs> candToken_;
+  //edm::EDGetTokenT<trigger::TriggerFilterObjectWithRefs> candToken_; //use if reading from a filter
+  edm::EDGetTokenT<reco::RecoEcalCandidateCollection> candToken_; //use if reading from a producer
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenR9_;
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenHoE_;
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenSigmaiEtaiEta_;
