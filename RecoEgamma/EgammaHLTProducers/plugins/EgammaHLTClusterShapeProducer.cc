@@ -63,6 +63,7 @@ EgammaHLTClusterShapeProducer::EgammaHLTClusterShapeProducer(const edm::Paramete
   produces<reco::RecoEcalCandidateIsolationMap>("sigmaIPhiIPhi");
   produces<reco::RecoEcalCandidateIsolationMap>("sigmaIPhiIPhi5x5");
   produces<reco::RecoEcalCandidateIsolationMap>("sigmaIPhiIPhi5x5NoiseCleaned");
+  produces<reco::RecoEcalCandidateIsolationMap>("e2x2");
 }
 
 EgammaHLTClusterShapeProducer::~EgammaHLTClusterShapeProducer() {}
@@ -101,6 +102,8 @@ void EgammaHLTClusterShapeProducer::produce(edm::StreamID sid,
   reco::RecoEcalCandidateIsolationMap clsh5x5Map2(recoecalcandHandle);
   reco::RecoEcalCandidateIsolationMap clsh5x5NoiseCleanedMap2(recoecalcandHandle);
 
+  reco::RecoEcalCandidateIsolationMap e2x2Map(recoecalcandHandle);
+
   for (unsigned int iRecoEcalCand = 0; iRecoEcalCand < recoecalcandHandle->size(); iRecoEcalCand++) {
     reco::RecoEcalCandidateRef recoecalcandref(recoecalcandHandle, iRecoEcalCand);
     if (recoecalcandref->superCluster()->seed()->seed().det() != DetId::Ecal) {  //HGCAL, skip for now
@@ -111,6 +114,8 @@ void EgammaHLTClusterShapeProducer::produce(edm::StreamID sid,
       clshMap2.insert(recoecalcandref, 0);
       clsh5x5Map2.insert(recoecalcandref, 0);
       clsh5x5NoiseCleanedMap2.insert(recoecalcandref, 0);
+
+      e2x2Map.insert(recoecalcandref, 0);
 
       continue;
     }
@@ -153,6 +158,9 @@ void EgammaHLTClusterShapeProducer::produce(edm::StreamID sid,
     clshMap2.insert(recoecalcandref, sigmapp);
     clsh5x5Map2.insert(recoecalcandref, sigmapp5x5);
     clsh5x5NoiseCleanedMap2.insert(recoecalcandref, sigmapp5x5NoiseCleaned);
+
+    auto const e2x2 = lazyTools.e2x2(*(recoecalcandref->superCluster()->seed()));
+    e2x2Map.insert(recoecalcandref, sigmaee);
   }
 
   iEvent.put(std::make_unique<reco::RecoEcalCandidateIsolationMap>(clshMap));
@@ -164,6 +172,8 @@ void EgammaHLTClusterShapeProducer::produce(edm::StreamID sid,
   iEvent.put(std::make_unique<reco::RecoEcalCandidateIsolationMap>(clsh5x5Map2), "sigmaIPhiIPhi5x5");
   iEvent.put(std::make_unique<reco::RecoEcalCandidateIsolationMap>(clsh5x5NoiseCleanedMap2),
              "sigmaIPhiIPhi5x5NoiseCleaned");
+
+  iEvent.put(std::make_unique<reco::RecoEcalCandidateIsolationMap>(e2x2Map), "e2x2");
 }
 
 #include "FWCore/Framework/interface/MakerMacros.h"
