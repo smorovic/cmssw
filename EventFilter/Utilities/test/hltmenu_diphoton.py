@@ -10389,13 +10389,13 @@ process.HLTDiphotonMVATestProducer = cms.EDProducer("MVATestProducer",
     inputTagR9 = cms.InputTag("hltEgammaR9IDUnseeded", "r95x5"),
     inputTagHoE = cms.InputTag("hltEgammaHoverEUnseeded"),
     inputTagSigmaiEtaiEta = cms.InputTag("hltEgammaClusterShapeUnseeded", "sigmaIEtaIEta5x5NoiseCleaned"),
+    inputTagE2x2 = cms.InputTag("hltEgammaClusterShapeUnseeded", "e2x2"),
     inputTagIso = cms.InputTag("hltEgammaEcalPFClusterIsoUnseeded"),
-    ecalRechitEB = cms.InputTag( 'hltEcalRecHit','EcalRecHitsEB' ),
-    ecalRechitEE = cms.InputTag( 'hltEcalRecHit','EcalRecHitsEE' ),
     mvaFileB = cms.FileInPath("EventFilter/Utilities/test/M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Barrel.xml"),
-    mvaFileE = cms.FileInPath("EventFilter/Utilities/test//M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Endcap.xml")
+    mvaFileE = cms.FileInPath("EventFilter/Utilities/test/M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Endcap.xml")
 )
 process.HLTDiphotonMVATestFilter = cms.EDFilter("MVATestFilter",
+    candTag = cms.InputTag( "hltEgammaCandidatesUnseeded" ),
     inputTag = cms.InputTag( "HLTDiphotonMVATestProducer" ),
 )
 

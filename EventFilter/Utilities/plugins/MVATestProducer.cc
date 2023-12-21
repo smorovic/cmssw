@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "TestProducer.h"
+#include "MVATestProducer.h"
 
 #include <FWCore/ParameterSet/interface/ConfigurationDescriptions.h>
 #include <FWCore/ParameterSet/interface/ParameterSetDescription.h>
@@ -130,7 +130,7 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
 
     //std::unique_ptr<std::vector<float>> pi(new std::vector<float>());
     //event.put(std::move(pi));
-    iEvent.put(std::make_unique<reco::RecoEcalCandidateIsolationMap>(mvaScoreMap));
+    event.put(std::make_unique<reco::RecoEcalCandidateIsolationMap>(mvaScoreMap));
 
   }
 
