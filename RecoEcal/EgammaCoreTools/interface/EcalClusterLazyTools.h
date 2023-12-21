@@ -186,11 +186,6 @@ public:
   float e5x1(const reco::BasicCluster &cluster) const {
     return ClusterTools::e5x1(cluster, getEcalRecHitCollection(cluster), topology_);
   }
-
-  float s4(const reco::BasicCluster &cluster) const {
-    return ClusterTools::e2x2MaxFrom3x3(cluster, getEcalRecHitCollection(cluster), topology_);
-  }
-
   float e2x2(const reco::BasicCluster &cluster) const {
     return ClusterTools::e2x2(cluster, getEcalRecHitCollection(cluster), topology_);
   }
