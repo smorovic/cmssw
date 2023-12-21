@@ -160,7 +160,7 @@ void EgammaHLTClusterShapeProducer::produce(edm::StreamID sid,
     clsh5x5NoiseCleanedMap2.insert(recoecalcandref, sigmapp5x5NoiseCleaned);
 
     auto const e2x2 = lazyTools.e2x2(*(recoecalcandref->superCluster()->seed()));
-    e2x2Map.insert(recoecalcandref, sigmaee);
+    e2x2Map.insert(recoecalcandref, e2x2);
   }
 
   iEvent.put(std::make_unique<reco::RecoEcalCandidateIsolationMap>(clshMap));
