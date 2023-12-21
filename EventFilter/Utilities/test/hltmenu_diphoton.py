@@ -10392,6 +10392,8 @@ process.HLTDiphotonMVATestProducer = cms.EDProducer("MVATestProducer",
     inputTagIso = cms.InputTag("hltEgammaEcalPFClusterIsoUnseeded"),
     ecalRechitEB = cms.InputTag( 'hltEcalRecHit','EcalRecHitsEB' ),
     ecalRechitEE = cms.InputTag( 'hltEcalRecHit','EcalRecHitsEE' ),
+    mvaFileB = cms.FileInPath("EventFilter/Utilities/test/M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Barrel.xml"),
+    mvaFileE = cms.FileInPath("EventFilter/Utilities/test//M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Endcap.xml")
 )
 process.HLTDiphotonMVATestFilter = cms.EDFilter("MVATestFilter",
     inputTag = cms.InputTag( "HLTDiphotonMVATestProducer" ),
