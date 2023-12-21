@@ -9,6 +9,7 @@
 <use name="FWCore/ServiceRegistry"/>
 <use name="FWCore/Sources"/>
 <use name="IOPool/Streamer"/>
+<use name="CommonTools/MVAUtils"/>
 <export>
   <lib name="1"/>
 </export>

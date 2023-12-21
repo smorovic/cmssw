@@ -13,6 +13,9 @@
 
 #include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
 #include "RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h"
+
+#include "EventFilter/Utilities/interface/photonMvaEstimator.h"
+
 namespace edm {
   class ConfigurationDescriptions;
 }
@@ -37,6 +40,12 @@ private:
   const edm::EDGetTokenT<EcalRecHitCollection> ecalRechitEBToken_;
   const edm::EDGetTokenT<EcalRecHitCollection> ecalRechitEEToken_;
   const EcalClusterLazyTools::ESGetTokens ecalClusterToolsESGetTokens_;
+
+  const edm::FileInPath mvaFileB_;
+  const edm::FileInPath mvaFileE_;
+
+  std::unique_ptr<const photonMvaEstimator> mvaEstimatorB_;
+  std::unique_ptr<const photonMvaEstimator> mvaEstimatorE_;
 
 };
 

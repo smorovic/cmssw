@@ -29,8 +29,12 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
 //       edm::InputTag( "hltEgammaEcalPFClusterIsoUnseeded" )))// or cms.InputTag( "hltEgammaHollowTrackIsoUnseeded" )
       ecalRechitEBToken_(consumes(config.getParameter<edm::InputTag>("ecalRechitEB"))), //will move to ClusterShapeProducer
       ecalRechitEEToken_(consumes(config.getParameter<edm::InputTag>("ecalRechitEE"))),
-      ecalClusterToolsESGetTokens_(consumesCollector())
+      ecalClusterToolsESGetTokens_(consumesCollector()),
+      mvaFileB_(config.getParameter<edm::FileInPath>("mvaFileB")),
+      mvaFileE_(config.getParameter<edm::FileInPath>("mvaFileE"))
   {
+    mvaEstimatorB_ = std::make_unique<photonMvaEstimator>(mvaFileB_);
+    mvaEstimatorE_ = std::make_unique<photonMvaEstimator>(mvaFileE_);
     produces<std::vector<float>>();
   }
 
@@ -41,6 +45,10 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
     desc.add<edm::InputTag>("inputTagHoE", edm::InputTag("hltEgammaHoverEUnseeded"));
     desc.add<edm::InputTag>("inputTagSigmaiEtaiEta", edm::InputTag("hltEgammaClusterShapeUnseeded", "sigmaIEtaIEta5x5NoiseCleaned"));
     desc.add<edm::InputTag>("inputTagIso", edm::InputTag("hltEgammaEcalPFClusterIsoUnseeded"));
+    desc.add<edm::FileInPath>("mvaFileB",
+                              edm::FileInPath("/afs/cern.ch/work/r/rlee/public/CMSSW_13_3_0/src/xgbModels/M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Barrel.xml"));
+    desc.add<edm::FileInPath>("mvaFileE",
+                              edm::FileInPath("/afs/cern.ch/work/r/rlee/public/CMSSW_13_3_0/src/xgbModels/M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Endcap.xml"));
   }
 
   void MVATestProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
@@ -103,26 +111,19 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
 
     //endif
 
-      edm::LogWarning("MVATestProducer") << " cand 1";
 
       float EtaSC = ref->eta();
       float PhiSC = ref->phi();
 
       //reco::RecoEcalCandidateIsolationMap::const_iterator r9i = (*r9Map).find(ref);
-      edm::LogWarning("MVATestProducer") << " cand 2";
       float r9 = (*r9Map).find(ref)->val;
-      edm::LogWarning("MVATestProducer") << " cand 3";
       float hoe = (*hoEMap).find(ref)->val;
-      edm::LogWarning("MVATestProducer") << " cand 4";
       float siEtaiEta = (*sigmaiEtaiEtaMap).find(ref)->val;
-      edm::LogWarning("MVATestProducer") << " cand 5";
       float iso = (*isoMap).find(ref)->val;
-      edm::LogWarning("MVATestProducer") << " cand 5";
 
       float rawE = ref->superCluster()->rawEnergy();
       float etaW = ref->superCluster()->etaWidth();
       float phiW = ref->superCluster()->phiWidth();
-      edm::LogWarning("MVATestProducer") << " cand 6";
 
       float scEnergy = ref->superCluster()->energy();
       float scEt = scEnergy * sin(2 * atan(exp(-EtaSC)));
@@ -131,17 +132,19 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
       if (scEt < 0.)
         scEt = 0.; /* first and second order terms assume non-negative energies */
 
-      edm::LogWarning("MVATestProducer") << " cand 7";
       //calculate maximum energy 2x2 cluster in 3x3
       float s4 = lazyTools.s4(*(ref->superCluster()->seed()));
-      edm::LogWarning("MVATestProducer") << " cand 8";
 
       //TODO: calculate S4 -> possibly make a new egamma producer and/or implement S4 in EcalLazyTools which needs access to rechits
 
       //TODO: do MVA calculation with cand pairs
-      edm::LogWarning("DiphotonMVAMVATestProducer") << EtaSC << " " << PhiSC << " " << r9 << " " << hoe << " "
-	        << siEtaiEta << " " << iso << " " << rawE << " " << etaW << " "
-		<< phiW << " " << scEt << " " << s4;
+      float photonScore = 0;
+      if (abs(EtaSC) < 1.5) photonScore = mvaEstimatorB_->computeMva(rawE,r9,siEtaiEta,etaW,phiW,s4,EtaSC,hoe,iso);
+      if (abs(EtaSC) > 1.5) photonScore = mvaEstimatorE_->computeMva(rawE,r9,siEtaiEta,etaW,phiW,s4,EtaSC,hoe,iso);
+
+      edm::LogWarning("DiphotonMVAMVATestProducer") << "PhotonScore:" << photonScore << " variables: EtaSC:" << EtaSC << " PhiSC:" << PhiSC << " R9:" << r9 << " HOE:" << hoe
+                << " sihih:" << siEtaiEta << " iso:" << iso << " rawE:" << rawE << " etaW:" << etaW
+                << " phiW:" << phiW << " scEt:" << scEt << " s4:" << s4;
     }
       edm::LogWarning("DiphotonMVAMVATestProducer") << "END";
 
