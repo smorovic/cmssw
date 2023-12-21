@@ -134,6 +134,8 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
 
       //calculate maximum energy 2x2 cluster in 3x3
       float s4 = lazyTools.s4(*(ref->superCluster()->seed()));
+      float e2x2 = lazyTools.e2x2(*(ref->superCluster()->seed()));
+      std::cout << "s4: " << s4 << " e2x2:" << e2x2 << std::endl;
 
       //TODO: calculate S4 -> possibly make a new egamma producer and/or implement S4 in EcalLazyTools which needs access to rechits
 
