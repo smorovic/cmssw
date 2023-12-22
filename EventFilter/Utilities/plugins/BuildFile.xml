@@ -9,6 +9,7 @@
   <use name="FWCore/Utilities"/>
   <use name="IOPool/Streamer"/>
   <use name="RecoEcal/EgammaCoreTools"/>
+  <use name="HLTrigger/HLTcore"/>
   <use name="CLHEP"/>
   <use name="boost"/>
   <use name="root"/>
