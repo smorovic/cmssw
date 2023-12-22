@@ -118,7 +118,7 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
       //TODO: do MVA calculation with cand pairs?
       float photonScore = 0;
       if (abs(EtaSC) < 1.5) photonScore = mvaEstimatorB_->computeMva(rawE,r9,siEtaiEta,etaW,phiW,e2x2,EtaSC,hoe,iso);
-      if (abs(EtaSC) > 1.5) photonScore = mvaEstimatorE_->computeMva(rawE,r9,siEtaiEta,etaW,phiW,e2x2,EtaSC,hoe,iso);
+      if (abs(EtaSC) >= 1.5) photonScore = mvaEstimatorE_->computeMva(rawE,r9,siEtaiEta,etaW,phiW,e2x2,EtaSC,hoe,iso);
 
       edm::LogWarning("DiphotonMVAMVATestProducer") << "PhotonScore:" << photonScore << " variables: EtaSC:" << EtaSC << " PhiSC:" << PhiSC << " R9:" << r9 << " HOE:" << hoe
                 << " sihih:" << siEtaiEta << " iso:" << iso << " rawE:" << rawE << " etaW:" << etaW
