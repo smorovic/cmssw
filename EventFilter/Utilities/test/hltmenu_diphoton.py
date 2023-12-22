@@ -10394,9 +10394,13 @@ process.HLTDiphotonMVATestProducer = cms.EDProducer("MVATestProducer",
     mvaFileB = cms.FileInPath("EventFilter/Utilities/test/M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Barrel.xml"),
     mvaFileE = cms.FileInPath("EventFilter/Utilities/test/M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Endcap.xml")
 )
-process.HLTDiphotonMVATestFilter = cms.EDFilter("MVATestFilter",
+process.HLTDiphotonMVATestCombFilter = cms.EDFilter("MVATestCombFilter",
+    saveTags = cms.bool( False ),
+    minMass = cms.double(95),
+    mvaMinBarrel = cms.double(0.5),
+    mvaMinEndcap = cms.double(0.5),
     candTag = cms.InputTag( "hltEgammaCandidatesUnseeded" ),
-    inputTag = cms.InputTag( "HLTDiphotonMVATestProducer" ),
+    mvaPhotonTag = cms.InputTag( "HLTDiphotonMVATestProducer" ),
 )
 
 process.hltEgammaR9IDUnseeded = cms.EDProducer( "EgammaHLTR9IDProducer",
@@ -11718,7 +11722,7 @@ process.HLT_Diphoton30_22_R9Id_OR_IsoCaloId_AND_HE_R9Id_Mass90_v19 = cms.Path( p
 process.HLT_Diphoton30_22_R9Id_OR_IsoCaloId_AND_HE_R9Id_Mass95_v19 = cms.Path( process.HLTBeginSequence + process.hltL1sSingleAndDoubleEGor + process.hltPreDiphoton3022R9IdORIsoCaloIdANDHER9IdMass95 + process.HLTDiphoton30L22R9Id85b90eORIso60CaloId15b35eANDHE12R9Id50b80eSequence + process.hltDiEG22R9Id85b95eORIso60CaloId15b35eANDHE12R9Id50b80eMass95CombMassLastFilter + process.HLTEndSequence )
 
 #NEW PATH
-process.HLT_Diphoton_MVATest = cms.Path( process.HLTBeginSequence + process.hltL1sSingleAndDoubleEGor + process.hltPreDiphotonMVATest + process.HLTDiphotonMvaTestSequence  + process.HLTDiphotonMVATestProducer + process.HLTDiphotonMVATestFilter + process.HLTEndSequence )
+process.HLT_Diphoton_MVATest = cms.Path( process.HLTBeginSequence + process.hltL1sSingleAndDoubleEGor + process.hltPreDiphotonMVATest + process.HLTDiphotonMvaTestSequence  + process.HLTDiphotonMVATestProducer + process.HLTDiphotonMVATestCombFilter + process.HLTEndSequence )
 
 process.Dataset_EGamma0 = cms.Path( process.HLTDatasetPathBeginSequence + process.hltDatasetEGamma + process.hltPreDatasetEGamma0 )
 process.Dataset_EGamma1 = cms.Path( process.HLTDatasetPathBeginSequence + process.hltDatasetEGamma + process.hltPreDatasetEGamma1 )
