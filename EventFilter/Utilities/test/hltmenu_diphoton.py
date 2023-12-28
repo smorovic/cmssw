@@ -11903,7 +11903,7 @@ if data:
     )
  
   #run on 10 files
-  if True:
+  if False:
     process.source.fileNames = cms.untracked.vstring(
     'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000000.raw',
     'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000001.raw',
@@ -11919,7 +11919,7 @@ if data:
     )
 
   #use all files in LS (117 files):
-  if False:
+  if True:
     process.source.fileNames = cms.untracked.vstring(
     'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000000.raw',
     'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000001.raw',
