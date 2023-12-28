@@ -1,4 +1,5 @@
-#include <memory>
+
+#define DEBUG_EGAMMA_MVA //have ntuple
 
 #include "MVATestProducer.h"
 
@@ -9,9 +10,15 @@
 #include "DataFormats/EgammaReco/interface/SuperCluster.h"
 #include "DataFormats/EgammaReco/interface/SuperClusterFwd.h"
 #include "DataFormats/Common/interface/AssociationMap.h"
-//#include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+
+#include <memory>
+
+
+#include "TFile.h"
+#include "TTree.h"
+
 
 MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
 //      //if getting cands from a filter
@@ -25,14 +32,49 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
       tokenIso_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagIso"))),
       mvaFileB_(config.getParameter<edm::FileInPath>("mvaFileB")),
       mvaFileE_(config.getParameter<edm::FileInPath>("mvaFileE"))
-  {
+{
     mvaEstimatorB_ = std::make_unique<photonMvaEstimator>(mvaFileB_);
     mvaEstimatorE_ = std::make_unique<photonMvaEstimator>(mvaFileE_);
     //produces<std::vector<float>>();//TODO
     produces<reco::RecoEcalCandidateIsolationMap>();
-  }
 
-  void MVATestProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+#ifdef DEBUG_EGAMMA_MVA
+
+    et_ = new std::vector<float>();
+    scEt_ = new std::vector<float>();
+    phi_ = new std::vector<float>();
+    r9_ = new std::vector<float>();
+    siEtaiEta_ = new std::vector<float>();
+    rawEnergy_ = new std::vector<float>();
+    etaW_ = new std::vector<float>();
+    phiW_ = new std::vector<float>();
+    e2x2_ = new std::vector<float>();
+    eta_ = new std::vector<float>();
+    hoe_ = new std::vector<float>();
+    iso_ = new std::vector<float>();
+    mvaScore_ = new std::vector<float>();
+    f_ = new TFile("photon_mva.root", "RECREATE");
+    t_ = new TTree("HLTPhotonMVA", "HLT Photon MVA");
+    t_->Branch("eventId", &eventId_, "eventId/l");
+    t_->Branch("et", "std::vector<float>", &et_);
+    t_->Branch("scEt", "std::vector<float>", &scEt_);
+    t_->Branch("phi", "std::vector<float>", &phi_);
+    t_->Branch("r9", "std::vector<float>", &r9_);
+    t_->Branch("siEtaiEta", "std::vector<float>", &siEtaiEta_);
+    t_->Branch("rawEnergy", "std::vector<float>", &rawEnergy_);
+    t_->Branch("etaW", "std::vector<float>", &etaW_);
+    t_->Branch("phiW", "std::vector<float>", &phiW_);
+    t_->Branch("e2x2", "std::vector<float>", &e2x2_);
+    t_->Branch("eta", "std::vector<float>", &eta_);
+    t_->Branch("HoE", "std::vector<float>", &hoe_);
+    t_->Branch("iso", "std::vector<float>", &iso_);
+    t_->Branch("mvaScore", "std::vector<float>", &mvaScore_);
+
+#endif
+
+}
+
+void MVATestProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     edm::ParameterSetDescription desc;
     desc.add<edm::InputTag>("candTag");
     desc.add<edm::InputTag>("inputTagR9", edm::InputTag("hltEgammaR9IDUnseeded", "r95x5"));
@@ -44,9 +86,9 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
                               edm::FileInPath("/afs/cern.ch/work/r/rlee/public/CMSSW_13_3_0/src/xgbModels/M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Barrel.xml"));
     desc.add<edm::FileInPath>("mvaFileE",
                               edm::FileInPath("/afs/cern.ch/work/r/rlee/public/CMSSW_13_3_0/src/xgbModels/M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Endcap.xml"));
-  }
+}
 
-  void MVATestProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
+void MVATestProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
 
 //    //ifdef we get cands from a filter
 //    // Ref to Candidate object to be recorded in filter object
@@ -85,18 +127,38 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
     edm::Handle<reco::RecoEcalCandidateIsolationMap> isoMap;
     event.getByToken(tokenIso_, isoMap);
 
+#ifdef DEBUG_EGAMMA_MVA
+      eventId_ = event.eventAuxiliary().event();
+      et_->clear();
+      scEt_->clear();
+      phi_->clear();
+      rawEnergy_->clear();
+      r9_->clear();
+      siEtaiEta_->clear();
+      etaW_->clear();
+      phiW_->clear();
+      e2x2_->clear();
+      eta_->clear();
+      hoe_->clear();
+      iso_->clear();
+      mvaScore_->clear();
+#endif
+
     //output
     reco::RecoEcalCandidateIsolationMap mvaScoreMap(recCollection);
+
 //    //if taking trigger cands
 //    for (unsigned int i = 0; i < recoecalcands.size(); i++) {
 //      ref = recoecalcands[i];
 //      //edm::Ref<reco::RecoEcalCandidateCollection> ref(recoecalcands, i);
-//
+
     for (size_t i=0;i < recCollection->size(); i++) {
       edm::Ref<reco::RecoEcalCandidateCollection> ref(recCollection, i);
 
-      float EtaSC = ref->eta();
-      float PhiSC = ref->phi();
+      float etaSC = ref->eta();
+#ifdef DEBUG_EGAMMA_MVA
+      float phiSC = ref->phi();
+#endif
 
       float r9 = (*r9Map).find(ref)->val;
       float hoe = (*hoEMap).find(ref)->val;
@@ -104,35 +166,67 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
       float e2x2 = (*e2x2Map).find(ref)->val;
       float iso = (*isoMap).find(ref)->val;
 
-      float rawE = ref->superCluster()->rawEnergy();
+      float rawEnergy = ref->superCluster()->rawEnergy();
       float etaW = ref->superCluster()->etaWidth();
       float phiW = ref->superCluster()->phiWidth();
 
       float scEnergy = ref->superCluster()->energy();
-      float scEt = scEnergy * sin(2 * atan(exp(-EtaSC)));
-      if (scEnergy < 0.)
-        scEnergy = 0.;
+      float scEt = scEnergy * sin(2 * atan(exp(-etaSC)));
+      //if (scEnergy < 0.)
+      //  scEnergy = 0.;
       if (scEt < 0.)
         scEt = 0.; /* first and second order terms assume non-negative energies */
 
-      //TODO: do MVA calculation with cand pairs?
       float photonScore = 0;
-      if (abs(EtaSC) < 1.5) photonScore = mvaEstimatorB_->computeMva(rawE,r9,siEtaiEta,etaW,phiW,e2x2,EtaSC,hoe,iso);
-      if (abs(EtaSC) >= 1.5) photonScore = mvaEstimatorE_->computeMva(rawE,r9,siEtaiEta,etaW,phiW,e2x2,EtaSC,hoe,iso);
-
-      edm::LogWarning("DiphotonMVAMVATestProducer") << "PhotonScore:" << photonScore << " variables: EtaSC:" << EtaSC << " PhiSC:" << PhiSC << " R9:" << r9 << " HOE:" << hoe
-                << " sihih:" << siEtaiEta << " iso:" << iso << " rawE:" << rawE << " etaW:" << etaW
-                << " phiW:" << phiW << " scEt:" << scEt << " s4(e2x2):" << e2x2;
+      if (abs(etaSC) < 1.5)
+        photonScore = mvaEstimatorB_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
+      else
+        photonScore = mvaEstimatorE_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
 
       mvaScoreMap.insert(ref, photonScore);
 
-    }
+#ifdef DEBUG_EGAMMA_MVA
+      edm::LogWarning("DiphotonMVAMVATestProducer") << "PhotonScore:" << photonScore
+                << " variables: "
+                << " RawE:" << rawEnergy
+                << " R9:" << r9
+                << " SiEtaiEta:" << siEtaiEta
+                << " EtaW:" << etaW
+                << " PhiW:" << phiW
+                << " S4(e2x2):" << e2x2
+                << " EtaSC:" << etaSC
+                << " HoE:" << hoe
+                << " Iso:" << iso;
 
-    //std::unique_ptr<std::vector<float>> pi(new std::vector<float>());
-    //event.put(std::move(pi));
-    event.put(std::make_unique<reco::RecoEcalCandidateIsolationMap>(mvaScoreMap));
-
+      et_->push_back(ref->et());
+      scEt_->push_back(scEt);
+      phi_->push_back(phiSC);
+      rawEnergy_->push_back(rawEnergy);
+      r9_->push_back(r9);
+      siEtaiEta_->push_back(siEtaiEta);
+      etaW_->push_back(etaW);
+      phiW_->push_back(phiW);
+      e2x2_->push_back(e2x2);
+      eta_->push_back(etaSC);
+      hoe_->push_back(hoe);
+      iso_->push_back(iso);
+      mvaScore_->push_back(photonScore);
+#endif
   }
+  event.put(std::make_unique<reco::RecoEcalCandidateIsolationMap>(mvaScoreMap));
+
+#ifdef DEBUG_EGAMMA_MVA
+  if (recCollection->size())
+    t_->Fill();
+#endif
+
+}
+
+MVATestProducer::~MVATestProducer() {
+  if (t_) t_->Write();
+  if (f_) f_->Close();
+
+}
 
 #include "FWCore/Framework/interface/MakerMacros.h"
 DEFINE_FWK_MODULE(MVATestProducer);
