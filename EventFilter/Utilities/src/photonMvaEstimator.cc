@@ -45,7 +45,7 @@ double photonMvaEstimator::computeMva(float rawEnergyIn, float r9In, float sigma
   std::cout << "OUT(GBC):" <<  gbrForest_->GetGradBoostClassifier(var) << " "; 
   std::cout << "OUT(C):" <<  gbrForest_->GetClassifier(var) << std::endl;
     
-  return gbrForest_->GetResponse(var);
+  return gbrForest_->GetGradBoostClassifier(var);
 }
 
 double photonMvaEstimator::computeMva2(float rawEnergyIn, float r9In, float sigmaIEtaIEtaIn, float etaWidthIn, float phiWidthIn, float s4In, float etaIn, float hOvrEIn, float ecalPFIsoIn) const {
