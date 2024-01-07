@@ -11844,15 +11844,16 @@ except:
 process.PrescaleService.prescaleTable =  cms.VPSet(  *( 
 
       cms.PSet(  pathName = cms.string( "HLT_Diphoton30_22_R9Id_OR_IsoCaloId_AND_HE_R9Id_Mass90_v19" ),
-        #prescales = cms.vuint32( 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0 )
-        prescales = cms.vuint32( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 )
+        prescales = cms.vuint32( 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0 )
+        #prescales = cms.vuint32( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 )
       ),
       cms.PSet(  pathName = cms.string( "HLT_Diphoton30_22_R9Id_OR_IsoCaloId_AND_HE_R9Id_Mass95_v19" ),
-        #prescales = cms.vuint32( 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0 )
-        prescales = cms.vuint32( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 )
+        prescales = cms.vuint32( 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0 )
+        #prescales = cms.vuint32( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 )
       ),
       cms.PSet(  pathName = cms.string( "Dataset_EGamma0" ),
         prescales = cms.vuint32( 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 )
+        #prescales = cms.vuint32( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 )
       ),
       cms.PSet(  pathName = cms.string( "Dataset_EGamma1" ),
         prescales = cms.vuint32( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 )
@@ -11860,6 +11861,7 @@ process.PrescaleService.prescaleTable =  cms.VPSet(  *(
       #new MVA path:
       cms.PSet(  pathName = cms.string( "HLT_Diphoton_MVATest" ),
         prescales = cms.vuint32( 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 )
+        #prescales = cms.vuint32( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 )
       ),
 
 ))
@@ -11881,6 +11883,19 @@ try:
    os.makedirs('data/run'+options.runNumber)
 except:
    pass
+
+
+#trig report
+if False:
+
+  process.options.wantSummary = cms.untracked.bool(True) ## default is false
+
+  #process.hltTrigReport = cms.EDAnalyzer( 'HLTrigReport',
+  #  HLTriggerResults = cms.InputTag( 'TriggerResults','','HLT' )
+  #)
+  #process.HLTAnalyzerEndpath = cms.EndPath( process.hltTrigReport )
+
+ # process.MessageLogger.categories = cms.untracked.vstring("HLTrigReport")
 
 
 
