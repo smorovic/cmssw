@@ -35,7 +35,6 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
 {
     mvaEstimatorB_ = std::make_unique<photonMvaEstimator>(mvaFileB_);
     mvaEstimatorE_ = std::make_unique<photonMvaEstimator>(mvaFileE_);
-    //produces<std::vector<float>>();//TODO
     produces<reco::RecoEcalCandidateIsolationMap>();
 
 #ifdef DEBUG_EGAMMA_MVA
