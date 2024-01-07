@@ -10392,8 +10392,11 @@ process.HLTDiphotonMVATestProducer = cms.EDProducer("MVATestProducer",
     inputTagE2x2 = cms.InputTag("hltEgammaClusterShapeUnseeded", "e2x2"),
     inputTagIso = cms.InputTag("hltEgammaEcalPFClusterIsoUnseeded"),
     mvaFileB = cms.FileInPath("EventFilter/Utilities/test/M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Barrel.xml"),
-    mvaFileE = cms.FileInPath("EventFilter/Utilities/test/M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Endcap.xml")
+    mvaFileE = cms.FileInPath("EventFilter/Utilities/test/M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Endcap.xml"),
+    mvaFileXgbB = cms.FileInPath("EventFilter/Utilities/test/barrel.bin"),
+    mvaFileXgbE = cms.FileInPath("EventFilter/Utilities/test/endcap.bin")
 )
+
 process.HLTDiphotonMVATestCombFilter = cms.EDFilter("MVATestCombFilter",
     saveTags = cms.bool( False ),
     minMass = cms.double(95),
@@ -11886,7 +11889,7 @@ except:
 
 
 #trig report
-if False:
+if True:
 
   process.options.wantSummary = cms.untracked.bool(True) ## default is false
 

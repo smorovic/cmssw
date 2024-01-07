@@ -3,12 +3,18 @@
 #include "FWCore/ParameterSet/interface/FileInPath.h"
 #include "CommonTools/MVAUtils/interface/GBRForestTools.h"
 
-photonMvaEstimator::photonMvaEstimator(const edm::FileInPath& weightsfile){
+#include "xgboost/c_api.h"
+
+photonMvaEstimator::photonMvaEstimator(const edm::FileInPath& weightsfile, const edm::FileInPath& weightsFileXgb){
   //xgboost::Learner *xgb_model = xgboost::Learner::Create({&xgb_train});
   gbrForest_ = createGBRForest(weightsfile);
 
-  //XGBoosterCreate(NULL, 0, &booster_);
-  //XGBoosterLoadModel(booster, "/tmp/model.bin");
+  XGBoosterCreate(NULL, 0, &booster_);
+  //XGBoosterCreate(NULL, 0, &boosterB_);
+  //XGBoosterCreate(NULL, 0, &boosterE_);
+  XGBoosterLoadModel(booster_, weightsFileXgb.fullPath().c_str());
+  //XGBoosterLoadModel(boosterB_, "/home/smorovic/CMSSW/CMSSW_13_3_0/src/EventFilter/Utilities/test/barrel.bin");
+  //XGBoosterLoadModel(boosterE_, "/home/smorovic/CMSSW/CMSSW_13_3_0/src/EventFilter/Utilities/test/endcap.bin");
 }
 
 photonMvaEstimator::~photonMvaEstimator() {}
@@ -62,4 +68,30 @@ double photonMvaEstimator::computeMva2(float rawEnergyIn, float r9In, float sigm
     var[ecalPFIso] = ecalPFIsoIn;
     
   return gbrForest_->GetResponse(var);
+}
+
+double photonMvaEstimator::computeMva3(float rawEnergyIn, float r9In, float sigmaIEtaIEtaIn, float etaWidthIn, float phiWidthIn, float s4In, float etaIn, float hOvrEIn, float ecalPFIsoIn) const {
+    float var[9];
+
+    var[rawEnergy] = rawEnergyIn;
+    var[r9]= r9In;
+    var[sigmaIEtaIEta] = sigmaIEtaIEtaIn;
+    var[etaWidth] = etaWidthIn;
+    var[phiWidth] = phiWidthIn;
+    var[s4] = s4In;
+    var[eta] = etaIn;
+    var[hOvrE] = hOvrEIn;
+    var[ecalPFIso] = ecalPFIsoIn;
+
+  DMatrixHandle dmat;
+  XGDMatrixCreateFromMat(var, 1, 9, -1, &dmat);
+  bst_ulong out_len;
+  const float* out_result;
+  XGBoosterPredict(booster_, dmat, 0, 0, 0, &out_len, &out_result);
+  //if (fabs(etaIn) < 1.5)
+  //XGBoosterPredict(boosterB_, dmat, 0, 0, 0, &out_len, &out_result);
+  //else
+  //  XGBoosterPredict(boosterE_, dmat, 0, 0, 0, &out_len, &out_result);
+  printf("%f\n", out_result[0]);
+  return out_result[0];
 }
