@@ -31,10 +31,13 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
       tokenE2x2_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagE2x2"))),
       tokenIso_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagIso"))),
       mvaFileB_(config.getParameter<edm::FileInPath>("mvaFileB")),
-      mvaFileE_(config.getParameter<edm::FileInPath>("mvaFileE"))
+      mvaFileE_(config.getParameter<edm::FileInPath>("mvaFileE")),
+      mvaFileXgbB_(config.getParameter<edm::FileInPath>("mvaFileXgbB")),
+      mvaFileXgbE_(config.getParameter<edm::FileInPath>("mvaFileXgbE"))
+
 {
-    mvaEstimatorB_ = std::make_unique<photonMvaEstimator>(mvaFileB_);
-    mvaEstimatorE_ = std::make_unique<photonMvaEstimator>(mvaFileE_);
+   mvaEstimatorB_ = std::make_unique<photonMvaEstimator>(mvaFileB_, mvaFileXgbB_);
+    mvaEstimatorE_ = std::make_unique<photonMvaEstimator>(mvaFileE_, mvaFileXgbE_);
     produces<reco::RecoEcalCandidateIsolationMap>();
 
 #ifdef DEBUG_EGAMMA_MVA
@@ -52,6 +55,7 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
     hoe_ = new std::vector<float>();
     iso_ = new std::vector<float>();
     mvaScore_ = new std::vector<float>();
+    mvaScoreXGB_ = new std::vector<float>();
     f_ = new TFile("photon_mva.root", "RECREATE");
     t_ = new TTree("HLTPhotonMVA", "HLT Photon MVA");
     t_->Branch("eventId", &eventId_, "eventId/l");
@@ -68,6 +72,8 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
     t_->Branch("HoE", "std::vector<float>", &hoe_);
     t_->Branch("iso", "std::vector<float>", &iso_);
     t_->Branch("mvaScore", "std::vector<float>", &mvaScore_);
+    t_->Branch("mvaScoreXGB", "std::vector<float>", &mvaScoreXGB_);
+
 
 #endif
 
@@ -141,6 +147,7 @@ void MVATestProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
       hoe_->clear();
       iso_->clear();
       mvaScore_->clear();
+      mvaScoreXGB_->clear();
 #endif
 
     //output
@@ -182,11 +189,14 @@ void MVATestProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
       else
         photonScore = mvaEstimatorE_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
 
-      mvaScoreMap.insert(ref, photonScore);
+      float xgbScore = mvaEstimatorB_->computeMva3(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
+
+      mvaScoreMap.insert(ref, xgbScore);
 
 #ifdef DEBUG_EGAMMA_MVA
       edm::LogWarning("DiphotonMVAMVATestProducer") << "PhotonScore:" << photonScore
-                << " variables: "
+                << " xgbScore:" << xgbScore
+                << " -- variables: "
                 << " RawE:" << rawEnergy
                 << " R9:" << r9
                 << " SiEtaiEta:" << siEtaiEta
@@ -210,6 +220,7 @@ void MVATestProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
       hoe_->push_back(hoe);
       iso_->push_back(iso);
       mvaScore_->push_back(photonScore);
+      mvaScoreXGB_->push_back(xgbScore);
 #endif
   }
   event.put(std::make_unique<reco::RecoEcalCandidateIsolationMap>(mvaScoreMap));
@@ -222,8 +233,11 @@ void MVATestProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
 }
 
 MVATestProducer::~MVATestProducer() {
+#ifdef DEBUG_EGAMMA_MVA
+  if (f_) f_->cd();
   if (t_) t_->Write();
   if (f_) f_->Close();
+#endif
 
 }
 

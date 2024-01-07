@@ -41,6 +41,8 @@ private:
 
   const edm::FileInPath mvaFileB_;
   const edm::FileInPath mvaFileE_;
+  const edm::FileInPath mvaFileXgbB_;
+  const edm::FileInPath mvaFileXgbE_;
 
   std::unique_ptr<const photonMvaEstimator> mvaEstimatorB_;
   std::unique_ptr<const photonMvaEstimator> mvaEstimatorE_;
@@ -62,6 +64,7 @@ private:
   std::vector<float> *hoe_;
   std::vector<float> *iso_;
   std::vector<float> *mvaScore_;
+  std::vector<float> *mvaScoreXGB_;
  
 };
 
