@@ -10391,8 +10391,10 @@ process.HLTDiphotonMVATestProducer = cms.EDProducer("MVATestProducer",
 process.HLTDiphotonMVATestCombFilter = cms.EDFilter("MVATestCombFilter",
     saveTags = cms.bool( False ),
     minMass = cms.double(95),
-    mvaMinBarrel = cms.double(0.5),
-    mvaMinEndcap = cms.double(0.5),
+    mvaMinBarrel = cms.double(0.01),
+    mvaMinEndcap = cms.double(0.01),
+    mvaMinBarrelTight = cms.double(0.02),
+    mvaMinEndcapTight = cms.double(0.02),
     candTag = cms.InputTag( "hltEgammaCandidatesUnseeded" ),
     mvaPhotonTag = cms.InputTag( "HLTDiphotonMVATestProducer" ),
 )
@@ -11883,166 +11885,17 @@ if True:
 
 data = False
 
-process.GlobalTag.globaltag = cms.string("133X_mcRun3_2023_realistic_postBPix_v2")
+#process.GlobalTag.globaltag = cms.string("133X_mcRun3_2023_realistic_postBPix_v2")
 if data:
   #data:
   pass
   #process.GlobalTag.globaltag = cms.string("132X_dataRun3_HLT_for2024TSGStudies_v1")
 else:
   #mc:
-  pass
-  #process.GlobalTag.globaltag = cms.string("130X_mcRun3_2023_realistic_postBPix_v2")
+  process.GlobalTag.globaltag = cms.string("130X_mcRun3_2023_realistic_postBPix_v2")
 
 
 #### specify data files:
-
-if data:
-  #run on 1 file
-  if False:
-    process.source.fileListMode = cms.untracked.bool( True )
-    process.source.fileNames = cms.untracked.vstring(
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000000.raw',
-    )
- 
-  #run on 10 files
-  if False:
-    process.source.fileListMode = cms.untracked.bool( True )
-    process.source.fileNames = cms.untracked.vstring(
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000000.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000001.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000002.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000003.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000004.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000005.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000006.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000007.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000008.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000009.raw',
- 
-    )
-
-  #use all files in LS (117 files):
-  if False:
-    process.source.fileListMode = cms.untracked.bool( True )
-    process.source.fileNames = cms.untracked.vstring(
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000000.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000001.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000002.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000003.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000004.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000005.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000006.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000007.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000008.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000009.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000010.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000011.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000012.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000013.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000014.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000015.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000016.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000017.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000018.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000019.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000020.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000021.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000022.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000023.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000024.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000025.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000026.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000027.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000028.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000029.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000030.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000031.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000032.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000033.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000034.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000035.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000036.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000037.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000038.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000039.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000040.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000041.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000042.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000043.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000044.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000045.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000046.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000047.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000048.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000049.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000050.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000051.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000052.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000053.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000054.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000055.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000056.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000057.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000058.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000059.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000060.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000061.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000062.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000063.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000064.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000065.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000066.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000067.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000068.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000069.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000070.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000071.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000072.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000073.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000074.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000075.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000076.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000077.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000078.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000079.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000080.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000081.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000082.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000083.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000084.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000085.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000086.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000087.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000088.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000089.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000090.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000091.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000092.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000093.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000094.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000095.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000096.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000097.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000098.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000099.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000100.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000101.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000102.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000103.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000104.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000105.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000106.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000107.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000108.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000109.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000110.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000111.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000112.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000113.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000114.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000115.raw',
-    'file:/eos/cms/store/group/tsg/STEAM/timing_server/samples/srv-b1b07-16-01_samples/Run370293_LS241to242_HLTPhysics/run370293/run370293_ls0241_index000116.raw'
-    )
 
 if not data:
   if True:

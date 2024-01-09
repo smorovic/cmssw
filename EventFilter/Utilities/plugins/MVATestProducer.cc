@@ -36,8 +36,9 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
       mvaFileXgbE_(config.getParameter<edm::FileInPath>("mvaFileXgbE"))
 
 {
-   mvaEstimatorB_ = std::make_unique<photonMvaEstimator>(mvaFileB_, mvaFileXgbB_);
+    mvaEstimatorB_ = std::make_unique<photonMvaEstimator>(mvaFileB_, mvaFileXgbB_);
     mvaEstimatorE_ = std::make_unique<photonMvaEstimator>(mvaFileE_, mvaFileXgbE_);
+    mvaEstimatorE_->computeMva4();
     produces<reco::RecoEcalCandidateIsolationMap>();
 
 #ifdef DEBUG_EGAMMA_MVA
@@ -178,20 +179,24 @@ void MVATestProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
 
       float scEnergy = ref->superCluster()->energy();
       float scEt = scEnergy * sin(2 * atan(exp(-etaSC)));
-      //if (scEnergy < 0.)
-      //  scEnergy = 0.;
       if (scEt < 0.)
         scEt = 0.; /* first and second order terms assume non-negative energies */
 
-      float photonScore = 0;
-      if (abs(etaSC) < 1.5)
+      float photonScore;
+      float xgbScore;
+      if (abs(etaSC) < 1.5) {
         photonScore = mvaEstimatorB_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
-      else
+        xgbScore = mvaEstimatorB_->computeMva3(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
+      }
+      else {
         photonScore = mvaEstimatorE_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
-
-      float xgbScore = mvaEstimatorB_->computeMva3(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
+        xgbScore = mvaEstimatorE_->computeMva3(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
+      }
 
       mvaScoreMap.insert(ref, xgbScore);
+
+      //no unused error
+      if (photonScore == -999) continue;
 
 #ifdef DEBUG_EGAMMA_MVA
       edm::LogWarning("DiphotonMVAMVATestProducer") << "PhotonScore:" << photonScore
