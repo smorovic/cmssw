@@ -15,8 +15,8 @@
 #include "RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h"
 
 #include "CommonTools/MVAUtils/interface/GBRForestTools.h"
-//#include "xgboost/c_api.h"
 #include "xgboost/c_api.h"
+#include "xgboost/learner.h"
 
 class GBRForest;
 
@@ -32,12 +32,13 @@ public:
   double computeMva(float rawEnergyIn, float r9In, float sigmaIEtaIEtaIn, float etaWidthIn, float phiWidthIn, float s4In, float etaIn, float hOvrEIn, float ecalPFIsoIn) const;
   double computeMva2(float rawEnergyIn, float r9In, float sigmaIEtaIEtaIn, float etaWidthIn, float phiWidthIn, float s4In, float etaIn, float hOvrEIn, float ecalPFIsoIn) const;
   double computeMva3(float rawEnergyIn, float r9In, float sigmaIEtaIEtaIn, float etaWidthIn, float phiWidthIn, float s4In, float etaIn, float hOvrEIn, float ecalPFIsoIn) const;
+  double computeMva4() const;
 
 private:
   std::unique_ptr<const GBRForest> gbrForest_;
   BoosterHandle booster_;
-  //BoosterHandle boosterB_;
-  //BoosterHandle boosterE_;
+
+  //std::unique_ptr<xgboost::Learner> learner_;
 };
 #endif
 
