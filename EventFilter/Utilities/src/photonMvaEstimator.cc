@@ -18,15 +18,15 @@ photonMvaEstimator::~photonMvaEstimator() {}
 
 namespace {
   enum inputIndexes {
-      rawEnergy,         // 0
-      r9,                // 1
-      sigmaIEtaIEta,     // 2
-      etaWidth,          // 3
-      phiWidth,          // 4
-      s4,                // 5
-      eta,               // 6
-      hOvrE,             // 7
-      ecalPFIso,         // 8
+      rawEnergy = 0,         // 0
+      r9 = 1,                // 1
+      sigmaIEtaIEta = 2,     // 2
+      etaWidth = 3,          // 3
+      phiWidth = 4,          // 4
+      s4 = 5,                // 5
+      eta = 6,               // 6
+      hOvrE = 7,             // 7
+      ecalPFIso = 8,         // 8
   };
 }  // namespace
 

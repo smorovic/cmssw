@@ -165,12 +165,9 @@ void MVATestProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
       edm::Ref<reco::RecoEcalCandidateCollection> ref(recCollection, i);
 
       float etaSC = ref->eta();
-#ifdef DEBUG_EGAMMA_MVA
-      float phiSC = ref->phi();
-#endif
 
       float scEnergy = ref->superCluster()->energy();
-      float scEnergyInv = scEnergy > 0 ? (1. / scEnergy) : -1.;
+      float scEnergyInv = scEnergy != 0 ? (1. / scEnergy) : -1.;
 
       float r9 = (*r9Map).find(ref)->val;
       float hoe = (*hoEMap).find(ref)->val * scEnergyInv;
@@ -200,10 +197,10 @@ void MVATestProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
 
       mvaScoreMap.insert(ref, xgbScore);
 
-      //no unused error
-      if (photonScore == -999) continue;
 
 #ifdef DEBUG_EGAMMA_MVA
+
+      float phiSC = ref->phi();
       edm::LogWarning("DiphotonMVAMVATestProducer") << "PhotonScore:" << photonScore
                 << " xgbScore:" << xgbScore
                 << " -- variables: "
@@ -232,6 +229,9 @@ void MVATestProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
       mvaScore_->push_back(photonScore);
       mvaScoreXGB_->push_back(xgbScore);
 #endif
+      //no unused error
+      if (photonScore == -999) continue;
+
   }
   event.put(std::make_unique<reco::RecoEcalCandidateIsolationMap>(mvaScoreMap));
 
