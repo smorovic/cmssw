@@ -167,17 +167,20 @@ void MVATestProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
       float phiSC = ref->phi();
 #endif
 
+      float scEnergy = ref->superCluster()->energy();
+      float scEnergyInv = scEnergy > 0 ? (1. / scEnergy) : -1.;
+
       float r9 = (*r9Map).find(ref)->val;
-      float hoe = (*hoEMap).find(ref)->val;
+      float hoe = (*hoEMap).find(ref)->val * scEnergyInv;
       float siEtaiEta = (*sigmaiEtaiEtaMap).find(ref)->val;
       float e2x2 = (*e2x2Map).find(ref)->val;
+      //float isoRel = (*isoMap).find(ref)->val * scEnergyInv;
       float iso = (*isoMap).find(ref)->val;
 
       float rawEnergy = ref->superCluster()->rawEnergy();
       float etaW = ref->superCluster()->etaWidth();
       float phiW = ref->superCluster()->phiWidth();
 
-      float scEnergy = ref->superCluster()->energy();
       float scEt = scEnergy * sin(2 * atan(exp(-etaSC)));
       if (scEt < 0.)
         scEt = 0.; /* first and second order terms assume non-negative energies */
