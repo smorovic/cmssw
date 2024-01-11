@@ -8,7 +8,7 @@
 
 constexpr int best_ntree_limit = 48;
 
-photonMvaEstimator::photonMvaEstimator(const edm::FileInPath& weightsfile, const edm::FileInPath& weightsFileXgb){
+photonMvaEstimator::photonMvaEstimator(const edm::FileInPath& weightsfile, const edm::FileInPath& weightsFileXgb) {
   gbrForest_ = createGBRForest(weightsfile);
   XGBoosterCreate(NULL, 0, &booster_);
   std::cout << weightsFileXgb.fullPath().c_str() << std::endl;
@@ -32,7 +32,6 @@ namespace {
 }  // namespace
 
 double photonMvaEstimator::computeMva(float rawEnergyIn, float r9In, float sigmaIEtaIEtaIn, float etaWidthIn, float phiWidthIn, float s4In, float etaIn, float hOvrEIn, float ecalPFIsoIn) const {
-    return 0;
     float var[9];
 
     var[rawEnergy] = rawEnergyIn;
@@ -45,15 +44,17 @@ double photonMvaEstimator::computeMva(float rawEnergyIn, float r9In, float sigma
     var[hOvrE] = hOvrEIn;
     var[ecalPFIso] = ecalPFIsoIn;
 
-  std::cout << "IN ";
-  for (size_t i =0;i<9;i++) std::cout << var[i] << " ";
-  std::cout << "OUT(GBC):" <<  gbrForest_->GetGradBoostClassifier(var) << " "; 
-  std::cout << "OUT(C):" <<  gbrForest_->GetClassifier(var) << std::endl;
+//  std::cout << "IN ";
+//  for (size_t i =0;i<9;i++) std::cout << var[i] << " ";
+//  std::cout << "OUT(GBC):" <<  gbrForest_->GetGradBoostClassifier(var) << " "; 
+//  std::cout << "OUT(C):" <<  gbrForest_->GetClassifier(var) << std::endl;
     
   return gbrForest_->GetGradBoostClassifier(var);
 }
 
 double photonMvaEstimator::computeMva2(float rawEnergyIn, float r9In, float sigmaIEtaIEtaIn, float etaWidthIn, float phiWidthIn, float s4In, float etaIn, float hOvrEIn, float ecalPFIsoIn) const {
+    return 0;
+/*
     float var[9];
 
     var[rawEnergy] = rawEnergyIn;
@@ -67,6 +68,7 @@ double photonMvaEstimator::computeMva2(float rawEnergyIn, float r9In, float sigm
     var[ecalPFIso] = ecalPFIsoIn;
     
   return gbrForest_->GetResponse(var);
+*/
 }
 
 double photonMvaEstimator::computeMva3(float rawEnergyIn, float r9In, float sigmaIEtaIEtaIn, float etaWidthIn, float phiWidthIn, float s4In, float etaIn, float hOvrEIn, float ecalPFIsoIn) const {
@@ -88,8 +90,6 @@ double photonMvaEstimator::computeMva3(float rawEnergyIn, float r9In, float sigm
   const float* out_result;
   XGBoosterPredict(booster_, dmat, 0, best_ntree_limit, 0, &out_len, &out_result);
   XGDMatrixFree(dmat);
-//  std::cout << "XGB score: " << out_result[0] << std::endl;
-//  printf("%f\n", out_result[0]);
   return out_result[0];
 }
 

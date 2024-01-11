@@ -10374,6 +10374,18 @@ process.hltDiEG22EtEta2p55UnseededFilter = cms.EDFilter( "HLT1Photon",
 #    MinN = cms.int32( 2 )
 #)
 
+process.hltDiEGEta2p55UnseededFilter = cms.EDFilter( "HLT1Photon",
+    saveTags = cms.bool( True ),
+    inputTag = cms.InputTag( "hltEgammaCandidatesUnseeded" ),
+    triggerType = cms.int32( 92 ),
+    MinE = cms.double( -1.0 ),
+    MinPt = cms.double( -1.0 ),
+    MinMass = cms.double( -1.0 ),
+    MaxMass = cms.double( -1.0 ),
+    MinEta = cms.double( -1.0 ),
+    MaxEta = cms.double( 2.55 ),
+    MinN = cms.int32( 2 )
+)
 
 process.HLTDiphotonMVATestProducer = cms.EDProducer("MVATestProducer",
     #candTag = cms.InputTag( "hltDiEG22EtEta2p55UnseededFilter" ),
@@ -11709,8 +11721,9 @@ process.HLTTrackReconstructionForIsoForPhotons = cms.Sequence( process.HLTPreAK4
 process.HLTDiphoton30L22R9Id85b90eORIso60CaloId15b35eANDHE12R9Id50b80eSequence = cms.Sequence( process.HLTDoFullUnpackingEgammaEcalSequence + process.HLTPFClusteringForEgamma + process.hltEgammaCandidates + process.hltEGL1SingleAndDoubleEGOrFilter + process.hltEG30L1SingleAndDoubleEGOrEtFilter + process.hltEgammaR9ID + process.hltEG30LR9Id50b80eR9IdFilter + process.HLTDoLocalHcalSequence + process.HLTFastJetForEgamma + process.hltEgammaHoverE + process.hltEG30LHE12R9Id50b80eHEFilter + cms.ignore(process.hltEG30LR9Id85b90eHE12R9Id50b80eR9IdLastFilter) + process.hltEgammaClusterShape + cms.ignore(process.hltEG30LCaloId15b35eHE12R9Id50b80eClusterShapeFilter) + process.hltEgammaEcalPFClusterIso + cms.ignore(process.hltEG30LIso60CaloId15b35eHE12R9Id50b80eEcalIsoLastFilter) + process.hltEG30LRId85ORIso60CaloId15b35eANDHE12R9Id50b80eLegCombLastFilter + process.HLTPFClusteringForEgammaUnseeded + process.hltEgammaCandidatesUnseeded + process.hltDiEG22EtEta2p55UnseededFilter + process.hltEgammaR9IDUnseeded + process.hltDiEG22R9Id50b80eR9IdUnseededFilter + process.hltEgammaHoverEUnseeded + process.hltDiEG22HE12R9Id50b80eHEUnseededFilter + cms.ignore(process.hltEG22R9Id85b90eHE12R9Id50b80eR9UnseededLastFilter) + process.hltEgammaClusterShapeUnseeded + cms.ignore(process.hltEG22CaloId15b35eHE12R9Id50b80eClusterShapeUnseededFilter) + process.hltEgammaEcalPFClusterIsoUnseeded + cms.ignore(process.hltEG22Iso60CaloId15b35eHE12R9Id50b80eEcalIsoUnseededFilter) + process.HLTTrackReconstructionForIsoForPhotons + process.hltEgammaHollowTrackIsoUnseeded + cms.ignore(process.hltEG22Iso60CaloId15b35eHE12R9Id50b80eTrackIsoUnseededLastFilter) )
 
 #NEW SEQUENCE
-process.HLTDiphotonMvaTestSequence = cms.Sequence( process.HLTDoFullUnpackingEgammaEcalSequence + process.HLTPFClusteringForEgamma + process.hltEgammaCandidates + process.hltEGL1SingleAndDoubleEGOrFilter + process.hltEG30L1SingleAndDoubleEGOrEtFilter + process.HLTDoLocalHcalSequence + process.HLTFastJetForEgamma + process.hltEgammaHoverE + process.hltEgammaClusterShape + process.hltEgammaEcalPFClusterIso + process.HLTPFClusteringForEgammaUnseeded + process.hltEgammaCandidatesUnseeded + process.hltDiEG22EtEta2p55UnseededFilter + process.hltEgammaR9IDUnseeded + process.hltEgammaHoverEUnseeded + process.hltEgammaClusterShapeUnseeded + process.hltEgammaEcalPFClusterIsoUnseeded )# + process.preMVATestFilter)
-process.HLTDiphotonMvaTestSequence2 = cms.Sequence( process.HLTDoFullUnpackingEgammaEcalSequence + process.HLTPFClusteringForEgamma + process.HLTPFClusteringForEgammaUnseeded + process.hltEgammaCandidatesUnseeded + process.hltDiEG22EtEta2p55UnseededFilter + process.hltEgammaR9IDUnseeded + process.HLTDoLocalHcalSequence + process.HLTFastJetForEgamma + process.hltEgammaHoverEUnseeded + process.hltEgammaClusterShapeUnseeded + process.hltEgammaEcalPFClusterIsoUnseeded )# + process.preMVATestFilter)
+#process.HLTDiphotonMvaTestSequence = cms.Sequence( process.HLTDoFullUnpackingEgammaEcalSequence + process.HLTPFClusteringForEgamma + process.hltEgammaCandidates + process.hltEGL1SingleAndDoubleEGOrFilter + process.hltEG30L1SingleAndDoubleEGOrEtFilter + process.HLTDoLocalHcalSequence + process.HLTFastJetForEgamma + process.hltEgammaHoverE + process.hltEgammaClusterShape + process.hltEgammaEcalPFClusterIso + process.HLTPFClusteringForEgammaUnseeded + process.hltEgammaCandidatesUnseeded + process.hltDiEGEta2p55UnseededFilter + process.hltEgammaR9IDUnseeded + process.hltEgammaHoverEUnseeded + process.hltEgammaClusterShapeUnseeded + process.hltEgammaEcalPFClusterIsoUnseeded )# + process.preMVATestFilter)
+
+process.HLTDiphotonMvaTestSequence = cms.Sequence( process.HLTDoFullUnpackingEgammaEcalSequence + process.HLTPFClusteringForEgamma + process.hltEgammaCandidates + process.hltEGL1SingleAndDoubleEGOrFilter + process.hltEG30L1SingleAndDoubleEGOrEtFilter + process.HLTDoLocalHcalSequence + process.HLTFastJetForEgamma + process.HLTPFClusteringForEgammaUnseeded + process.hltEgammaCandidatesUnseeded + process.hltDiEGEta2p55UnseededFilter + process.hltEgammaR9IDUnseeded + process.hltEgammaHoverEUnseeded + process.hltEgammaClusterShapeUnseeded + process.hltEgammaEcalPFClusterIsoUnseeded )# + process.preMVATestFilter)
 
 process.HLTEndSequence = cms.Sequence( process.hltBoolEnd )
 process.HLTDatasetPathBeginSequence = cms.Sequence( process.hltGtStage2Digis )
@@ -11840,15 +11853,16 @@ except:
 process.PrescaleService.prescaleTable =  cms.VPSet(  *( 
 
       cms.PSet(  pathName = cms.string( "HLT_Diphoton30_22_R9Id_OR_IsoCaloId_AND_HE_R9Id_Mass90_v19" ),
-        #prescales = cms.vuint32( 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0 )
-        prescales = cms.vuint32( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 )
+        prescales = cms.vuint32( 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1 )
+        #prescales = cms.vuint32( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 )
       ),
       cms.PSet(  pathName = cms.string( "HLT_Diphoton30_22_R9Id_OR_IsoCaloId_AND_HE_R9Id_Mass95_v19" ),
-        #prescales = cms.vuint32( 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0 )
-        prescales = cms.vuint32( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 )
+        prescales = cms.vuint32( 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1 )
+        #prescales = cms.vuint32( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 )
       ),
       cms.PSet(  pathName = cms.string( "Dataset_EGamma0" ),
-        prescales = cms.vuint32( 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 )
+        #prescales = cms.vuint32( 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 )
+        prescales = cms.vuint32( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 )
       ),
       cms.PSet(  pathName = cms.string( "Dataset_EGamma1" ),
         prescales = cms.vuint32( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 )
@@ -11857,7 +11871,6 @@ process.PrescaleService.prescaleTable =  cms.VPSet(  *(
       cms.PSet(  pathName = cms.string( "HLT_Diphoton_MVATest" ),
         prescales = cms.vuint32( 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 )
       ),
-
 
 ))
 
@@ -11898,7 +11911,8 @@ else:
 #### specify data files:
 
 if not data:
-  if True:
+  if False:
+    #this MC sample (and M-90 one as well) is BAD! Most event fail L1 seed filter
     process.source.fileNames = cms.untracked.vstring(
     "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/01cb1481-0755-4e72-9cef-dea7532823d1.root",
     "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/02319bc3-d74c-4076-9d8a-193e0ddf1da8.root",
@@ -11951,6 +11965,13 @@ if not data:
     "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/2f71cc58-bc8e-4edf-866b-21ea30be0e85.root",
     "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/2f899e9f-8055-4bfc-b8ad-3e3b9364c2d0.root",
     #"/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/0023a0f9-e40d-4c97-9a96-c6162cd968ef.root",
+    )
+  if True:
+    process.source.fileNames = cms.untracked.vstring(
+      "/store/mc/Run3Summer23BPixDRPremix/DoublePhoton_Pt-5To300_gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/000e5521-dff2-47d2-9f01-2454c1bbd085.root",
+#      "/store/mc/Run3Summer23BPixDRPremix/DoublePhoton_Pt-5To300_gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/0017fb36-f517-49f6-8916-5b18a2d811c7.root",
+#      "/store/mc/Run3Summer23BPixDRPremix/DoublePhoton_Pt-5To300_gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/002bc62d-9fe0-49c5-91f1-a77b326b919d.root",
+#      "/store/mc/Run3Summer23BPixDRPremix/DoublePhoton_Pt-5To300_gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/0037794c-59e9-4ab7-aa3d-1bc41cf67725.root"
     )
   if False:
     process.source.fileNames = cms.untracked.vstring(
