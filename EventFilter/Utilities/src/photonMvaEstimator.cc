@@ -6,13 +6,12 @@
 #include "xgboost/c_api.h"
 #include "xgboost/learner.h"
 
-constexpr int best_ntree_limit = 48;
-
-photonMvaEstimator::photonMvaEstimator(const edm::FileInPath& weightsfile, const edm::FileInPath& weightsFileXgb) {
+photonMvaEstimator::photonMvaEstimator(const edm::FileInPath& weightsfile, const edm::FileInPath& weightsFileXgb, int best_ntree_limit) {
   gbrForest_ = createGBRForest(weightsfile);
   XGBoosterCreate(NULL, 0, &booster_);
   std::cout << weightsFileXgb.fullPath().c_str() << std::endl;
   XGBoosterLoadModel(booster_, weightsFileXgb.fullPath().c_str());
+  best_ntree_limit_ = best_ntree_limit;
 }
 
 photonMvaEstimator::~photonMvaEstimator() {}
@@ -88,7 +87,7 @@ double photonMvaEstimator::computeMva3(float rawEnergyIn, float r9In, float sigm
   XGDMatrixCreateFromMat(var, 1, 9, -999.9f, &dmat);
   bst_ulong out_len;
   const float* out_result;
-  XGBoosterPredict(booster_, dmat, 0, best_ntree_limit, 0, &out_len, &out_result);
+  XGBoosterPredict(booster_, dmat, 0, best_ntree_limit_, 0, &out_len, &out_result);
   XGDMatrixFree(dmat);
   return out_result[0];
 }
@@ -111,7 +110,7 @@ double photonMvaEstimator::computeMva4() const {
   bst_ulong out_len;
   const float* out_result;
 
-  XGBoosterPredict(booster_, dmat, 0, best_ntree_limit, 0, &out_len, &out_result);
+  XGBoosterPredict(booster_, dmat, 0, best_ntree_limit_, 0, &out_len, &out_result);
   XGDMatrixFree(dmat);
 
   std::cout << " ===TEST===   LEN: " <<  out_len << std::endl;

@@ -11905,7 +11905,9 @@ if data:
   #process.GlobalTag.globaltag = cms.string("132X_dataRun3_HLT_for2024TSGStudies_v1")
 else:
   #mc:
-  process.GlobalTag.globaltag = cms.string("130X_mcRun3_2023_realistic_postBPix_v2")
+  #process.GlobalTag.globaltag = cms.string("130X_mcRun3_2023_realistic_postBPix_v2")
+  process.GlobalTag.globaltag = cms.string("133X_mcRun3_2023_realistic_postBPix_v3")
+process.GlobalTag.globaltag = cms.string("133X_mcRun3_2023_realistic_postBPix_v3")
 
 
 #### specify data files:
