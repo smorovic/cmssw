@@ -19,6 +19,8 @@
 #include "TFile.h"
 #include "TTree.h"
 
+constexpr int best_ntree_limit_barrel = 55;
+constexpr int best_ntree_limit_endcap = 48;
 
 MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
 //      //if getting cands from a filter
@@ -36,8 +38,8 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
       mvaFileXgbE_(config.getParameter<edm::FileInPath>("mvaFileXgbE"))
 
 {
-    mvaEstimatorB_ = std::make_unique<photonMvaEstimator>(mvaFileB_, mvaFileXgbB_);
-    mvaEstimatorE_ = std::make_unique<photonMvaEstimator>(mvaFileE_, mvaFileXgbE_);
+    mvaEstimatorB_ = std::make_unique<photonMvaEstimator>(mvaFileB_, mvaFileXgbB_, best_ntree_limit_barrel);
+    mvaEstimatorE_ = std::make_unique<photonMvaEstimator>(mvaFileE_, mvaFileXgbE_, best_ntree_limit_endcap);
     mvaEstimatorE_->computeMva4();
     produces<reco::RecoEcalCandidateIsolationMap>();
 
