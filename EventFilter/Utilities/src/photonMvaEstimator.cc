@@ -14,7 +14,9 @@ photonMvaEstimator::photonMvaEstimator(const edm::FileInPath& weightsfile, const
   best_ntree_limit_ = best_ntree_limit;
 }
 
-photonMvaEstimator::~photonMvaEstimator() {}
+photonMvaEstimator::~photonMvaEstimator() {
+  XGBoosterFree(&booster_);
+}
 
 namespace {
   enum inputIndexes {
