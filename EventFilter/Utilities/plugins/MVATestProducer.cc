@@ -32,7 +32,9 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
       mvaFileB_(config.getParameter<edm::FileInPath>("mvaFileB")),
       mvaFileE_(config.getParameter<edm::FileInPath>("mvaFileE")),
       mvaFileXgbB_(config.getParameter<edm::FileInPath>("mvaFileXgbB")),
-      mvaFileXgbE_(config.getParameter<edm::FileInPath>("mvaFileXgbE"))
+      mvaFileXgbE_(config.getParameter<edm::FileInPath>("mvaFileXgbE"))//,
+      //mvaNTreeLimitB_(config.getParameter<edm::FileInPath>("mvaNTreeLimitB")) //55
+      //mvaNTreeLimitE_(config.getParameter<edm::FileInPath>("mvaNTreeLimitE")) //48
 
 {
     mvaEstimatorB_ = std::make_unique<photonMvaEstimator>(mvaFileB_, mvaFileXgbB_, best_ntree_limit_barrel);

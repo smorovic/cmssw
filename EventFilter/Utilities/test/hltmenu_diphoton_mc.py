@@ -10374,12 +10374,12 @@ process.hltDiEG22EtEta2p55UnseededFilter = cms.EDFilter( "HLT1Photon",
 #    MinN = cms.int32( 2 )
 #)
 
-process.hltDiEGEta2p55UnseededFilter = cms.EDFilter( "HLT1Photon",
+process.hltDiEG14p25EtEta2p55UnseededFilter = cms.EDFilter( "HLT1Photon",
     saveTags = cms.bool( True ),
     inputTag = cms.InputTag( "hltEgammaCandidatesUnseeded" ),
     triggerType = cms.int32( 92 ),
     MinE = cms.double( -1.0 ),
-    MinPt = cms.double( -1.0 ),
+    MinPt = cms.double( 14.25 ),
     MinMass = cms.double( -1.0 ),
     MaxMass = cms.double( -1.0 ),
     MinEta = cms.double( -1.0 ),
@@ -11723,7 +11723,7 @@ process.HLTDiphoton30L22R9Id85b90eORIso60CaloId15b35eANDHE12R9Id50b80eSequence =
 #NEW SEQUENCE
 #process.HLTDiphotonMvaTestSequence = cms.Sequence( process.HLTDoFullUnpackingEgammaEcalSequence + process.HLTPFClusteringForEgamma + process.hltEgammaCandidates + process.hltEGL1SingleAndDoubleEGOrFilter + process.hltEG30L1SingleAndDoubleEGOrEtFilter + process.HLTDoLocalHcalSequence + process.HLTFastJetForEgamma + process.hltEgammaHoverE + process.hltEgammaClusterShape + process.hltEgammaEcalPFClusterIso + process.HLTPFClusteringForEgammaUnseeded + process.hltEgammaCandidatesUnseeded + process.hltDiEGEta2p55UnseededFilter + process.hltEgammaR9IDUnseeded + process.hltEgammaHoverEUnseeded + process.hltEgammaClusterShapeUnseeded + process.hltEgammaEcalPFClusterIsoUnseeded )# + process.preMVATestFilter)
 
-process.HLTDiphotonMvaTestSequence = cms.Sequence( process.HLTDoFullUnpackingEgammaEcalSequence + process.HLTPFClusteringForEgamma + process.hltEgammaCandidates + process.hltEGL1SingleAndDoubleEGOrFilter + process.hltEG30L1SingleAndDoubleEGOrEtFilter + process.HLTDoLocalHcalSequence + process.HLTFastJetForEgamma + process.HLTPFClusteringForEgammaUnseeded + process.hltEgammaCandidatesUnseeded + process.hltDiEGEta2p55UnseededFilter + process.hltEgammaR9IDUnseeded + process.hltEgammaHoverEUnseeded + process.hltEgammaClusterShapeUnseeded + process.hltEgammaEcalPFClusterIsoUnseeded )# + process.preMVATestFilter)
+process.HLTDiphotonMvaTestSequence = cms.Sequence( process.HLTDoFullUnpackingEgammaEcalSequence + process.HLTPFClusteringForEgamma + process.hltEgammaCandidates + process.hltEGL1SingleAndDoubleEGOrFilter + process.hltEG30L1SingleAndDoubleEGOrEtFilter + process.HLTDoLocalHcalSequence + process.HLTFastJetForEgamma + process.HLTPFClusteringForEgammaUnseeded + process.hltEgammaCandidatesUnseeded + process.hltDiEG14p25EtEta2p55UnseededFilter + process.hltEgammaR9IDUnseeded + process.hltEgammaHoverEUnseeded + process.hltEgammaClusterShapeUnseeded + process.hltEgammaEcalPFClusterIsoUnseeded )# + process.preMVATestFilter)
 
 process.HLTEndSequence = cms.Sequence( process.hltBoolEnd )
 process.HLTDatasetPathBeginSequence = cms.Sequence( process.hltGtStage2Digis )
@@ -11913,62 +11913,24 @@ process.GlobalTag.globaltag = cms.string("133X_mcRun3_2023_realistic_postBPix_v3
 #### specify data files:
 
 if not data:
-  if False:
+  if True:
     #this MC sample (and M-90 one as well) is BAD! Most event fail L1 seed filter
+    #for now look at DY 50
     process.source.fileNames = cms.untracked.vstring(
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/01cb1481-0755-4e72-9cef-dea7532823d1.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/02319bc3-d74c-4076-9d8a-193e0ddf1da8.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/0260153f-e394-4f36-8d19-27ab25d367aa.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/0268eb2c-017e-4173-b921-c5817c10d187.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/032a1b7c-2b4e-4c65-9000-f0f7d6c0e76b.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/037eb900-b4a1-47d9-a976-9538f84f66bf.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/03ca9c00-2db2-4197-85d6-0c63c36de12d.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/078df212-518c-48d0-a7c9-c48de85135ab.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/08ca352b-799b-4d3a-b545-e89cbdc5b77d.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/097a29f3-1d75-4732-9eb4-8b12daf2ef58.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/0a854339-32cd-410f-a203-1cc645fe9fd6.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/0abf7dc0-ccb9-4456-a49c-1f5317a6169d.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/0b72d067-56cc-48b5-827d-040c9d582f3c.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/0bd72b13-a20a-4812-a792-5270b934de51.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/0c2f361d-f6b4-4a9a-809e-c2606260d5d7.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/0c69cd8d-dfb0-4be8-99e0-f3ebe07a3ae2.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/0da711c1-0388-419c-b267-3da2febbac47.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/0e037406-df8d-434e-8ea2-ffce939c6732.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/0e96efc7-35d3-4c65-a5aa-c6aa85284aad.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/0ff418d3-0abc-401d-9b79-186184699c34.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/1162097d-e1e2-4c78-9762-22f0dc1e4e6b.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/13258960-ef8e-49c4-a907-95923896e383.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/13decb55-291d-40ac-86ee-56576af5d9cc.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/14a28242-0297-4080-bd1c-828eccdef7a2.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/1595deff-b6fa-4386-be39-ac906698317c.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/1669fec7-7f31-4322-a5db-e1b404e9f4ec.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/171cc89c-1cc3-4d65-bccc-18843aacbb1e.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/1841fdd8-8e09-40c6-900d-c0b6db8bc308.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/18ffb46c-7f11-4f55-b84c-bd11e307c478.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/1af4ad60-cd9e-42ab-8d06-853f141d4f3d.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/1c275b2f-6a25-4d25-b15c-457e878d3071.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/200378be-ed32-4bf2-bc96-75e5780c4e8d.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/2171a3bb-139d-4994-bd5a-9ae3985bc23a.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/21b0c72b-2706-456d-878d-2ef8fa64edd5.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/21b68488-533c-4849-a270-2a538f76ee0e.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/2253eecc-983b-493d-9d2f-19c985effb6f.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/229cd612-a4d8-43b1-a91b-5291d5002b8f.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/2394ee3f-0161-4c45-a2d2-9661232baf57.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/27796e56-d81c-4d8e-96fe-8f8fb03d42e6.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/27bbbebe-2851-441a-a48e-150e8a0e1e22.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/2927e83e-7f99-4997-bc4a-65a26eb70607.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/295e2790-4ff5-4e61-8359-f8d4c50dc133.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/29dc1d1b-a505-4640-9d10-8c305feeadb7.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/2a8a52de-ebaf-49f8-b8f4-b2aa76543729.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/2c509fb6-7fd9-4e3c-be12-a4d46c9b0627.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/2da8b64e-d243-4bc2-b82a-2eec3c3f6c3a.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/2e012c68-ac46-44c5-b4b6-da8b7aaea310.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/2f2c74bf-9c2c-4628-b9ec-f21c484491a8.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/2f71cc58-bc8e-4edf-866b-21ea30be0e85.root",
-    "/store/mc/Run3Summer23BPixDRPremix/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/2f899e9f-8055-4bfc-b8ad-3e3b9364c2d0.root",
+      "/store/mc/Run3Summer23BPixDRPremix/DYToLL_M-4To50_TuneCP5_13p6TeV-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/06ee283b-f545-4582-ba81-3a05cd1a575f.root",
+      "/store/mc/Run3Summer23BPixDRPremix/DYToLL_M-4To50_TuneCP5_13p6TeV-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/0f21bed3-16c3-49c1-99c1-19b44c9ba946.root",
+      "/store/mc/Run3Summer23BPixDRPremix/DYToLL_M-4To50_TuneCP5_13p6TeV-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/126d50a7-f1f6-4897-b112-d80728bfb128.root",
+      "/store/mc/Run3Summer23BPixDRPremix/DYToLL_M-4To50_TuneCP5_13p6TeV-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/167e952a-a4e9-4dfe-8315-68d5c688d3b6.root",
+      "/store/mc/Run3Summer23BPixDRPremix/DYToLL_M-4To50_TuneCP5_13p6TeV-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/2cea9ee1-87fb-4ce8-bdd6-6ea763a86804.root",
+      "/store/mc/Run3Summer23BPixDRPremix/DYToLL_M-4To50_TuneCP5_13p6TeV-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/2f608f58-7029-45ff-9704-e23f4cc099e5.root",
+      "/store/mc/Run3Summer23BPixDRPremix/DYToLL_M-4To50_TuneCP5_13p6TeV-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/3095ae6e-88e3-4f3a-bb03-50550e9b527d.root",
+      "/store/mc/Run3Summer23BPixDRPremix/DYToLL_M-4To50_TuneCP5_13p6TeV-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/3b13b04c-db78-4c11-9323-d85064dc8dc9.root",
+      "/store/mc/Run3Summer23BPixDRPremix/DYToLL_M-4To50_TuneCP5_13p6TeV-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/3e937bcb-5422-4e57-8183-0a7428026f88.root",
+      "/store/mc/Run3Summer23BPixDRPremix/DYToLL_M-4To50_TuneCP5_13p6TeV-pythia8/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/66a1b58d-b471-4746-b8ad-0855d8dec03f.root"
+    #"/store/mc/Run3Summer23BPixDRPremix/DYto2L_M-50_TuneCP5_13p6TeV_pythia8/GEN-SIM-RAW/KeepSi_130X_mcRun3_2023_realistic_postBPix_v2-v3/2560000/0272d111-beac-456b-95b6-9b1acef65422.root"
     #"/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/0023a0f9-e40d-4c97-9a96-c6162cd968ef.root",
     )
-  if True:
+  if False:
     process.source.fileNames = cms.untracked.vstring(
       "/store/mc/Run3Summer23BPixDRPremix/DoublePhoton_Pt-5To300_gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/000e5521-dff2-47d2-9f01-2454c1bbd085.root",
 #      "/store/mc/Run3Summer23BPixDRPremix/DoublePhoton_Pt-5To300_gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/80000/0017fb36-f517-49f6-8916-5b18a2d811c7.root",
@@ -11977,53 +11939,5 @@ if not data:
     )
   if False:
     process.source.fileNames = cms.untracked.vstring(
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/0023a0f9-e40d-4c97-9a96-c6162cd968ef.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/0091fef7-6fde-4582-9437-2493dee5e707.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/009ca0af-4bbb-40ae-a10e-f3dcbe324a3e.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/009d74ad-cb32-45a1-8060-cd47b022502a.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/00d0f16a-cd0b-4a2c-be9a-4bb9d18e10cc.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/00f03a40-a6fc-43c9-b8a6-4dac0ead1d44.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/00f6a640-e372-4bc9-9c6d-ea8a38cddb19.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/013bf6ec-a6f3-42c7-a02c-0ea509e6e841.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/014cb8f8-fc95-46d1-9fcc-3fe617180abf.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/018ba072-c1c2-418e-87ef-5f1fdb0b4bf3.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/01b94dcd-688d-46ee-8faf-c4466d5f875d.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/01f4154b-c4bf-4b50-bd60-90643d21d5ff.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/01f85531-db08-45d6-b0ce-f94d8480431d.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/0237f591-6341-4be1-a213-e597dced7705.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/02ebadea-87bc-4bdd-b5f0-b089bc0ae3d6.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/02fb403d-7325-4140-88b6-246698490d14.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/0309bb58-ee20-45d0-a278-237f0b01d947.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/033d16f5-cb04-41e4-92f0-6c35c8c74579.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/034ed991-8e80-44ff-aad5-365ab5aca1d8.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/03b0f5c4-9ed6-4878-8e70-14ca18d8d636.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/03b48844-b834-4190-9be5-b5f83355df74.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/03bea84c-423c-4fae-9190-ca204d9fba8e.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/0411ac0b-b74e-4d95-a2a3-4e2737ed2716.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/042152c8-c832-4763-b93f-ea9f145911b4.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/04a8d57b-c26b-45a4-ae1d-5c26dbd0e0d2.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/055c6878-0070-44df-a238-12e1d6da1321.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/05a09dba-6523-472f-a174-7437eebdc629.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/05a5a7ec-ecc6-4397-8502-a75113621a50.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/05b924f6-cc07-4fc9-abfc-0f2bf424d255.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/0613df6a-bc2c-4a32-943b-360453fcd5dd.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/066b0711-8173-4a51-971f-c95916a89225.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/069fa2c6-5af5-487c-9e68-adae6fa72b56.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/06f52940-5a2a-44e5-8249-ddd9b310f37f.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/0788c726-e4ef-4973-ac0e-e0dc24736d1d.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/07ec9a75-fbc5-47cf-87bc-019e74cd3080.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/080809f4-5075-48c3-afb4-942e3ad51446.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/0832e240-091c-4341-8cd7-fbca58d9fd6a.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/0853c6ec-10ef-4b64-98a3-6a1dcea6e4d8.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/087f01f4-c866-4b42-8182-fc46ec840b59.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/08858422-8464-4633-8cfe-e222f39f1a0f.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/089ee0f9-8949-4d08-8b40-a031fd43c45e.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/089fb1f0-2355-4844-8a5c-6006522c8bc6.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/08a332d0-af0a-4d74-96d8-a034f20dff75.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/09278116-6e75-4931-a27d-5202a9f500f6.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/099ab777-96b1-4182-9b75-c842e0efbf6f.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/099e6f36-f636-462d-afc6-af029d95383a.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/09b34a64-2e82-438a-859f-9882eebd813a.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/0a1527ca-7004-4655-b151-ae8ec44f147e.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/0a23576a-d717-437d-b7df-e7d2bda3e97e.root",
-    "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/0a3262b8-d50c-4ef1-adc1-6a95a39b9490.root")
+      "/store/mc/Run3Summer23BPixDRPremix/SinglePhoton_Pt-0To200-gun/GEN-SIM-RAW/130X_mcRun3_2023_realistic_postBPix_v2-v2/2550000/0023a0f9-e40d-4c97-9a96-c6162cd968ef.root",
+    )
