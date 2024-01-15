@@ -1,8 +1,11 @@
 #ifndef EVENTFILTER_UTILITIES_PLUGINS_TESTPRODUCER
 #define EVENTFILTER_UTILITIES_PLUGINS_TESTPRODUCER
 
+#define DEBUG_EGAMMA_MVA //have ntuple
 
-#include <FWCore/Framework/interface/stream/EDProducer.h>
+#include <FWCore/Framework/interface/global/EDProducer.h>
+//#include <FWCore/Framework/interface/stream/EDProducer.h>
+#include <FWCore/Framework/interface/one/EDProducer.h>
 #include <FWCore/Framework/interface/Event.h>
 #include <FWCore/ParameterSet/interface/ParameterSet.h>
 #include <FWCore/Utilities/interface/InputTag.h>
@@ -21,7 +24,11 @@ namespace edm {
   class ConfigurationDescriptions;
 }
 
-class MVATestProducer : public edm::stream::EDProducer<> {
+#ifdef DEBUG_EGAMMA_MVA
+class MVATestProducer : public edm::one::EDProducer<> {
+#else
+class MVATestProducer : public edm::global::EDProducer<> {
+#endif
 public:
   explicit MVATestProducer(edm::ParameterSet const &);
   ~MVATestProducer();
@@ -29,7 +36,11 @@ public:
   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
 
 private:
+#ifdef DEBUG_EGAMMA_MVA
   void produce(edm::Event &, edm::EventSetup const &) override;
+#else
+  void produce(edm::StreamID, edm::Event &, edm::EventSetup const &) const override;
+#endif
 
   //edm::EDGetTokenT<trigger::TriggerFilterObjectWithRefs> candToken_; //use if reading from a filter
   edm::EDGetTokenT<reco::RecoEcalCandidateCollection> candToken_; //use if reading from a producer

@@ -1,6 +1,3 @@
-
-#define DEBUG_EGAMMA_MVA //have ntuple
-
 #include "MVATestProducer.h"
 
 #include <FWCore/ParameterSet/interface/ConfigurationDescriptions.h>
@@ -96,7 +93,11 @@ void MVATestProducer::fillDescriptions(edm::ConfigurationDescriptions& descripti
                               edm::FileInPath("/afs/cern.ch/work/r/rlee/public/CMSSW_13_3_0/src/xgbModels/M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Endcap.xml"));
 }
 
+#ifdef DEBUG_EGAMMA_MVA //have ntuple
 void MVATestProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
+#else
+void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup const& setup) const {
+#endif
 
 //    //ifdef we get cands from a filter
 //    // Ref to Candidate object to be recorded in filter object
