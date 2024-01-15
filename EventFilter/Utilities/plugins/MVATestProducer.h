@@ -58,6 +58,9 @@ private:
   std::unique_ptr<const photonMvaEstimator> mvaEstimatorB_;
   std::unique_ptr<const photonMvaEstimator> mvaEstimatorE_;
 
+  //unsigned mvaNTreeLimitB_ = 0;
+  //unsigned mvaNTreeLimitE_ = 0;
+
   TFile *f_ = nullptr;
   TTree *t_ = nullptr;
 
