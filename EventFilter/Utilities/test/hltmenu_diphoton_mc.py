@@ -10389,8 +10389,8 @@ process.hltDiEGEta2p55UnseededFilter = cms.EDFilter( "HLT1Photon",
 
 
 process.HLTDiphotonMVATestProducer = cms.EDProducer("MVATestProducer",
-    candTag = cms.InputTag( "hltDiEGEta2p55UnseededFilter" ),
-    #candTag = cms.InputTag( "hltEgammaCandidatesUnseeded" ),
+    #candTag = cms.InputTag( "hltDiEGEta2p55UnseededFilter" ),
+    candTag = cms.InputTag( "hltEgammaCandidatesUnseeded" ),
     inputTagR9 = cms.InputTag("hltEgammaR9IDUnseeded", "r95x5"),
     inputTagHoE = cms.InputTag("hltEgammaHoverEUnseeded"),
     inputTagSigmaiEtaiEta = cms.InputTag("hltEgammaClusterShapeUnseeded", "sigmaIEtaIEta5x5NoiseCleaned"),
