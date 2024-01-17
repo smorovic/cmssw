@@ -16,30 +16,29 @@
 #include "TFile.h"
 #include "TTree.h"
 
-constexpr int best_ntree_limit_barrel = 55;
-constexpr int best_ntree_limit_endcap = 48;
-
 MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
-//      //if getting cands from a filter
-//      candToken_(consumes<trigger::TriggerFilterObjectWithRefs>(config.getParameter<edm::InputTag>("candTag"))),
-//      //if we consume a producer
+      //if getting cands from a filter
+      //candToken_(consumes<trigger::TriggerFilterObjectWithRefs>(config.getParameter<edm::InputTag>("candTag"))),
+
+      //if consuming a producer
       candToken_(consumes<reco::RecoEcalCandidateCollection>(config.getParameter<edm::InputTag>("candTag"))),
       tokenR9_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagR9"))),
       tokenHoE_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagHoE"))),
       tokenSigmaiEtaiEta_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagSigmaiEtaiEta"))),
       tokenE2x2_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagE2x2"))),
       tokenIso_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagIso"))),
-      mvaFileB_(config.getParameter<edm::FileInPath>("mvaFileB")),
-      mvaFileE_(config.getParameter<edm::FileInPath>("mvaFileE")),
       mvaFileXgbB_(config.getParameter<edm::FileInPath>("mvaFileXgbB")),
-      mvaFileXgbE_(config.getParameter<edm::FileInPath>("mvaFileXgbE"))//,
-      //mvaNTreeLimitB_(config.getParameter<edm::FileInPath>("mvaNTreeLimitB")) //55
-      //mvaNTreeLimitE_(config.getParameter<edm::FileInPath>("mvaNTreeLimitE")) //48
-
+      mvaFileXgbE_(config.getParameter<edm::FileInPath>("mvaFileXgbE")),
+      mvaNTreeLimitB_(config.getParameter<unsigned int>("mvaNTreeLimitB")),
+      mvaNTreeLimitE_(config.getParameter<unsigned int>("mvaNTreeLimitE")),
+      mvaThresholdEt_(config.getParameter<unsigned int>("mvaThresholdEt"))
+#ifdef DEBUG_EGAMMA_MVA
+      ,rootFileName_(config.getUntrackedParameter<std::string>("treeFile", "photon_mva.root"))
+#endif
 {
-    mvaEstimatorB_ = std::make_unique<photonMvaEstimator>(mvaFileB_, mvaFileXgbB_, best_ntree_limit_barrel);
-    mvaEstimatorE_ = std::make_unique<photonMvaEstimator>(mvaFileE_, mvaFileXgbE_, best_ntree_limit_endcap);
-    mvaEstimatorE_->computeMva4();
+    mvaEstimatorB_ = std::make_unique<PhotonMvaEstimator>(mvaFileXgbB_, mvaNTreeLimitB_);
+    mvaEstimatorE_ = std::make_unique<PhotonMvaEstimator>(mvaFileXgbE_, mvaNTreeLimitE_);
+    mvaEstimatorE_->computeMvaTest();
     produces<reco::RecoEcalCandidateIsolationMap>();
 
 #ifdef DEBUG_EGAMMA_MVA
@@ -56,9 +55,8 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
     eta_ = new std::vector<float>();
     hoe_ = new std::vector<float>();
     iso_ = new std::vector<float>();
-    mvaScore_ = new std::vector<float>();
     mvaScoreXGB_ = new std::vector<float>();
-    f_ = new TFile("photon_mva.root", "RECREATE");
+    f_ = new TFile(rootFileName_.c_str(), "RECREATE");
     t_ = new TTree("HLTPhotonMVA", "HLT Photon MVA");
     t_->Branch("eventId", &eventId_, "eventId/l");
     t_->Branch("et", "std::vector<float>", &et_);
@@ -73,9 +71,7 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
     t_->Branch("eta", "std::vector<float>", &eta_);
     t_->Branch("HoE", "std::vector<float>", &hoe_);
     t_->Branch("iso", "std::vector<float>", &iso_);
-    t_->Branch("mvaScore", "std::vector<float>", &mvaScore_);
     t_->Branch("mvaScoreXGB", "std::vector<float>", &mvaScoreXGB_);
-
 
 #endif
 
@@ -89,10 +85,13 @@ void MVATestProducer::fillDescriptions(edm::ConfigurationDescriptions& descripti
     desc.add<edm::InputTag>("inputTagSigmaiEtaiEta", edm::InputTag("hltEgammaClusterShapeUnseeded", "sigmaIEtaIEta5x5NoiseCleaned"));
     desc.add<edm::InputTag>("inputTagE2x2", edm::InputTag("hltEgammaClusterShapeUnseeded", "e2x2"));
     desc.add<edm::InputTag>("inputTagIso", edm::InputTag("hltEgammaEcalPFClusterIsoUnseeded"));
-    desc.add<edm::FileInPath>("mvaFileB",
-                              edm::FileInPath("/afs/cern.ch/work/r/rlee/public/CMSSW_13_3_0/src/xgbModels/M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Barrel.xml"));
-    desc.add<edm::FileInPath>("mvaFileE",
-                              edm::FileInPath("/afs/cern.ch/work/r/rlee/public/CMSSW_13_3_0/src/xgbModels/M7L25_GGH13andDataD_NoTrkIso_M60_PdgIDCut_1213_Endcap.xml"));
+    desc.add<edm::FileInPath>("mvaFileXgbB",
+                              edm::FileInPath("EventFilter/Utilities/data/barrel.bin"));
+    desc.add<edm::FileInPath>("mvaFileXgbE",
+                              edm::FileInPath("EventFilter/Utilities/data/endcap.bin"));
+    desc.add<unsigned int>("mvaNTreeLimitB", 55);
+    desc.add<unsigned int>("mvaNTreeLimitE", 48);
+    desc.add<unsigned int>("mvaThresholdEt", 0);
 }
 
 #ifdef DEBUG_EGAMMA_MVA //have ntuple
@@ -101,19 +100,14 @@ void MVATestProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
 void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup const& setup) const {
 #endif
 
-//    //ifdef we get cands from a filter
-//    // Ref to Candidate object to be recorded in filter object
-//    edm::Ref<reco::RecoEcalCandidateCollection> ref;
-//
-//    edm::Handle<trigger::TriggerFilterObjectWithRefs> PrevFilterOutput;
-//    event.getByToken(candToken_, PrevFilterOutput);
-//
-//    std::vector<edm::Ref<reco::RecoEcalCandidateCollection> > recoecalcands;
-//
-//    PrevFilterOutput->getObjects(trigger::TriggerCluster, recoecalcands);
-//    if (recoecalcands.empty())
-//      PrevFilterOutput->getObjects(trigger::TriggerPhoton, recoecalcands);
+    //edm::Handle<trigger::TriggerFilterObjectWithRefs> PrevFilterOutput;
+    //event.getByToken(candToken_, PrevFilterOutput);
 
+    //std::vector<edm::Ref<reco::RecoEcalCandidateCollection> > filterCands;
+
+    //PrevFilterOutput->getObjects(trigger::TriggerCluster, filterCands);
+    //if (recCands.empty())
+    //  PrevFilterOutput->getObjects(trigger::TriggerPhoton, filterCands);
 
     edm::Handle<reco::RecoEcalCandidateCollection> recCollection; // hltEgammaCandidates(Unseeded)
     event.getByToken(candToken_, recCollection);
@@ -152,17 +146,16 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
       eta_->clear();
       hoe_->clear();
       iso_->clear();
-      mvaScore_->clear();
       mvaScoreXGB_->clear();
 #endif
 
     //output
     reco::RecoEcalCandidateIsolationMap mvaScoreMap(recCollection);
 
-//    //if taking trigger cands
-//    for (unsigned int i = 0; i < recoecalcands.size(); i++) {
-//      ref = recoecalcands[i];
-//      //edm::Ref<reco::RecoEcalCandidateCollection> ref(recoecalcands, i);
+    ////if taking trigger cands
+    //for (unsigned int i = 0; i < recCollection.size(); i++) {
+    //  edm::Ref<reco::RecoEcalCandidateCollection> ref = recCollection[i];
+    //  //edm::Ref<reco::RecoEcalCandidateCollection> ref(recoecalcands, i);
 
     for (size_t i=0;i < recCollection->size(); i++) {
       edm::Ref<reco::RecoEcalCandidateCollection> ref(recCollection, i);
@@ -170,13 +163,10 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
       float etaSC = ref->eta();
 
       float scEnergy = ref->superCluster()->energy();
-      float scEnergyInv = scEnergy != 0 ? (1. / scEnergy) : -1.;
-
       float r9 = (*r9Map).find(ref)->val;
-      float hoe = (*hoEMap).find(ref)->val * scEnergyInv;
+      float hoe = (*hoEMap).find(ref)->val / scEnergy;
       float siEtaiEta = (*sigmaiEtaiEtaMap).find(ref)->val;
       float e2x2 = (*e2x2Map).find(ref)->val;
-      //float isoRel = (*isoMap).find(ref)->val * scEnergyInv;
       float iso = (*isoMap).find(ref)->val;
 
       float rawEnergy = ref->superCluster()->rawEnergy();
@@ -187,24 +177,22 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
       if (scEt < 0.)
         scEt = 0.; /* first and second order terms assume non-negative energies */
 
-      float photonScore;
-      float xgbScore;
-      if (abs(etaSC) < 1.5) {
-        photonScore = mvaEstimatorB_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
-        xgbScore = mvaEstimatorB_->computeMva3(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
+      float xgbScore = -100.;
+      //compute only above threshold used for training and cand filter, else store negative value.
+      if (scEt >= mvaThresholdEt_) {
+        if (abs(etaSC) < 1.5)
+          xgbScore = mvaEstimatorB_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
+        else
+          xgbScore = mvaEstimatorE_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
       }
-      else {
-        photonScore = mvaEstimatorE_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
-        xgbScore = mvaEstimatorE_->computeMva3(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
-      }
-
       mvaScoreMap.insert(ref, xgbScore);
-
 
 #ifdef DEBUG_EGAMMA_MVA
 
+      if (scEt < mvaThresholdEt_) continue;
+
       float phiSC = ref->phi();
-      edm::LogWarning("DiphotonMVAMVATestProducer") << "PhotonScore:" << photonScore
+      edm::LogWarning("DiPhotonMVAMVATestProducer")
                 << " xgbScore:" << xgbScore
                 << " -- variables: "
                 << " RawE:" << rawEnergy
@@ -229,12 +217,8 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
       eta_->push_back(etaSC);
       hoe_->push_back(hoe);
       iso_->push_back(iso);
-      mvaScore_->push_back(photonScore);
       mvaScoreXGB_->push_back(xgbScore);
 #endif
-      //no unused error
-      if (photonScore == -999) continue;
-
   }
   event.put(std::make_unique<reco::RecoEcalCandidateIsolationMap>(mvaScoreMap));
 
@@ -242,7 +226,6 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
   if (recCollection->size())
     t_->Fill();
 #endif
-
 }
 
 MVATestProducer::~MVATestProducer() {
@@ -251,7 +234,6 @@ MVATestProducer::~MVATestProducer() {
   if (t_) t_->Write();
   if (f_) f_->Close();
 #endif
-
 }
 
 #include "FWCore/Framework/interface/MakerMacros.h"
