@@ -4,7 +4,6 @@
 #define DEBUG_EGAMMA_MVA //have ntuple
 
 #include <FWCore/Framework/interface/global/EDProducer.h>
-//#include <FWCore/Framework/interface/stream/EDProducer.h>
 #include <FWCore/Framework/interface/one/EDProducer.h>
 #include <FWCore/Framework/interface/Event.h>
 #include <FWCore/ParameterSet/interface/ParameterSet.h>
@@ -13,7 +12,7 @@
 #include "DataFormats/HLTReco/interface/TriggerFilterObjectWithRefs.h"
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidateIsolation.h"
 
-#include "EventFilter/Utilities/interface/photonMvaEstimator.h"
+#include "EventFilter/Utilities/interface/PhotonMvaEstimator.h"
 
 #include <vector>
 
@@ -43,6 +42,7 @@ private:
 #endif
 
   //edm::EDGetTokenT<trigger::TriggerFilterObjectWithRefs> candToken_; //use if reading from a filter
+
   edm::EDGetTokenT<reco::RecoEcalCandidateCollection> candToken_; //use if reading from a producer
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenR9_;
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenHoE_;
@@ -50,17 +50,17 @@ private:
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenE2x2_;
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenIso_;
 
-  const edm::FileInPath mvaFileB_;
-  const edm::FileInPath mvaFileE_;
   const edm::FileInPath mvaFileXgbB_;
   const edm::FileInPath mvaFileXgbE_;
+  unsigned mvaNTreeLimitB_ = 0;
+  unsigned mvaNTreeLimitE_ = 0;
+  unsigned mvaThresholdEt_ = 0;
 
-  std::unique_ptr<const photonMvaEstimator> mvaEstimatorB_;
-  std::unique_ptr<const photonMvaEstimator> mvaEstimatorE_;
+  std::unique_ptr<PhotonMvaEstimator> mvaEstimatorB_;
+  std::unique_ptr<PhotonMvaEstimator> mvaEstimatorE_;
 
-  //unsigned mvaNTreeLimitB_ = 0;
-  //unsigned mvaNTreeLimitE_ = 0;
-
+#ifdef DEBUG_EGAMMA_MVA
+  std::string rootFileName_;
   TFile *f_ = nullptr;
   TTree *t_ = nullptr;
 
@@ -77,8 +77,8 @@ private:
   std::vector<float> *eta_;
   std::vector<float> *hoe_;
   std::vector<float> *iso_;
-  std::vector<float> *mvaScore_;
   std::vector<float> *mvaScoreXGB_;
+#endif
  
 };
 
