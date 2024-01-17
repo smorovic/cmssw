@@ -1,7 +1,7 @@
 #ifndef EVENTFILTER_UTILITIES_PLUGINS_TESTPRODUCER
 #define EVENTFILTER_UTILITIES_PLUGINS_TESTPRODUCER
 
-#define DEBUG_EGAMMA_MVA //have ntuple
+//#define DEBUG_EGAMMA_MVA //have ntuple - note: remove this line for timing tests
 
 #include <FWCore/Framework/interface/global/EDProducer.h>
 #include <FWCore/Framework/interface/one/EDProducer.h>
@@ -54,7 +54,7 @@ private:
   const edm::FileInPath mvaFileXgbE_;
   unsigned mvaNTreeLimitB_ = 0;
   unsigned mvaNTreeLimitE_ = 0;
-  unsigned mvaThresholdEt_ = 0;
+  double mvaThresholdEt_ = 0;
 
   std::unique_ptr<PhotonMvaEstimator> mvaEstimatorB_;
   std::unique_ptr<PhotonMvaEstimator> mvaEstimatorE_;

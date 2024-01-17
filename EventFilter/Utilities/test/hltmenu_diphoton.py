@@ -10407,7 +10407,7 @@ process.HLTDiphotonMVATestProducer = cms.EDProducer("MVATestProducer",
     mvaFileXgbE = cms.FileInPath("EventFilter/Utilities/data/endcap.bin"),
     mvaNTreeLimitB = cms.uint32(55),
     mvaNTreeLimitE = cms.uint32(48),
-    mvaThresholdEt = cms.uint32(0)
+    mvaThresholdEt = cms.double(14.25)
 )
 
 process.HLTDiphotonMVATestCombFilter = cms.EDFilter("MVATestCombFilter",
@@ -11732,10 +11732,10 @@ process.HLTDiphoton30L22R9Id85b90eORIso60CaloId15b35eANDHE12R9Id50b80eSequence =
 
 
 #NEW SEQUENCE (cand ET - > 2 x > 14.25 GeV)
-#process.HLTDiphotonMvaTestSequence = cms.Sequence( process.HLTDoFullUnpackingEgammaEcalSequence + process.HLTPFClusteringForEgamma + process.hltEgammaCandidates + process.hltEGL1SingleAndDoubleEGOrFilter + process.hltEG30L1SingleAndDoubleEGOrEtFilter + process.HLTDoLocalHcalSequence + process.HLTFastJetForEgamma + process.HLTPFClusteringForEgammaUnseeded + process.hltEgammaCandidatesUnseeded + process.hltDiEG14p25EtEta2p55UnseededFilter + process.hltEgammaR9IDUnseeded + process.hltEgammaHoverEUnseeded + process.hltEgammaClusterShapeUnseeded + process.hltEgammaEcalPFClusterIsoUnseeded )
+process.HLTDiphotonMvaTestSequence = cms.Sequence( process.HLTDoFullUnpackingEgammaEcalSequence + process.HLTPFClusteringForEgamma + process.hltEgammaCandidates + process.hltEGL1SingleAndDoubleEGOrFilter + process.hltEG30L1SingleAndDoubleEGOrEtFilter + process.HLTDoLocalHcalSequence + process.HLTFastJetForEgamma + process.HLTPFClusteringForEgammaUnseeded + process.hltEgammaCandidatesUnseeded + process.hltDiEG14p25EtEta2p55UnseededFilter + process.hltEgammaR9IDUnseeded + process.hltEgammaHoverEUnseeded + process.hltEgammaClusterShapeUnseeded + process.hltEgammaEcalPFClusterIsoUnseeded )
 
 #NEW SEQUENCE (no unseeded cand PT filter)
-process.HLTDiphotonMvaTestSequence = cms.Sequence( process.HLTDoFullUnpackingEgammaEcalSequence + process.HLTPFClusteringForEgamma + process.hltEgammaCandidates + process.hltEGL1SingleAndDoubleEGOrFilter + process.hltEG30L1SingleAndDoubleEGOrEtFilter + process.HLTDoLocalHcalSequence + process.HLTFastJetForEgamma + process.hltEgammaHoverE + process.hltEgammaClusterShape + process.hltEgammaEcalPFClusterIso + process.HLTPFClusteringForEgammaUnseeded + process.hltEgammaCandidatesUnseeded + process.hltDiEGEta2p55UnseededFilter + process.hltEgammaR9IDUnseeded + process.hltEgammaHoverEUnseeded + process.hltEgammaClusterShapeUnseeded + process.hltEgammaEcalPFClusterIsoUnseeded )
+#process.HLTDiphotonMvaTestSequence = cms.Sequence( process.HLTDoFullUnpackingEgammaEcalSequence + process.HLTPFClusteringForEgamma + process.hltEgammaCandidates + process.hltEGL1SingleAndDoubleEGOrFilter + process.hltEG30L1SingleAndDoubleEGOrEtFilter + process.HLTDoLocalHcalSequence + process.HLTFastJetForEgamma + process.hltEgammaHoverE + process.hltEgammaClusterShape + process.hltEgammaEcalPFClusterIso + process.HLTPFClusteringForEgammaUnseeded + process.hltEgammaCandidatesUnseeded + process.hltDiEGEta2p55UnseededFilter + process.hltEgammaR9IDUnseeded + process.hltEgammaHoverEUnseeded + process.hltEgammaClusterShapeUnseeded + process.hltEgammaEcalPFClusterIsoUnseeded )
 
 process.HLTEndSequence = cms.Sequence( process.hltBoolEnd )
 process.HLTDatasetPathBeginSequence = cms.Sequence( process.hltGtStage2Digis )
