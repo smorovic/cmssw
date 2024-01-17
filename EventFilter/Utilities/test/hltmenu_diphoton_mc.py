@@ -10400,7 +10400,7 @@ process.HLTDiphotonMVATestProducer = cms.EDProducer("MVATestProducer",
     mvaFileXgbE = cms.FileInPath("EventFilter/Utilities/data/endcap.bin"),
     mvaNTreeLimitB = cms.uint32(55),
     mvaNTreeLimitE = cms.uint32(48),
-    mvaThresholdEt = cms.uint32(0)
+    mvaThresholdEt = cms.double(0.0)
 )
 
 process.HLTDiphotonMVATestCombFilter = cms.EDFilter("MVATestCombFilter",

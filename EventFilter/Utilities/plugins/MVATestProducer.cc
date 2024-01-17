@@ -31,7 +31,7 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
       mvaFileXgbE_(config.getParameter<edm::FileInPath>("mvaFileXgbE")),
       mvaNTreeLimitB_(config.getParameter<unsigned int>("mvaNTreeLimitB")),
       mvaNTreeLimitE_(config.getParameter<unsigned int>("mvaNTreeLimitE")),
-      mvaThresholdEt_(config.getParameter<unsigned int>("mvaThresholdEt"))
+      mvaThresholdEt_(config.getParameter<double>("mvaThresholdEt"))
 #ifdef DEBUG_EGAMMA_MVA
       ,rootFileName_(config.getUntrackedParameter<std::string>("treeFile", "photon_mva.root"))
 #endif
@@ -91,7 +91,7 @@ void MVATestProducer::fillDescriptions(edm::ConfigurationDescriptions& descripti
                               edm::FileInPath("EventFilter/Utilities/data/endcap.bin"));
     desc.add<unsigned int>("mvaNTreeLimitB", 55);
     desc.add<unsigned int>("mvaNTreeLimitE", 48);
-    desc.add<unsigned int>("mvaThresholdEt", 0);
+    desc.add<double>("mvaThresholdEt", 0);
 }
 
 #ifdef DEBUG_EGAMMA_MVA //have ntuple
