@@ -11926,7 +11926,7 @@ data = True
 if data:
 
   #data:
-  process.GlobalTag.globaltag = cms.string("132X_dataRun3_HLT_for2024TSGStudies_v1")
+  process.GlobalTag.globaltag = cms.string("133X_dataRun3_HLT_for2024TSGStudies_v1")
 
 
   #### specify data files:
