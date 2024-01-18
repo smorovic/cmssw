@@ -1,0 +1,9 @@
+#how to get environment:
+
+git clone https://gitlab.cern.ch/cms-tsg/steam/timing.git
+cmsenv
+virtualenv --python=python3.9 venv
+source venv/bin/activate
+venv install tsgauth
+
+#run python timing/submit.py ...
