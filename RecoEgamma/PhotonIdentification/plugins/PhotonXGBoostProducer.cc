@@ -1,0 +1,148 @@
+#include "RecoEgamma/PhotonIdentification/interface/PhotonXGBoostEstimator.h"
+
+#include <FWCore/Framework/interface/global/EDProducer.h>
+#include <FWCore/Framework/interface/one/EDProducer.h>
+#include <FWCore/Framework/interface/Event.h>
+#include <FWCore/ParameterSet/interface/ParameterSet.h>
+#include <FWCore/Utilities/interface/InputTag.h>
+
+#include "FWCore/ParameterSet/interface/FileInPath.h"
+#include <FWCore/ParameterSet/interface/ConfigurationDescriptions.h>
+#include <FWCore/ParameterSet/interface/ParameterSetDescription.h>
+
+#include "DataFormats/RecoCandidate/interface/RecoEcalCandidateIsolation.h"
+#include "DataFormats/RecoCandidate/interface/RecoEcalCandidate.h"
+#include "DataFormats/EgammaReco/interface/SuperCluster.h"
+#include "DataFormats/EgammaReco/interface/SuperClusterFwd.h"
+#include "DataFormats/Common/interface/AssociationMap.h"
+
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
+
+#include <memory>
+#include <vector>
+
+
+class PhotonXGBoostProducer : public edm::global::EDProducer<> {
+public:
+  explicit PhotonXGBoostProducer(edm::ParameterSet const &);
+  ~PhotonXGBoostProducer() {}
+
+  static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
+
+private:
+  void produce(edm::StreamID, edm::Event &, edm::EventSetup const &) const override;
+
+  edm::EDGetTokenT<reco::RecoEcalCandidateCollection> candToken_;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenR9_;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenHoE_;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenSigmaiEtaiEta_;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenE2x2_;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tokenIso_;
+  const edm::FileInPath mvaFileXgbB_;
+  const edm::FileInPath mvaFileXgbE_;
+  unsigned mvaNTreeLimitB_ = 0;
+  unsigned mvaNTreeLimitE_ = 0;
+  double mvaThresholdEt_ = 0;
+  std::unique_ptr<PhotonXGBoostEstimator> mvaEstimatorB_;
+  std::unique_ptr<PhotonXGBoostEstimator> mvaEstimatorE_;
+};
+
+
+PhotonXGBoostProducer::PhotonXGBoostProducer(edm::ParameterSet const& config) :
+      candToken_(consumes<reco::RecoEcalCandidateCollection>(config.getParameter<edm::InputTag>("candTag"))),
+      tokenR9_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagR9"))),
+      tokenHoE_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagHoE"))),
+      tokenSigmaiEtaiEta_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagSigmaiEtaiEta"))),
+      tokenE2x2_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagE2x2"))),
+      tokenIso_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagIso"))),
+      mvaFileXgbB_(config.getParameter<edm::FileInPath>("mvaFileXgbB")),
+      mvaFileXgbE_(config.getParameter<edm::FileInPath>("mvaFileXgbE")),
+      mvaNTreeLimitB_(config.getParameter<unsigned int>("mvaNTreeLimitB")),
+      mvaNTreeLimitE_(config.getParameter<unsigned int>("mvaNTreeLimitE")),
+      mvaThresholdEt_(config.getParameter<double>("mvaThresholdEt"))
+{
+    mvaEstimatorB_ = std::make_unique<PhotonXGBoostEstimator>(mvaFileXgbB_, mvaNTreeLimitB_);
+    mvaEstimatorE_ = std::make_unique<PhotonXGBoostEstimator>(mvaFileXgbE_, mvaNTreeLimitE_);
+    produces<reco::RecoEcalCandidateIsolationMap>();
+}
+
+void PhotonXGBoostProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+    edm::ParameterSetDescription desc;
+    desc.add<edm::InputTag>("candTag");
+    desc.add<edm::InputTag>("inputTagR9", edm::InputTag("hltEgammaR9IDUnseeded", "r95x5"));
+    desc.add<edm::InputTag>("inputTagHoE", edm::InputTag("hltEgammaHoverEUnseeded"));
+    desc.add<edm::InputTag>("inputTagSigmaiEtaiEta", edm::InputTag("hltEgammaClusterShapeUnseeded", "sigmaIEtaIEta5x5NoiseCleaned"));
+    desc.add<edm::InputTag>("inputTagE2x2", edm::InputTag("hltEgammaClusterShapeUnseeded", "e2x2"));
+    desc.add<edm::InputTag>("inputTagIso", edm::InputTag("hltEgammaEcalPFClusterIsoUnseeded"));
+    desc.add<edm::FileInPath>("mvaFileXgbB",
+                              edm::FileInPath("RecoEgamma/PhotonIdentification/data/xgb_photonmva_barrel_v1.bin"));
+    desc.add<edm::FileInPath>("mvaFileXgbE",
+                              edm::FileInPath("RecoEgamma/PhotonIdentification/data/xgb_photonmva_endcap_v1.bin"));
+    desc.add<unsigned int>("mvaNTreeLimitB", 55);
+    desc.add<unsigned int>("mvaNTreeLimitE", 48);
+    desc.add<double>("mvaThresholdEt", 0);
+}
+
+void PhotonXGBoostProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup const& setup) const {
+
+    edm::Handle<reco::RecoEcalCandidateCollection> recCollection;
+    event.getByToken(candToken_, recCollection);
+
+    //get hold of r9 association map
+    edm::Handle<reco::RecoEcalCandidateIsolationMap> r9Map;
+    event.getByToken(tokenR9_, r9Map);
+
+    //get hold of HoE association map
+    edm::Handle<reco::RecoEcalCandidateIsolationMap> hoEMap;
+    event.getByToken(tokenHoE_, hoEMap);
+
+    //get hold of isolated association map
+    edm::Handle<reco::RecoEcalCandidateIsolationMap> sigmaiEtaiEtaMap;
+    event.getByToken(tokenSigmaiEtaiEta_, sigmaiEtaiEtaMap);
+
+    //get hold of e2x2 (s4) association map
+    edm::Handle<reco::RecoEcalCandidateIsolationMap> e2x2Map;
+    event.getByToken(tokenE2x2_, e2x2Map);
+
+    //get hold of Ecal isolation association map
+    edm::Handle<reco::RecoEcalCandidateIsolationMap> isoMap;
+    event.getByToken(tokenIso_, isoMap);
+
+    //output
+    reco::RecoEcalCandidateIsolationMap mvaScoreMap(recCollection);
+
+    for (size_t i=0;i < recCollection->size(); i++) {
+      edm::Ref<reco::RecoEcalCandidateCollection> ref(recCollection, i);
+
+      float etaSC = ref->eta();
+
+      float scEnergy = ref->superCluster()->energy();
+      float r9 = (*r9Map).find(ref)->val;
+      float hoe = (*hoEMap).find(ref)->val / scEnergy;
+      float siEtaiEta = (*sigmaiEtaiEtaMap).find(ref)->val;
+      float e2x2 = (*e2x2Map).find(ref)->val;
+      float iso = (*isoMap).find(ref)->val;
+
+      float rawEnergy = ref->superCluster()->rawEnergy();
+      float etaW = ref->superCluster()->etaWidth();
+      float phiW = ref->superCluster()->phiWidth();
+
+      float scEt = scEnergy * sin(2 * atan(exp(-etaSC)));
+      if (scEt < 0.)
+        scEt = 0.; /* first and second order terms assume non-negative energies */
+
+      float xgbScore = -100.;
+      //compute only above threshold used for training and cand filter, else store negative value into the association map.
+      if (scEt >= mvaThresholdEt_) {
+        if (abs(etaSC) < 1.5)
+          xgbScore = mvaEstimatorB_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
+        else
+          xgbScore = mvaEstimatorE_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
+      }
+      mvaScoreMap.insert(ref, xgbScore);
+  }
+  event.put(std::make_unique<reco::RecoEcalCandidateIsolationMap>(mvaScoreMap));
+}
+
+#include "FWCore/Framework/interface/MakerMacros.h"
+DEFINE_FWK_MODULE(PhotonXGBoostProducer);
