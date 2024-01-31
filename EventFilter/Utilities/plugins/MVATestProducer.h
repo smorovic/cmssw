@@ -1,7 +1,7 @@
 #ifndef EVENTFILTER_UTILITIES_PLUGINS_TESTPRODUCER
 #define EVENTFILTER_UTILITIES_PLUGINS_TESTPRODUCER
 
-//#define DEBUG_EGAMMA_MVA //have ntuple - note: remove this line for timing tests
+#define DEBUG_EGAMMA_MVA //have ntuple
 
 #include <FWCore/Framework/interface/global/EDProducer.h>
 #include <FWCore/Framework/interface/one/EDProducer.h>
@@ -66,6 +66,7 @@ private:
 
   uint64_t eventId_ = 0;
   std::vector<float> *et_;
+  std::vector<float> *scEnergy_;
   std::vector<float> *scEt_;
   std::vector<float> *phi_;
   std::vector<float> *r9_;
@@ -74,10 +75,12 @@ private:
   std::vector<float> *etaW_;
   std::vector<float> *phiW_;
   std::vector<float> *e2x2_;
+  std::vector<float> *s4_;
   std::vector<float> *eta_;
   std::vector<float> *hoe_;
   std::vector<float> *iso_;
   std::vector<float> *mvaScoreXGB_;
+  std::vector<float> *xgbScoresTop2M60_;
 #endif
  
 };
