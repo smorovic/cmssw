@@ -44,6 +44,7 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
 #ifdef DEBUG_EGAMMA_MVA
 
     et_ = new std::vector<float>();
+    scEnergy_ = new std::vector<float>();
     scEt_ = new std::vector<float>();
     phi_ = new std::vector<float>();
     r9_ = new std::vector<float>();
@@ -52,14 +53,17 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
     etaW_ = new std::vector<float>();
     phiW_ = new std::vector<float>();
     e2x2_ = new std::vector<float>();
+    s4_ = new std::vector<float>();
     eta_ = new std::vector<float>();
     hoe_ = new std::vector<float>();
     iso_ = new std::vector<float>();
     mvaScoreXGB_ = new std::vector<float>();
+    xgbScoresTop2M60_ = new std::vector<float>();
     f_ = new TFile(rootFileName_.c_str(), "RECREATE");
     t_ = new TTree("HLTPhotonMVA", "HLT Photon MVA");
     t_->Branch("eventId", &eventId_, "eventId/l");
     t_->Branch("et", "std::vector<float>", &et_);
+    t_->Branch("scEnergy", "std::vector<float>", &scEnergy_);
     t_->Branch("scEt", "std::vector<float>", &scEt_);
     t_->Branch("phi", "std::vector<float>", &phi_);
     t_->Branch("r9", "std::vector<float>", &r9_);
@@ -68,10 +72,12 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
     t_->Branch("etaW", "std::vector<float>", &etaW_);
     t_->Branch("phiW", "std::vector<float>", &phiW_);
     t_->Branch("e2x2", "std::vector<float>", &e2x2_);
+    t_->Branch("s4", "std::vector<float>", &s4_);
     t_->Branch("eta", "std::vector<float>", &eta_);
     t_->Branch("HoE", "std::vector<float>", &hoe_);
     t_->Branch("iso", "std::vector<float>", &iso_);
     t_->Branch("mvaScoreXGB", "std::vector<float>", &mvaScoreXGB_);
+    t_->Branch("mvaScoreTop2M60", "std::vector<float>", &xgbScoresTop2M60_);
 
 #endif
 
@@ -135,6 +141,7 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
 #ifdef DEBUG_EGAMMA_MVA
       eventId_ = event.eventAuxiliary().event();
       et_->clear();
+      scEnergy_->clear();
       scEt_->clear();
       phi_->clear();
       rawEnergy_->clear();
@@ -143,10 +150,15 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
       etaW_->clear();
       phiW_->clear();
       e2x2_->clear();
+      s4_->clear();
       eta_->clear();
       hoe_->clear();
       iso_->clear();
       mvaScoreXGB_->clear();
+      xgbScoresTop2M60_->clear();
+
+    float mv1 = -1, mv2 = -1;
+    int mi1 = -1, mi2 = -1;
 #endif
 
     //output
@@ -163,32 +175,32 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
       float etaSC = ref->eta();
 
       float scEnergy = ref->superCluster()->energy();
+      float eInv = 1./scEnergy;
       float r9 = (*r9Map).find(ref)->val;
-      float hoe = (*hoEMap).find(ref)->val / scEnergy;
+      float hoe = (*hoEMap).find(ref)->val * eInv;
       float siEtaiEta = (*sigmaiEtaiEtaMap).find(ref)->val;
       float e2x2 = (*e2x2Map).find(ref)->val;
+      float s4 = e2x2 * eInv;
       float iso = (*isoMap).find(ref)->val;
 
       float rawEnergy = ref->superCluster()->rawEnergy();
       float etaW = ref->superCluster()->etaWidth();
       float phiW = ref->superCluster()->phiWidth();
 
-      float scEt = scEnergy * sin(2 * atan(exp(-etaSC)));
-      if (scEt < 0.)
-        scEt = 0.; /* first and second order terms assume non-negative energies */
+      float scEt = ref->et();
 
       float xgbScore = -100.;
       //compute only above threshold used for training and cand filter, else store negative value.
       if (scEt >= mvaThresholdEt_) {
         if (abs(etaSC) < 1.5)
-          xgbScore = mvaEstimatorB_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
+          xgbScore = mvaEstimatorB_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,s4,etaSC,hoe,iso);
         else
-          xgbScore = mvaEstimatorE_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
+          xgbScore = mvaEstimatorE_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,s4,etaSC,hoe,iso);
       }
       mvaScoreMap.insert(ref, xgbScore);
 
-#ifdef DEBUG_EGAMMA_MVA
 
+#ifdef DEBUG_EGAMMA_MVA
       if (scEt < mvaThresholdEt_) continue;
 
       float phiSC = ref->phi();
@@ -200,12 +212,14 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
                 << " SiEtaiEta:" << siEtaiEta
                 << " EtaW:" << etaW
                 << " PhiW:" << phiW
-                << " S4(e2x2):" << e2x2
+                << " e2x2:" << e2x2
+                << " s4:" << s4
                 << " EtaSC:" << etaSC
                 << " HoE:" << hoe
                 << " Iso:" << iso;
 
       et_->push_back(ref->et());
+      scEnergy_->push_back(scEnergy);
       scEt_->push_back(scEt);
       phi_->push_back(phiSC);
       rawEnergy_->push_back(rawEnergy);
@@ -214,15 +228,44 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
       etaW_->push_back(etaW);
       phiW_->push_back(phiW);
       e2x2_->push_back(e2x2);
+      s4_->push_back(s4);
       eta_->push_back(etaSC);
       hoe_->push_back(hoe);
       iso_->push_back(iso);
       mvaScoreXGB_->push_back(xgbScore);
+
+      //find highest two indices
+      if (scEt > 14.25 && scEt >= mvaThresholdEt_) {
+        if (xgbScore > mv1) {
+          mv2 = mv1;
+          mi2 = mi1;
+          mi1 = i;
+          mv1 = xgbScore;
+
+        } else if (xgbScore > mv2) {
+          mi2 = i;
+          mv2 = xgbScore;
+        }
+      }
+
 #endif
   }
   event.put(std::make_unique<reco::RecoEcalCandidateIsolationMap>(mvaScoreMap));
 
 #ifdef DEBUG_EGAMMA_MVA
+
+  //store highest two score cands if mass is > 60  GeV
+  if (mi1 != -1 && mi2 != -1) {
+      edm::Ref<reco::RecoEcalCandidateCollection> ref1(recCollection, mi1);
+      edm::Ref<reco::RecoEcalCandidateCollection> ref2(recCollection, mi2);
+//      auto p4 = ref1->p4() + ref2->p4();
+      double mass = (ref1->p4() + ref2->p4()).M();
+      if (mass > 60) {
+        xgbScoresTop2M60_->push_back(mv1);
+        xgbScoresTop2M60_->push_back(mv2);
+      }
+  }
+
   if (recCollection->size())
     t_->Fill();
 #endif
