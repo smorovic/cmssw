@@ -76,6 +76,21 @@ float PhotonMvaEstimator::computeMva(float rawEnergyIn, float r9In, float sigmaI
   return ret;
 }
 
+std::vector<float> PhotonMvaEstimator::computeMvaVec(float * vars, size_t nrows, size_t ncols) const {
+  DMatrixHandle dmat;
+  XGDMatrixCreateFromMat(vars, nrows, ncols, -999.9f, &dmat);
+  uint64_t const* out_shape;
+  uint64_t out_dim;
+  const float* out_result = NULL;
+  XGBoosterPredictFromDMatrix(booster_, dmat, config_.c_str(), &out_shape, &out_dim, &out_result);
+  std::vector<float> ret;
+  ret.reserve(nrows);
+  for (size_t i = 0; i < nrows; i++)
+    ret.push_back(out_result[i]);
+  XGDMatrixFree(dmat);
+  return ret;
+}
+
 float PhotonMvaEstimator::computeMvaTest() const {
   float var[9];
   var[0] = 116.004;
@@ -109,6 +124,26 @@ float PhotonMvaEstimator::computeMvaTest() const {
   float const* out_result2 = NULL;
   XGBoosterPredictFromDMatrix(booster_, dmat2, config_.c_str(), &out_shape, &out_dim, &out_result2);
   printf(" ===TEST NEWAPI=== VAL[0]: %f\n", out_result2[0]);
+
+  /* This does not work...
+  std::stringstream config3;
+  //config3 << "{\"training\": false, \"type\": 0, \"iteration_begin\": 0, \"iteration_end\": " << best_ntree_limit_ << ", \"strict_shape\": false, \"missing\":float, \"cache_id\":false}";
+  config3 << "{\"training\": false, \"type\": 0, \"iteration_begin\": 0, \"iteration_end\": " << best_ntree_limit_ << ", \"strict_shape\": false, \"missing\":float}";
+
+  uint64_t const* out_shape3;
+  uint64_t out_dim3;
+  float const* out_result3 = NULL;
+  char s[20];
+  sprintf(s, "%lu", (unsigned long)var);
+  //r = "{\"shape\":[1,9],\"typestr\":\"<f4\",\"data\": [[116.004,1.02043,0.023201,0.00653047,0.00588042,110.456,-1.76507,4.80358,0.47841], false], \"version\":3}";
+  std::stringstream data;
+  data << "{\"shape\":[1,9],\"typestr\":\"<f4\",\"data\": [" << s << " ,false], \"version\":3, \"strides\":null}";
+  std::string d = data.str();
+  std::cout << "DATA:" << d << std::endl << std::flush;
+  XGBoosterPredictFromDense(booster_, d.c_str(), config3.str().c_str(), NULL, &out_shape3, &out_dim3, &out_result3);
+  printf(" ===TEST NEWAPI(DENSE)=== VAL[0]: %f\n", out_result3[0]);
+
+  */
 
   return ret;
 }

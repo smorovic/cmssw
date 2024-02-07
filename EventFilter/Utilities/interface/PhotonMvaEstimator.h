@@ -2,6 +2,7 @@
 #define EventFilter_Utilities_PhotonMvaEstimator_h
 
 #include <iostream>
+#include <vector>
 #include "xgboost/c_api.h"
 
 
@@ -15,6 +16,7 @@ public:
   ~PhotonMvaEstimator();
 
   float computeMva(float rawEnergyIn, float r9In, float sigmaIEtaIEtaIn, float etaWidthIn, float phiWidthIn, float s4In, float etaIn, float hOvrEIn, float ecalPFIsoIn) const;
+  std::vector<float> computeMvaVec(float * vars, size_t nrows, size_t ncols = 9) const;
   float computeMvaTest() const;
 
 private:

@@ -16,6 +16,9 @@
 #include "TFile.h"
 #include "TTree.h"
 
+constexpr int NUM_COLUMNS = 9;
+
+
 MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
       //if getting cands from a filter
       //candToken_(consumes<trigger::TriggerFilterObjectWithRefs>(config.getParameter<edm::InputTag>("candTag"))),
@@ -43,7 +46,6 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
 
 #ifdef DEBUG_EGAMMA_MVA
 
-    et_ = new std::vector<float>();
     scEnergy_ = new std::vector<float>();
     scEt_ = new std::vector<float>();
     phi_ = new std::vector<float>();
@@ -62,7 +64,6 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
     f_ = new TFile(rootFileName_.c_str(), "RECREATE");
     t_ = new TTree("HLTPhotonMVA", "HLT Photon MVA");
     t_->Branch("eventId", &eventId_, "eventId/l");
-    t_->Branch("et", "std::vector<float>", &et_);
     t_->Branch("scEnergy", "std::vector<float>", &scEnergy_);
     t_->Branch("scEt", "std::vector<float>", &scEt_);
     t_->Branch("phi", "std::vector<float>", &phi_);
@@ -139,23 +140,22 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
     event.getByToken(tokenIso_, isoMap);
 
 #ifdef DEBUG_EGAMMA_MVA
-      eventId_ = event.eventAuxiliary().event();
-      et_->clear();
-      scEnergy_->clear();
-      scEt_->clear();
-      phi_->clear();
-      rawEnergy_->clear();
-      r9_->clear();
-      siEtaiEta_->clear();
-      etaW_->clear();
-      phiW_->clear();
-      e2x2_->clear();
-      s4_->clear();
-      eta_->clear();
-      hoe_->clear();
-      iso_->clear();
-      mvaScoreXGB_->clear();
-      xgbScoresTop2M60_->clear();
+    eventId_ = event.eventAuxiliary().event();
+    scEnergy_->clear();
+    scEt_->clear();
+    phi_->clear();
+    rawEnergy_->clear();
+    r9_->clear();
+    siEtaiEta_->clear();
+    etaW_->clear();
+    phiW_->clear();
+    e2x2_->clear();
+    s4_->clear();
+    eta_->clear();
+    hoe_->clear();
+    iso_->clear();
+    mvaScoreXGB_->clear();
+    xgbScoresTop2M60_->clear();
 
     float mv1 = -1, mv2 = -1;
     int mi1 = -1, mi2 = -1;
@@ -169,10 +169,41 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
     //  edm::Ref<reco::RecoEcalCandidateCollection> ref = recCollection[i];
     //  //edm::Ref<reco::RecoEcalCandidateCollection> ref(recoecalcands, i);
 
+    size_t mvaCountB = 0;
+    size_t mvaCountE = 0;
+    for (size_t i=0;i < recCollection->size(); i++) {
+      edm::Ref<reco::RecoEcalCandidateCollection> ref(recCollection, i);
+      if (ref->et() >= mvaThresholdEt_) {
+        if (abs(ref->eta()) < 1.5) {
+            mvaCountB++;
+        }
+        else {
+            mvaCountE++;
+        }
+      }
+    }
+
+    std::vector<float> idxB(mvaCountB);
+    std::vector<float> idxE(mvaCountE);
+    //contiguous arrays
+    auto varsB = std::make_unique<float[]>(mvaCountB * NUM_COLUMNS);
+    auto varsE = std::make_unique<float[]>(mvaCountE * NUM_COLUMNS);
+
+    mvaCountB = 0;
+    mvaCountE = 0;
+
     for (size_t i=0;i < recCollection->size(); i++) {
       edm::Ref<reco::RecoEcalCandidateCollection> ref(recCollection, i);
 
-      float etaSC = ref->eta();
+      float xgbScore = -100.;
+#ifdef DEBUG_EGAMMA_MVA
+      mvaScoreXGB_->push_back(xgbScore);
+#endif
+      if (ref->et() < mvaThresholdEt_) {
+          //skip
+          mvaScoreMap.insert(ref, xgbScore);
+          continue;
+      }
 
       float scEnergy = ref->superCluster()->energy();
       float eInv = 1./scEnergy;
@@ -182,28 +213,88 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
       float e2x2 = (*e2x2Map).find(ref)->val;
       float s4 = e2x2 * eInv;
       float iso = (*isoMap).find(ref)->val;
-
       float rawEnergy = ref->superCluster()->rawEnergy();
       float etaW = ref->superCluster()->etaWidth();
       float phiW = ref->superCluster()->phiWidth();
+      float etaSC = ref->eta();
+
+      if (abs(etaSC) < 1.5) {
+        const size_t rowpos = mvaCountB * NUM_COLUMNS;
+        idxB[mvaCountB] = i;
+        varsB[rowpos] = rawEnergy;
+        varsB[rowpos + 1] = r9;
+        varsB[rowpos + 2] = siEtaiEta;
+        varsB[rowpos + 3] = etaW;
+        varsB[rowpos + 4] = phiW;
+        varsB[rowpos + 5] = s4;
+        varsB[rowpos + 6] = etaSC;
+        varsB[rowpos + 7] = hoe;
+        varsB[rowpos + 8] = iso;
+        mvaCountB++;
+      } else {
+        const size_t rowpos = mvaCountE * NUM_COLUMNS;
+        idxE[mvaCountE] = i;
+        varsE[rowpos] = rawEnergy;
+        varsE[rowpos + 1] = r9;
+        varsE[rowpos + 2] = siEtaiEta;
+        varsE[rowpos + 3] = etaW;
+        varsE[rowpos + 4] = phiW;
+        varsE[rowpos + 5] = s4;
+        varsE[rowpos + 6] = etaSC;
+        varsE[rowpos + 7] = hoe;
+        varsE[rowpos + 8] = iso;
+        mvaCountE++;
+      }
+    }
+
+    if (mvaCountB) {
+      auto res = mvaEstimatorB_->computeMvaVec(varsB.get(), mvaCountB);
+      for (size_t i = 0; i < res.size(); i++) {
+        const size_t idx = idxB[i];
+        edm::Ref<reco::RecoEcalCandidateCollection> ref(recCollection, idx);
+#ifdef DEBUG_EGAMMA_MVA
+        (*mvaScoreXGB_)[idx] = res[i];
+#endif
+        mvaScoreMap.insert(ref, res[i]);
+      }
+    }
+    if (mvaCountE) {
+      auto res = mvaEstimatorE_->computeMvaVec(varsE.get(), mvaCountE);
+      for (size_t i = 0; i < res.size(); i++) {
+        const size_t idx = idxE[i];
+        edm::Ref<reco::RecoEcalCandidateCollection> ref(recCollection, idx);
+#ifdef DEBUG_EGAMMA_MVA
+        (*mvaScoreXGB_)[idx] = res[i];
+#endif
+        mvaScoreMap.insert(ref, res[i]);
+      }
+    }
+
+#ifdef DEBUG_EGAMMA_MVA
+    for (size_t i=0;i < recCollection->size(); i++) {
+      edm::Ref<reco::RecoEcalCandidateCollection> ref(recCollection, i);
 
       float scEt = ref->et();
 
-      float xgbScore = -100.;
-      //compute only above threshold used for training and cand filter, else store negative value.
-      if (scEt >= mvaThresholdEt_) {
-        if (abs(etaSC) < 1.5)
-          xgbScore = mvaEstimatorB_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,s4,etaSC,hoe,iso);
-        else
-          xgbScore = mvaEstimatorE_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,s4,etaSC,hoe,iso);
+      if (scEt < mvaThresholdEt_) {
+          continue;
       }
-      mvaScoreMap.insert(ref, xgbScore);
+      float xgbScore = mvaScoreXGB_->at(i);
 
-
-#ifdef DEBUG_EGAMMA_MVA
-      if (scEt < mvaThresholdEt_) continue;
-
+      float scEnergy = ref->superCluster()->energy();
+      float eInv = 1./scEnergy;
+      float r9 = (*r9Map).find(ref)->val;
+      float hoe = (*hoEMap).find(ref)->val * eInv;
+      float siEtaiEta = (*sigmaiEtaiEtaMap).find(ref)->val;
+      float e2x2 = (*e2x2Map).find(ref)->val;
+      float s4 = e2x2 * eInv;
+      float iso = (*isoMap).find(ref)->val;
+      float rawEnergy = ref->superCluster()->rawEnergy();
+      float etaW = ref->superCluster()->etaWidth();
+      float phiW = ref->superCluster()->phiWidth();
+      float etaSC = ref->eta();
       float phiSC = ref->phi();
+
       edm::LogWarning("DiPhotonMVAMVATestProducer")
                 << " xgbScore:" << xgbScore
                 << " -- variables: "
@@ -218,7 +309,6 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
                 << " HoE:" << hoe
                 << " Iso:" << iso;
 
-      et_->push_back(ref->et());
       scEnergy_->push_back(scEnergy);
       scEt_->push_back(scEt);
       phi_->push_back(phiSC);
@@ -232,7 +322,6 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
       eta_->push_back(etaSC);
       hoe_->push_back(hoe);
       iso_->push_back(iso);
-      mvaScoreXGB_->push_back(xgbScore);
 
       //find highest two indices
       if (scEt > 14.25 && scEt >= mvaThresholdEt_) {
@@ -247,7 +336,6 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
           mv2 = xgbScore;
         }
       }
-
 #endif
   }
   event.put(std::make_unique<reco::RecoEcalCandidateIsolationMap>(mvaScoreMap));
