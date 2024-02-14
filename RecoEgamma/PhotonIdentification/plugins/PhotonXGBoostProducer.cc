@@ -134,7 +134,7 @@ void PhotonXGBoostProducer::produce(edm::StreamID, edm::Event& event, edm::Event
       float xgbScore = -100.;
       //compute only above threshold used for training and cand filter, else store negative value into the association map.
       if (scEt >= mvaThresholdEt_) {
-        if (abs(etaSC) < 1.5)
+        if (std::abs(etaSC) < 1.5)
           xgbScore = mvaEstimatorB_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
         else
           xgbScore = mvaEstimatorE_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,e2x2,etaSC,hoe,iso);
