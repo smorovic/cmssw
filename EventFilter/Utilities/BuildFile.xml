@@ -9,6 +9,8 @@
 <use name="FWCore/ServiceRegistry"/>
 <use name="FWCore/Sources"/>
 <use name="IOPool/Streamer"/>
+<use name="CommonTools/MVAUtils"/>
+<use name="xgboost"/>
 <export>
   <lib name="1"/>
 </export>
