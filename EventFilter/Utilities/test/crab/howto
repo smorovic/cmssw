@@ -1,0 +1,10 @@
+cmsenv #sets python3.9
+#virtualenv --python=python3.6 venv #once
+source venv/bin/activate
+#pip install requests #once
+#pip install future #once
+source /cvmfs/cms.cern.ch/common/crab-setup.sh
+cmsenv #again!
+
+#$crab submit -c crabConfig_hgg_summer22.py
+
