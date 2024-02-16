@@ -1,9 +1,15 @@
-#how to get environment:
-
-git clone https://gitlab.cern.ch/cms-tsg/steam/timing.git
+#first step, set up "venv"
 cmsenv
 virtualenv --python=python3.9 venv
 source venv/bin/activate
 venv install tsgauth
+#run python timing script submit.py (get it from timing git) with the CMSSW configuration.
 
-#run python timing/submit.py ...
+
+#how to prepare configuration for timing:
+hltGetConfiguration /dev/CMSSW_13_3_0/GRun --globaltag 133X_dataRun3_HLT_for2024TSGStudies_v1 --data --process TIMING --full --offline --era Run3 --timing > new_timing_cfg.py
+#add out MVA customizations:
+cat add.py >> new_timing_cfg.py
+
+#note: this is still for CMSSW_13_3_X. See latest HLT TSG instructions for 14_0_X
+
