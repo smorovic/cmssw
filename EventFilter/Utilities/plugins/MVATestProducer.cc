@@ -192,7 +192,7 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
       float xgbScore = -100.;
       //compute only above threshold used for training and cand filter, else store negative value.
       if (scEt >= mvaThresholdEt_) {
-        if (abs(etaSC) < 1.5)
+        if (std::abs(etaSC) < 1.5)
           xgbScore = mvaEstimatorB_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,s4,etaSC,hoe,iso);
         else
           xgbScore = mvaEstimatorE_->computeMva(rawEnergy,r9,siEtaiEta,etaW,phiW,s4,etaSC,hoe,iso);
@@ -205,6 +205,7 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
 
       float phiSC = ref->phi();
       edm::LogWarning("DiPhotonMVAMVATestProducer")
+                << " eventID:" << eventId_
                 << " xgbScore:" << xgbScore
                 << " -- variables: "
                 << " RawE:" << rawEnergy
