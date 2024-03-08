@@ -23,10 +23,10 @@ process.HLTDiphotonMVATestProducer = cms.EDProducer("MVATestProducer",
      inputTagSigmaiEtaiEta = cms.InputTag("hltEgammaClusterShapeUnseeded", "sigmaIEtaIEta5x5NoiseCleaned"),
      inputTagE2x2 = cms.InputTag("hltEgammaClusterShapeUnseeded", "e2x2"),
      inputTagIso = cms.InputTag("hltEgammaEcalPFClusterIsoUnseeded"),
-     mvaFileXgbB = cms.FileInPath("EventFilter/Utilities/data/barrel.bin"),
-     mvaFileXgbE = cms.FileInPath("EventFilter/Utilities/data/endcap.bin"),
-     mvaNTreeLimitB = cms.uint32(55),
-     mvaNTreeLimitE = cms.uint32(48),
+     mvaFileXgbB = cms.FileInPath("EventFilter/Utilities/data/barrel_py3.bin"),
+     mvaFileXgbE = cms.FileInPath("EventFilter/Utilities/data/endcap_py3.bin"),
+     mvaNTreeLimitB = cms.uint32(1498),
+     mvaNTreeLimitE = cms.uint32(1500),
      mvaThresholdEt = cms.double(14.25)
 )
  
