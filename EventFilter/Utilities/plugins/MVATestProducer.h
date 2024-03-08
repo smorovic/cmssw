@@ -11,10 +11,13 @@
 
 #include "DataFormats/HLTReco/interface/TriggerFilterObjectWithRefs.h"
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidateIsolation.h"
+#include "HLTrigger/HLTcore/interface/TriggerExpressionData.h"
 
 #include "EventFilter/Utilities/interface/PhotonMvaEstimator.h"
 
 #include <vector>
+#include <set>
+#include <atomic>
 
 class TFile;
 class TTree;
@@ -22,6 +25,12 @@ class TTree;
 namespace edm {
   class ConfigurationDescriptions;
 }
+
+namespace triggerExpression {
+  class Evaluator;
+}
+
+
 
 #ifdef DEBUG_EGAMMA_MVA
 class MVATestProducer : public edm::one::EDProducer<> {
@@ -40,6 +49,12 @@ private:
 #else
   void produce(edm::StreamID, edm::Event &, edm::EventSetup const &) const override;
 #endif
+
+  /// evaluator for the trigger condition
+  std::vector<std::string> expressions_;
+  std::vector<std::unique_ptr<triggerExpression::Evaluator>> m_expression;
+  /// cache some data from the Event for faster access by the m_expression
+  std::vector<triggerExpression::Data> m_eventCache;
 
   //edm::EDGetTokenT<trigger::TriggerFilterObjectWithRefs> candToken_; //use if reading from a filter
 
@@ -65,6 +80,7 @@ private:
   TTree *t_ = nullptr;
 
   uint64_t eventId_ = 0;
+  std::vector<int> *pathAccept_;
   std::vector<float> *et_;
   std::vector<float> *scEnergy_;
   std::vector<float> *scEt_;
@@ -82,6 +98,7 @@ private:
   std::vector<float> *mvaScoreXGB_;
   std::vector<float> *xgbScoresTop2M60_;
 #endif
+  std::atomic<unsigned int> numPaths_ = 0;
  
 };
 
