@@ -1,7 +1,7 @@
 from CRABClient.UserUtilities import config
 config = config()
 
-config.General.requestName = 'mva_hgg_s2023_v4'
+config.General.requestName = 'mva_hgg_s2023_v6'
 
 config.JobType.pluginName = 'Analysis'
 # Name of the CMSSW configuration file

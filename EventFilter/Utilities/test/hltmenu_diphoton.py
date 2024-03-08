@@ -10396,6 +10396,11 @@ process.hltDiEGEta2p55UnseededFilter = cms.EDFilter( "HLT1Photon",
 )
 
 process.HLTDiphotonMVATestProducer = cms.EDProducer("MVATestProducer",
+    usePathStatus = cms.bool( True ),
+    hltResults = cms.InputTag( "" ),
+    l1tResults = cms.InputTag( "" ),
+    l1tIgnoreMaskAndPrescale = cms.bool( False ),
+    throw = cms.bool( True ),
     #candTag = cms.InputTag( "hltDiEG22EtEta2p55UnseededFilter" ),
     candTag = cms.InputTag( "hltEgammaCandidatesUnseeded" ),
     inputTagR9 = cms.InputTag("hltEgammaR9IDUnseeded", "r95x5"),
@@ -10403,11 +10408,20 @@ process.HLTDiphotonMVATestProducer = cms.EDProducer("MVATestProducer",
     inputTagSigmaiEtaiEta = cms.InputTag("hltEgammaClusterShapeUnseeded", "sigmaIEtaIEta5x5NoiseCleaned"),
     inputTagE2x2 = cms.InputTag("hltEgammaClusterShapeUnseeded", "e2x2"),
     inputTagIso = cms.InputTag("hltEgammaEcalPFClusterIsoUnseeded"),
-    mvaFileXgbB = cms.FileInPath("EventFilter/Utilities/data/barrel.bin"),
-    mvaFileXgbE = cms.FileInPath("EventFilter/Utilities/data/endcap.bin"),
-    mvaNTreeLimitB = cms.uint32(55),
-    mvaNTreeLimitE = cms.uint32(48),
-    mvaThresholdEt = cms.double(14.25)
+    #triggerResults = cms.InputTag("TriggerResults"),
+    mvaFileXgbB = cms.FileInPath("EventFilter/Utilities/data/barrel_py3.bin"),
+    mvaFileXgbE = cms.FileInPath("EventFilter/Utilities/data/endcap_py3.bin"),
+    mvaNTreeLimitB = cms.uint32(1498),
+    mvaNTreeLimitE = cms.uint32(1500),
+#    mvaFileXgbB = cms.FileInPath("EventFilter/Utilities/data/barrel.bin"),
+#    mvaFileXgbE = cms.FileInPath("EventFilter/Utilities/data/endcap.bin"),
+    #mvaNTreeLimitB = cms.uint32(55),
+    #mvaNTreeLimitE = cms.uint32(48),
+    mvaThresholdEt = cms.double(14.25),
+    triggerConditions = cms.vstring(
+      'HLT_Diphoton30_22_R9Id_OR_IsoCaloId_AND_HE_R9Id_Mass90_v19',
+      'HLT_Diphoton30_22_R9Id_OR_IsoCaloId_AND_HE_R9Id_Mass95_v19'
+    )
 )
 
 process.HLTDiphotonMVATestCombFilter = cms.EDFilter("MVATestCombFilter",
@@ -11732,10 +11746,11 @@ process.HLTDiphoton30L22R9Id85b90eORIso60CaloId15b35eANDHE12R9Id50b80eSequence =
 
 
 #NEW SEQUENCE (cand ET - > 2 x > 14.25 GeV)
-process.HLTDiphotonMvaTestSequence = cms.Sequence( process.HLTDoFullUnpackingEgammaEcalSequence + process.HLTPFClusteringForEgamma + process.hltEgammaCandidates + process.hltEGL1SingleAndDoubleEGOrFilter + process.hltEG30L1SingleAndDoubleEGOrEtFilter + process.HLTDoLocalHcalSequence + process.HLTFastJetForEgamma + process.HLTPFClusteringForEgammaUnseeded + process.hltEgammaCandidatesUnseeded + process.hltDiEG14p25EtEta2p55UnseededFilter + process.hltEgammaR9IDUnseeded + process.hltEgammaHoverEUnseeded + process.hltEgammaClusterShapeUnseeded + process.hltEgammaEcalPFClusterIsoUnseeded )
+#process.HLTDiphotonMvaTestSequence = cms.Sequence( process.HLTDoFullUnpackingEgammaEcalSequence + process.HLTPFClusteringForEgamma + process.hltEgammaCandidates + process.hltEGL1SingleAndDoubleEGOrFilter + process.hltEG30L1SingleAndDoubleEGOrEtFilter + process.HLTDoLocalHcalSequence + process.HLTFastJetForEgamma + process.HLTPFClusteringForEgammaUnseeded + process.hltEgammaCandidatesUnseeded + process.hltDiEG14p25EtEta2p55UnseededFilter + process.hltEgammaR9IDUnseeded + process.hltEgammaHoverEUnseeded + process.hltEgammaClusterShapeUnseeded + process.hltEgammaEcalPFClusterIsoUnseeded )
 
 #NEW SEQUENCE (no unseeded cand PT filter)
 #process.HLTDiphotonMvaTestSequence = cms.Sequence( process.HLTDoFullUnpackingEgammaEcalSequence + process.HLTPFClusteringForEgamma + process.hltEgammaCandidates + process.hltEGL1SingleAndDoubleEGOrFilter + process.hltEG30L1SingleAndDoubleEGOrEtFilter + process.HLTDoLocalHcalSequence + process.HLTFastJetForEgamma + process.hltEgammaHoverE + process.hltEgammaClusterShape + process.hltEgammaEcalPFClusterIso + process.HLTPFClusteringForEgammaUnseeded + process.hltEgammaCandidatesUnseeded + process.hltDiEGEta2p55UnseededFilter + process.hltEgammaR9IDUnseeded + process.hltEgammaHoverEUnseeded + process.hltEgammaClusterShapeUnseeded + process.hltEgammaEcalPFClusterIsoUnseeded )
+process.HLTDiphotonMvaTestSequence = cms.Sequence( process.HLTDoFullUnpackingEgammaEcalSequence + process.HLTPFClusteringForEgamma + process.hltEgammaCandidates + process.hltEGL1SingleAndDoubleEGOrFilter + process.hltEG30L1SingleAndDoubleEGOrEtFilter + process.HLTPFClusteringForEgammaUnseeded + process.hltEgammaCandidatesUnseeded + process.hltDiEG14p25EtEta2p55UnseededFilter + process.hltEgammaR9IDUnseeded + process.HLTDoLocalHcalSequence + process.HLTFastJetForEgamma + process.hltEgammaHoverEUnseeded + process.hltEgammaClusterShapeUnseeded + process.hltEgammaEcalPFClusterIsoUnseeded )
 
 process.HLTEndSequence = cms.Sequence( process.hltBoolEnd )
 process.HLTDatasetPathBeginSequence = cms.Sequence( process.hltGtStage2Digis )
@@ -11926,7 +11941,7 @@ data = True
 if data:
 
   #data:
-  process.GlobalTag.globaltag = cms.string("133X_dataRun3_HLT_for2024TSGStudies_v1")
+  process.GlobalTag.globaltag = cms.string("132X_dataRun3_HLT_for2024TSGStudies_v1")
 
 
   #### specify data files:
