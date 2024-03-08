@@ -10,16 +10,23 @@
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "FWCore/Framework/interface/TriggerNamesService.h"
+#include "FWCore/Common/interface/TriggerNames.h"
+#include "HLTrigger/HLTcore/interface/TriggerExpressionEvaluator.h"
+#include "HLTrigger/HLTcore/interface/TriggerExpressionParser.h"
+
 #include <memory>
 
+#define PARSE_TRIGGERRESULTS
 
 #include "TFile.h"
 #include "TTree.h"
 
 MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
+      expressions_(config.getParameter<std::vector<std::string>>("triggerConditions")),
       //if getting cands from a filter
       //candToken_(consumes<trigger::TriggerFilterObjectWithRefs>(config.getParameter<edm::InputTag>("candTag"))),
-
       //if consuming a producer
       candToken_(consumes<reco::RecoEcalCandidateCollection>(config.getParameter<edm::InputTag>("candTag"))),
       tokenR9_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("inputTagR9"))),
@@ -32,18 +39,24 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
       mvaNTreeLimitB_(config.getParameter<unsigned int>("mvaNTreeLimitB")),
       mvaNTreeLimitE_(config.getParameter<unsigned int>("mvaNTreeLimitE")),
       mvaThresholdEt_(config.getParameter<double>("mvaThresholdEt"))
+
 #ifdef DEBUG_EGAMMA_MVA
-      ,rootFileName_(config.getUntrackedParameter<std::string>("treeFile", "photon_mva.root"))
-#endif
 {
+      rootFileName_ = config.getUntrackedParameter<std::string>("treeFile", "photon_mva.root");
+      std::cout << "CREATED ROOT FILE ? " << std::endl;
+#endif
+      std::cout << "CONSTRUCTOR " << std::endl;
     mvaEstimatorB_ = std::make_unique<PhotonMvaEstimator>(mvaFileXgbB_, mvaNTreeLimitB_);
     mvaEstimatorE_ = std::make_unique<PhotonMvaEstimator>(mvaFileXgbE_, mvaNTreeLimitE_);
+    mvaEstimatorB_->computeMvaTest();
     mvaEstimatorE_->computeMvaTest();
     produces<reco::RecoEcalCandidateIsolationMap>();
 
 #ifdef DEBUG_EGAMMA_MVA
 
     et_ = new std::vector<float>();
+    pathAccept_ = new std::vector<int>();
+    pathAccept_->resize(expressions_.size(), -1);
     scEnergy_ = new std::vector<float>();
     scEt_ = new std::vector<float>();
     phi_ = new std::vector<float>();
@@ -62,6 +75,14 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
     f_ = new TFile(rootFileName_.c_str(), "RECREATE");
     t_ = new TTree("HLTPhotonMVA", "HLT Photon MVA");
     t_->Branch("eventId", &eventId_, "eventId/l");
+    t_->Branch("pathAcceptVec", "std::vector<int>", &pathAccept_);
+    //add also individual path accept
+    for (unsigned i = 0; i < expressions_.size(); i++) {
+      std::stringstream s;
+      s << "pathAccept_" << i;
+      t_->Branch(s.str().c_str(), &pathAccept_->at(i), (s.str() + "/I").c_str());
+    }
+
     t_->Branch("et", "std::vector<float>", &et_);
     t_->Branch("scEnergy", "std::vector<float>", &scEnergy_);
     t_->Branch("scEt", "std::vector<float>", &scEt_);
@@ -79,6 +100,28 @@ MVATestProducer::MVATestProducer(edm::ParameterSet const& config) :
     t_->Branch("mvaScoreXGB", "std::vector<float>", &mvaScoreXGB_);
     t_->Branch("mvaScoreTop2M60", "std::vector<float>", &xgbScoresTop2M60_);
 
+#ifdef PARSE_TRIGGERRESULTS
+
+    for (unsigned i=0; i < expressions_.size(); i++) {
+      m_eventCache.emplace_back(config, consumesCollector());
+      m_expression.push_back(nullptr);
+      m_expression[i].reset(triggerExpression::parse(expressions_[i]));
+    }
+
+    // consume all matching paths
+    callWhenNewProductsRegistered([this](edm::BranchDescription const& branch) {
+      if (branch.branchType() == edm::InEvent and branch.className() == "edm::HLTPathStatus") {
+        for (unsigned i=0;i < expressions_.size(); i++) {
+          if (branch.moduleLabel() == expressions_[i]) {
+            std::cout << "mL: " << branch.moduleLabel() << std::endl;
+            m_eventCache[i].setPathStatusToken(branch, consumesCollector());
+            numPaths_++;
+          }
+        }
+      }
+    });
+
+#endif
 #endif
 
 }
@@ -105,6 +148,9 @@ void MVATestProducer::produce(edm::Event& event, edm::EventSetup const& setup) {
 #else
 void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup const& setup) const {
 #endif
+
+    if (numPaths_ != expressions_.size())
+      throw cms::Exception("MVATestProducer") << "Mismatch between number of found paths and configured paths for path status" << std::endl;
 
     //edm::Handle<trigger::TriggerFilterObjectWithRefs> PrevFilterOutput;
     //event.getByToken(candToken_, PrevFilterOutput);
@@ -140,6 +186,7 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
 
 #ifdef DEBUG_EGAMMA_MVA
       eventId_ = event.eventAuxiliary().event();
+      //pathAccept_->resize(expressions_.size(), -1);
       et_->clear();
       scEnergy_->clear();
       scEt_->clear();
@@ -242,7 +289,6 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
           mi2 = mi1;
           mi1 = i;
           mv1 = xgbScore;
-
         } else if (xgbScore > mv2) {
           mi2 = i;
           mv2 = xgbScore;
@@ -267,7 +313,31 @@ void MVATestProducer::produce(edm::StreamID, edm::Event& event, edm::EventSetup 
       }
   }
 
-  if (recCollection->size())
+#ifdef PARSE_TRIGGERRESULTS
+
+  for (unsigned i=0; i< expressions_.size(); i++) {
+    bool set = m_eventCache[i].setEvent(event, setup);
+    if (!set)
+      throw cms::Exception("MVATestProducer") << "Can not setEvent for path " << i;
+    if (m_eventCache[i].configurationUpdated()) {
+      std::cout << " Config updated!" << std::endl;
+      m_expression[i]->init(m_eventCache[i]);
+    }
+
+    //if (!set)
+    //  std::cout << " set eventCache " << set << std::endl;
+    {
+      bool res = (*m_expression[i])(m_eventCache[i]);
+      pathAccept_->at(i) = res ? 1 : 0;
+      //std::cout << "Path result: " << res << std::endl;
+    }
+  }
+//  if (numPaths_) {
+
+//    }
+//  }
+#endif
+  if (recCollection->size() || numPaths_)
     t_->Fill();
 #endif
 }
