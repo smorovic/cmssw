@@ -6553,20 +6553,44 @@ process.hltDiEG14p25EtEta2p55UnseededFilter = cms.EDFilter( "HLT1Photon",
     MinN = cms.int32( 2 )
 )
 
+#process.HLTDiphotonMVATestProducer = cms.EDProducer("MVATestProducer",
+#    #candTag = cms.InputTag( "hltDiEG22EtEta2p55UnseededFilter" ),
+#    candTag = cms.InputTag( "hltEgammaCandidatesUnseeded" ),
+#    inputTagR9 = cms.InputTag("hltEgammaR9IDUnseeded", "r95x5"),
+#    inputTagHoE = cms.InputTag("hltEgammaHoverEUnseeded"),
+#    inputTagSigmaiEtaiEta = cms.InputTag("hltEgammaClusterShapeUnseeded", "sigmaIEtaIEta5x5NoiseCleaned"),
+#    inputTagE2x2 = cms.InputTag("hltEgammaClusterShapeUnseeded", "e2x2"),
+#    inputTagIso = cms.InputTag("hltEgammaEcalPFClusterIsoUnseeded"),
+#    mvaFileXgbB = cms.FileInPath("EventFilter/Utilities/data/barrel_py3.bin"),
+#    mvaFileXgbE = cms.FileInPath("EventFilter/Utilities/data/endcap_py3.bin"),
+#    mvaNTreeLimitB = cms.uint32(1498),
+#    mvaNTreeLimitE = cms.uint32(1500),
+#    mvaThresholdEt = cms.double(0)
+#)
+
 process.HLTDiphotonMVATestProducer = cms.EDProducer("MVATestProducer",
-    #candTag = cms.InputTag( "hltDiEG22EtEta2p55UnseededFilter" ),
+    usePathStatus = cms.bool( True ),
+    hltResults = cms.InputTag( "" ),
+    l1tResults = cms.InputTag( "" ),
+    l1tIgnoreMaskAndPrescale = cms.bool( False ),
+    throw = cms.bool( True ),
     candTag = cms.InputTag( "hltEgammaCandidatesUnseeded" ),
     inputTagR9 = cms.InputTag("hltEgammaR9IDUnseeded", "r95x5"),
     inputTagHoE = cms.InputTag("hltEgammaHoverEUnseeded"),
     inputTagSigmaiEtaiEta = cms.InputTag("hltEgammaClusterShapeUnseeded", "sigmaIEtaIEta5x5NoiseCleaned"),
     inputTagE2x2 = cms.InputTag("hltEgammaClusterShapeUnseeded", "e2x2"),
     inputTagIso = cms.InputTag("hltEgammaEcalPFClusterIsoUnseeded"),
-    mvaFileXgbB = cms.FileInPath("EventFilter/Utilities/data/barrel.bin"),
-    mvaFileXgbE = cms.FileInPath("EventFilter/Utilities/data/endcap.bin"),
-    mvaNTreeLimitB = cms.uint32(55),
-    mvaNTreeLimitE = cms.uint32(48),
-    mvaThresholdEt = cms.double(0)
+    mvaFileXgbB = cms.FileInPath("EventFilter/Utilities/data/barrel_py3.bin"),
+    mvaFileXgbE = cms.FileInPath("EventFilter/Utilities/data/endcap_py3.bin"),
+    mvaNTreeLimitB = cms.uint32(1498),
+    mvaNTreeLimitE = cms.uint32(1500),
+    mvaThresholdEt = cms.double(0),
+    triggerConditions = cms.vstring(
+      'HLT_Diphoton30_22_R9Id_OR_IsoCaloId_AND_HE_R9Id_Mass90_v19',
+      'HLT_Diphoton30_22_R9Id_OR_IsoCaloId_AND_HE_R9Id_Mass95_v19'
+    )
 )
+
 
 process.HLTDiphotonMVATestCombFilter = cms.EDFilter("MVATestCombFilter",
     saveTags = cms.bool( False ),

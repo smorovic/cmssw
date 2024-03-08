@@ -1,7 +1,7 @@
 from CRABClient.UserUtilities import config
 config = config()
 
-config.General.requestName = 'photonmva_ephemeral_2023D_v4'
+config.General.requestName = 'photonmva_ephemeral_2023D_v6'
 
 config.JobType.pluginName = 'Analysis'
 # Name of the CMSSW configuration file
