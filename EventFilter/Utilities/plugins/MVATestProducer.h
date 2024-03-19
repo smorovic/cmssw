@@ -46,6 +46,9 @@ public:
 private:
 #ifdef DEBUG_EGAMMA_MVA
   void produce(edm::Event &, edm::EventSetup const &) override;
+
+  bool hltFilter(edm::Handle<reco::RecoEcalCandidateCollection> const& recCollection,
+                 reco::RecoEcalCandidateIsolationMap const& mvaMap) const;
 #else
   void produce(edm::StreamID, edm::Event &, edm::EventSetup const &) const override;
 #endif
@@ -79,7 +82,24 @@ private:
   TFile *f_ = nullptr;
   TTree *t_ = nullptr;
 
+  double highMassCut_ = 90;
+  std::vector<double> leadCutHighMass1_;
+  std::vector<double> subCutHighMass1_;
+  std::vector<double> leadCutHighMass2_;
+  std::vector<double> subCutHighMass2_;
+  std::vector<double> leadCutHighMass3_;
+  std::vector<double> subCutHighMass3_;
+
+  double lowMassCut_ = 60;
+  std::vector<double> leadCutLowMass1_;
+  std::vector<double> subCutLowMass1_;
+  std::vector<double> leadCutLowMass2_;
+  std::vector<double> subCutLowMass2_;
+  std::vector<double> leadCutLowMass3_;
+  std::vector<double> subCutLowMass3_;
+
   uint64_t eventId_ = 0;
+  int pathAcceptMVA_ = 0;
   std::vector<int> *pathAccept_;
   std::vector<float> *et_;
   std::vector<float> *scEnergy_;
