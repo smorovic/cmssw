@@ -10421,7 +10421,21 @@ process.HLTDiphotonMVATestProducer = cms.EDProducer("MVATestProducer",
     triggerConditions = cms.vstring(
       'HLT_Diphoton30_22_R9Id_OR_IsoCaloId_AND_HE_R9Id_Mass90_v19',
       'HLT_Diphoton30_22_R9Id_OR_IsoCaloId_AND_HE_R9Id_Mass95_v19'
-    )
+    ),
+    highMassCut = cms.double(90),
+    leadCutHighMass1 = cms.vdouble(0.1,0.1),
+    subCutHighMass1 = cms.vdouble(0.1,0.1),
+    leadCutHighMass2 = cms.vdouble(0.1,0.1),
+    subCutHighMass2 = cms.vdouble(0.1,0.1),
+    leadCutHighMass3 = cms.vdouble(0.1,0.1),
+    subCutHighMass3 = cms.vdouble(0.1,0.1),
+    lowMassCut = cms.double(60),
+    leadCutLowMass1 = cms.vdouble(0.1,0.1),
+    subCutLowMass1 = cms.vdouble(0.1,0.1),
+    leadCutLowMass2 = cms.vdouble(0.1,0.1),
+    subCutLowMass2 = cms.vdouble(0.1,0.1),
+    leadCutLowMass3 = cms.vdouble(0.1,0.1),
+    subCutLowMass3 = cms.vdouble(0.1,0.1)
 )
 
 process.HLTDiphotonMVATestCombFilter = cms.EDFilter("MVATestCombFilter",
@@ -10433,6 +10447,22 @@ process.HLTDiphotonMVATestCombFilter = cms.EDFilter("MVATestCombFilter",
     mvaMinEndcapTight = cms.double(0.02),
     candTag = cms.InputTag( "hltEgammaCandidatesUnseeded" ),
     mvaPhotonTag = cms.InputTag( "HLTDiphotonMVATestProducer" ),
+
+    highMassCut = cms.double(90),
+    leadCutHighMass1 = cms.vdouble(0.1,0.1),
+    subCutHighMass1 = cms.vdouble(0.1,0.1),
+    leadCutHighMass2 = cms.vdouble(0.1,0.1),
+    subCutHighMass2 = cms.vdouble(0.1,0.1),
+    leadCutHighMass3 = cms.vdouble(0.1,0.1),
+    subCutHighMass3 = cms.vdouble(0.1,0.1),
+    lowMassCut = cms.double(60),
+    leadCutLowMass1 = cms.vdouble(0.1,0.1),
+    subCutLowMass1 = cms.vdouble(0.1,0.1),
+    leadCutLowMass2 = cms.vdouble(0.1,0.1),
+    subCutLowMass2 = cms.vdouble(0.1,0.1),
+    leadCutLowMass3 = cms.vdouble(0.1,0.1),
+    subCutLowMass3 = cms.vdouble(0.1,0.1)
+
 )
 
 process.hltEgammaR9IDUnseeded = cms.EDProducer( "EgammaHLTR9IDProducer",
