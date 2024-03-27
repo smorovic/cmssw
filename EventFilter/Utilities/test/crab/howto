@@ -6,5 +6,5 @@ source venv/bin/activate
 source /cvmfs/cms.cern.ch/common/crab-setup.sh
 cmsenv #again!
 
-#$crab submit -c crabConfig_hgg_summer22.py
+#$crab submit -c crabConfig_hgg_winter24.py
 

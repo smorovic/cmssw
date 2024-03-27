@@ -1,11 +1,11 @@
 from CRABClient.UserUtilities import config
 config = config()
 
-config.General.requestName = 'photonmva_ephemeral_2023D_v6'
+config.General.requestName = 'photonmva_ephemeral_2023D_v7'
 
 config.JobType.pluginName = 'Analysis'
 # Name of the CMSSW configuration file
-config.JobType.psetName = 'hltData.py'
+config.JobType.psetName = 'data_grun_v77.py'
 
 #config.Data.inputDataset = '/EphemeralHLTPhysics0/Run2023C-v1/RAW'
 config.Data.inputDataset = '/EphemeralHLTPhysics0/Run2023D-v1/RAW'

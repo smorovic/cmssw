@@ -1,11 +1,11 @@
 from CRABClient.UserUtilities import config
 config = config()
 
-config.General.requestName = 'mva_hgg_w2024_v6'
+config.General.requestName = 'mva_hgg_w2024_v7'
 
 config.JobType.pluginName = 'Analysis'
 # Name of the CMSSW configuration file
-config.JobType.psetName = 'hltMC_2024.py'
+config.JobType.psetName = 'mc_2024_grun_v77.py'
 
 #config.Data.inputDataset = '/EphemeralHLTPhysics0/Run2023C-v1/RAW'
 config.Data.inputDataset = '/GluGluHToGG_M-125_TuneCP5_13p6TeV_powheg-pythia8/Run3Winter24Digi-133X_mcRun3_2024_realistic_v9-v2/GEN-SIM-RAW'
