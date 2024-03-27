@@ -1,7 +1,7 @@
 from CRABClient.UserUtilities import config
 config = config()
 
-config.General.requestName = 'photonmva_ephemeral_2023D_v7'
+config.General.requestName = 'photonmva_ephemeral_2023D_v9'
 
 config.JobType.pluginName = 'Analysis'
 # Name of the CMSSW configuration file
@@ -25,6 +25,8 @@ config.Data.publication = False
 ## config.Data.runRange = '367260'
 
 config.JobType.outputFiles = ['photon_mva.root']
+config.JobType.numCores = 2
+config.JobType.maxMemoryMB = 3000
 
 # Where the output files will be transmitted to
 config.Site.storageSite = 'T2_CH_CERN'
