@@ -117,9 +117,11 @@ process.HLTDiphotonMVATestProducer = cms.EDProducer("MVATestProducer",
      subCutLowMass3 = cms.vdouble(0.30,0.30),
 )
 
+#process.HLTEgammaDoubleXGBoostCombFilter = cms.EDFilter("HLTEgammaDoubleXGBoostCombFilter",
 process.HLTDiphotonMVATestCombFilter = cms.EDFilter("MVATestCombFilter",
      saveTags = cms.bool( True ),
      candTag = cms.InputTag( "hltEgammaCandidatesUnseeded" ),
+     #mvaPhotonTag = cms.InputTag( "PhotonXGBoostProducer" ),
      mvaPhotonTag = cms.InputTag( "HLTDiphotonMVATestProducer" ),
      highMassCut = cms.double(95),
      leadCutHighMass1 = cms.vdouble(0.98,0.95),
@@ -222,5 +224,5 @@ process.hltGtStage2ObjectMap.AXOL1TLModelVersion = cms.string("GTADModel_v3")
 
 process.PrescaleService.forceDefault = cms.bool( True )
 
-process.options.numberOfThreads=cms.untracked.uint32(1)
+process.options.numberOfThreads=cms.untracked.uint32(2)
 process.options.numberOfStreams=cms.untracked.uint32(1)
