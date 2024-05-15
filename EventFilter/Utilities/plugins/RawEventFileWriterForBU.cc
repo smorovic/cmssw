@@ -102,8 +102,13 @@ void RawEventFileWriterForBU::doOutputEvent(FRDEventMsgView const& msg) {
   //  cms::Adler32((const char*) msg.startAddress(), msg.size(), adlera_, adlerb_);
 }
 
-void RawEventFileWriterForBU::initialize(std::string const& destinationDir, std::string const& name, int ls) {
+void RawEventFileWriterForBU::initialize(std::string const& destinationDir, std::string const& name, int run, int ls) {
   destinationDir_ = destinationDir;
+  run_ = run;
+
+  std::stringstream ss;
+  ss << "run" << std::setfill('0') << std::setw(6) << run_;
+  runPrefix_ = ss.str();
 
   if (outfd_ != -1) {
     finishFileWrite(ls);
@@ -269,9 +274,6 @@ void RawEventFileWriterForBU::endOfLS(int ls) {
 
   std::ostringstream ostr;
 
-  if (run_ == -1)
-    makeRunPrefix(destinationDir_);
-
   ostr << destinationDir_ << "/" << runPrefix_ << "_ls" << std::setfill('0') << std::setw(4) << ls << "_EoLS"
        << ".jsn";
   //outfd_ = open(ostr.str().c_str(), O_WRONLY | O_CREAT,  S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP | S_IWOTH | S_IROTH);
@@ -299,23 +301,10 @@ void RawEventFileWriterForBU::stop() {
   edm::LogInfo("RawEventFileWriterForBU") << "Writing EOR file!";
   if (!destinationDir_.empty()) {
     // create EoR file
-    if (run_ == -1)
-      makeRunPrefix(destinationDir_);
     std::string path = destinationDir_ + "/" + runPrefix_ + "_ls0000_EoR.jsn";
     runMon_->snap(0);
     runMon_->outputFullJSON(path, 0);
   }
-}
-
-//TODO:get from DaqDirector !
-void RawEventFileWriterForBU::makeRunPrefix(std::string const& destinationDir) {
-  //dirty hack: extract run number from destination directory
-  std::string::size_type pos = destinationDir.rfind("/run");
-  std::string run = destinationDir.substr(pos + 4);
-  run_ = atoi(run.c_str());
-  std::stringstream ss;
-  ss << "run" << std::setfill('0') << std::setw(6) << run_;
-  runPrefix_ = ss.str();
 }
 
 void RawEventFileWriterForBU::extendDescription(edm::ParameterSetDescription& desc) {

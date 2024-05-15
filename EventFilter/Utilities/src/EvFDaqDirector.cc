@@ -162,6 +162,13 @@ namespace evf {
       }
     }
 
+    updateRunParams();
+    std::stringstream ss;
+    ss << getpid();
+    pid_ = ss.str();
+  }
+
+  void EvFDaqDirector::updateRunParams() {
     std::stringstream ss;
     ss << "run" << std::setfill('0') << std::setw(6) << run_;
     run_string_ = ss.str();
@@ -171,12 +178,10 @@ namespace evf {
     run_dir_ = base_dir_ + "/" + run_string_;
     input_throttled_file_ = run_dir_ + "/input_throttle";
     discard_ls_filestem_ = run_dir_ + "/discard_ls";
-    ss = std::stringstream();
-    ss << getpid();
-    pid_ = ss.str();
   }
 
   void EvFDaqDirector::initRun() {
+    std::cout << " init Run " << std::endl;
     // check if base dir exists or create it accordingly
     int retval = mkdir(base_dir_.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (retval != 0 && errno != EEXIST) {

@@ -89,6 +89,7 @@ FedRawDataInputSource::FedRawDataInputSource(edm::ParameterSet const& pset, edm:
   long autoRunNumber = -1;
   if (fileListMode_) {
     autoRunNumber = initFileList();
+    edm::Service<evf::EvFDaqDirector>()->setFileListMode();
     if (!fileListLoopMode_) {
       if (autoRunNumber < 0)
         throw cms::Exception("FedRawDataInputSource::FedRawDataInputSource") << "Run number not found from filename";
