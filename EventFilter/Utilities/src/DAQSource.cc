@@ -94,6 +94,7 @@ DAQSource::DAQSource(edm::ParameterSet const& pset, edm::InputSourceDescription 
   long autoRunNumber = -1;
   if (fileListMode_) {
     autoRunNumber = initFileList();
+    daqDirector_->setFileListMode();
     if (!fileListLoopMode_) {
       if (autoRunNumber < 0)
         throw cms::Exception("DAQSource::DAQSource") << "Run number not found from filename";
@@ -850,7 +851,7 @@ void DAQSource::readSupervisor() {
       struct stat st;
       int stat_res = stat(rawFile.c_str(), &st);
       if (stat_res == -1) {
-        edm::LogError("DAQSource") << "Can not stat file (" << errno << "):-" << rawFile << std::endl;
+        edm::LogError("DAQSource") << "Can not stat file (" << errno << ") :- " << rawFile << std::endl;
         setExceptionState_ = true;
         break;
       }
