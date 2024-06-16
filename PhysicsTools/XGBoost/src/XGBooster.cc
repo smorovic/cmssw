@@ -130,3 +130,45 @@ float XGBooster::predict(const int iterationEnd) {
 
   return result;
 }
+
+
+float XGBooster::predict(std::vector<float> const& features, const int iterationEnd) {
+  float result(-999.);
+
+  if (feature_name_to_index_.size() != features.size())
+    throw std::runtime_error("Feature size mismatch");
+
+  DMatrixHandle dvalues;
+  XGDMatrixCreateFromMat(&features[0], 1, features.size(), 9e99, &dvalues);
+
+  bst_ulong out_len = 0;
+  const float* score = nullptr;
+
+  char json[256];  // Make sure the buffer is large enough to hold the resulting JSON string
+
+  // Use snprintf to format the JSON string with the external value
+  std::snprintf(json,
+                sizeof(json),
+                R"({
+    "type": 0,
+    "training": false,
+    "iteration_begin": 0,
+    "iteration_end": %d,
+    "strict_shape": false
+   })",
+                iterationEnd);
+
+  // Shape of output prediction
+  bst_ulong const* out_shape = nullptr;
+
+  auto ret = XGBoosterPredictFromDMatrix(booster_, dvalues, json, &out_shape, &out_len, &score);
+
+  if (ret == 0) {
+    assert(out_len == 1 && "Unexpected prediction format");
+    result = score[0];
+  }
+
+  XGDMatrixFree(dvalues);
+
+  return result;
+}
