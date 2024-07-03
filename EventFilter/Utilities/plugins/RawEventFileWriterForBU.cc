@@ -5,8 +5,9 @@
 #include <iostream>
 #include <sstream>
 
-// CMSSW headers
+#include "FWCore/ServiceRegistry/interface/Service.h"
 #include "EventFilter/Utilities/interface/EvFDaqDirector.h"
+#include "EventFilter/Utilities/interface/FastMonitoringService.h"
 #include "EventFilter/Utilities/interface/FileIO.h"
 #include "EventFilter/Utilities/interface/JSONSerializer.h"
 #include "EventFilter/Utilities/plugins/RawEventFileWriterForBU.h"
@@ -24,6 +25,10 @@ using namespace edm::streamer;
 RawEventFileWriterForBU::RawEventFileWriterForBU(edm::ParameterSet const& ps)
     : microSleep_(ps.getParameter<int>("microSleep")),
       frdFileVersion_(ps.getParameter<unsigned int>("frdFileVersion")) {
+
+  if (edm::Service<evf::FastMonitoringService>().isAvailable())
+    fms_ = static_cast<evf::FastMonitoringService*>(edm::Service<evf::FastMonitoringService>().operator->());
+
   //per-file JSD and FastMonitor
   rawJsonDef_.setDefaultGroup("legend");
   rawJsonDef_.addLegendItem("NEvents", "integer", DataPointDefinition::SUM);
@@ -42,6 +47,7 @@ RawEventFileWriterForBU::RawEventFileWriterForBU(edm::ParameterSet const& ps)
   eolJsonDef_.addLegendItem("NFiles", "integer", DataPointDefinition::SUM);
   eolJsonDef_.addLegendItem("TotalEvents", "integer", DataPointDefinition::SUM);
   eolJsonDef_.addLegendItem("NLostEvents", "integer", DataPointDefinition::SUM);
+  eolJsonDef_.addLegendItem("NBytes", "integer", DataPointDefinition::SUM);
 
   perLumiEventCount_.setName("NEvents");
   perLumiFileCount_.setName("NFiles");
@@ -102,7 +108,7 @@ void RawEventFileWriterForBU::doOutputEvent(FRDEventMsgView const& msg) {
   //  cms::Adler32((const char*) msg.startAddress(), msg.size(), adlera_, adlerb_);
 }
 
-void RawEventFileWriterForBU::initialize(std::string const& destinationDir, std::string const& name, int run, int ls) {
+void RawEventFileWriterForBU::initialize(std::string const& destinationDir, std::string const& name, int run, unsigned int ls) {
   destinationDir_ = destinationDir;
   run_ = run;
 
@@ -111,7 +117,8 @@ void RawEventFileWriterForBU::initialize(std::string const& destinationDir, std:
   runPrefix_ = ss.str();
 
   if (outfd_ != -1) {
-    finishFileWrite(ls);
+    if (!fms_ || !fms_->exceptionDetected() || !fms_->getAbortFlagForLumi(ls))
+      finishFileWrite(ls);
     closefd();
   }
 
@@ -119,37 +126,6 @@ void RawEventFileWriterForBU::initialize(std::string const& destinationDir, std:
 
   if (!writtenJSDs_) {
     writeJsds();
-    /*    std::stringstream ss;
-    ss << destinationDir_ << "/jsd";
-    mkdir(ss.str().c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
-
-    std::string rawJSDName = ss.str()+"/rawData.jsd";
-    std::string eolJSDName = ss.str()+"/EoLS.jsd";
-    std::string eorJSDName = ss.str()+"/EoR.jsd";
-
-    fileMon_->setDefPath(rawJSDName);
-    lumiMon_->setDefPath(eolJSDName);
-    runMon_->setDefPath(eorJSDName);
-
-    struct stat   fstat;
-    if (stat (rawJSDName.c_str(), &fstat) != 0) {
-      std::string content;
-      JSONSerializer::serialize(&rawJsonDef_,content);
-      FileIO::writeStringToFile(rawJSDName, content);
-    }
-
-    if (stat (eolJSDName.c_str(), &fstat) != 0) {
-      std::string content;
-      JSONSerializer::serialize(&eolJsonDef_,content);
-      FileIO::writeStringToFile(eolJSDName, content);
-    }
-
-    if (stat (eorJSDName.c_str(), &fstat) != 0) {
-      std::string content;
-      JSONSerializer::serialize(&eorJsonDef_,content);
-      FileIO::writeStringToFile(eorJSDName, content);
-    }
-*/
     writtenJSDs_ = true;
   }
 
@@ -213,7 +189,7 @@ void RawEventFileWriterForBU::writeJsds() {
   }
 }
 
-void RawEventFileWriterForBU::finishFileWrite(int ls) {
+void RawEventFileWriterForBU::finishFileWrite(unsigned int ls) {
   if (frdFileVersion_ == 1) {
     //rewind
     lseek(outfd_, 0, SEEK_SET);
@@ -265,7 +241,7 @@ void RawEventFileWriterForBU::finishFileWrite(int ls) {
   lumiOpen_ = ls;
 }
 
-void RawEventFileWriterForBU::endOfLS(int ls) {
+void RawEventFileWriterForBU::endOfLS(unsigned int ls) {
   if (outfd_ != -1) {
     finishFileWrite(ls);
     closefd();
