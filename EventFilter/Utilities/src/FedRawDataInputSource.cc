@@ -1080,7 +1080,7 @@ void FedRawDataInputSource::readSupervisor() {
       struct stat st;
       int stat_res = stat(rawFile.c_str(), &st);
       if (stat_res == -1) {
-        edm::LogError("FedRawDataInputSource") << "Can not stat file (" << errno << "):-" << rawFile << std::endl;
+        edm::LogError("FedRawDataInputSource") << "Can not stat file (" << errno << ") :- " << rawFile << std::endl;
         setExceptionState_ = true;
         break;
       }

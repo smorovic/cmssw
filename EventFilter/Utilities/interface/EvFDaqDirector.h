@@ -195,6 +195,7 @@ namespace evf {
     std::vector<std::string> const& getBUBaseDirs() const { return bu_base_dirs_all_; }
     std::vector<int> const& getBUBaseDirsNSources() const { return bu_base_dirs_nSources_; }
     void setFileListMode() { fileListMode_ = true; }
+    bool fileListMode() const { return fileListMode_; }
 
   private:
     bool bumpFile(unsigned int& ls,

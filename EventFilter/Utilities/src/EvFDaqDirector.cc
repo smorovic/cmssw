@@ -28,8 +28,6 @@
 
 //using boost::asio::ip::tcp;
 
-//#define DEBUG
-
 using namespace jsoncollector;
 using namespace edm::streamer;
 
@@ -323,7 +321,7 @@ namespace evf {
       }
 
       fulockfile_ = bu_run_dir_ + "/fu.lock";
-      if (!useFileBroker_)
+      if (!useFileBroker_ && !fileListMode_)
         openFULockfileStream(false);
     }
 
@@ -641,11 +639,6 @@ namespace evf {
     if (retval != 0)
       return fileStatus;
 
-#ifdef DEBUG
-    timeval ts_lockend;
-    gettimeofday(&ts_lockend, 0);
-#endif
-
     //open another lock file FD after the lock using main fd has been acquired
     int fu_readwritelock_fd2 = open(fulockfile_.c_str(), O_RDWR, S_IRWXU);
     if (fu_readwritelock_fd2 == -1)
@@ -739,13 +732,6 @@ namespace evf {
     }
     fclose(fu_rw_lock_stream2);  // = fdopen(fu_readwritelock_fd2, "r+");
 
-#ifdef DEBUG
-    timeval ts_preunlock;
-    gettimeofday(&ts_preunlock, 0);
-    int locked_period_int = ts_preunlock.tv_sec - ts_lockend.tv_sec;
-    double locked_period = locked_period_int + double(ts_preunlock.tv_usec - ts_lockend.tv_usec) / 1000000;
-#endif
-
     //if new json is present, lock file which FedRawDataInputSource will later unlock
     if (fileStatus == newFile)
       lockFULocal();
@@ -755,10 +741,6 @@ namespace evf {
     retvalu = fcntl(fu_readwritelock_fd_, F_SETLKW, &fu_rw_fulk);
     if (retvalu == -1)
       edm::LogError("EvFDaqDirector") << "Error unlocking the fu.lock " << strerror(errno);
-
-#ifdef DEBUG
-    edm::LogDebug("EvFDaqDirector") << "Waited during lock -: " << locked_period << " seconds";
-#endif
 
     if (fileStatus == noFile) {
       struct stat buf;
