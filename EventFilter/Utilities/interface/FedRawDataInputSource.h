@@ -91,7 +91,7 @@ private:
   unsigned int eventChunkSize_;   // for buffered read-ahead
   unsigned int eventChunkBlock_;  // how much read(2) asks at the time
   unsigned int readBlocks_;
-  unsigned int numConcurrentReads_;
+  int numConcurrentReads_;
   unsigned int numBuffers_;
   unsigned int maxBufferedFiles_;
   std::atomic<unsigned int> readingFilesCount_;
