@@ -1261,8 +1261,8 @@ void DAQSource::readWorker(unsigned int tid) {
           bufferLeft += last;
         }
         if ((uint64_t)last < eventChunkBlock_) {  //last read
-          edm::LogInfo("DAQSource") << "chunkUsedSize" << chunk->usedSize_ << " u-s:" << (chunk->usedSize_ - skipped)
-                                    << " ix:" << i * eventChunkBlock_ << " " << (size_t)last;
+          LogDebug("DAQSource") << "chunkUsedSize:" << chunk->usedSize_ << " u-s:" << (chunk->usedSize_ - skipped)
+                                << " ix:" << i * eventChunkBlock_ << " " << (size_t)last;
           //check if this is last block if single file, then total read size must match file size
           if (file->numFiles_ == 1 && !(chunk->usedSize_ - skipped == i * eventChunkBlock_ + (size_t)last)) {
             edm::LogError("DAQSource") << "readWorker failed to read file -: " << file->fileName_

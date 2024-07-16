@@ -162,7 +162,7 @@ void DataModeFRDPreUnpack::unpackEvent(edm::streamer::FRDEventMsgView *eview, Un
   bool tcdsInRange;
   unsigned char* tcds_pointer = nullptr;
   std::string errmsg;
-  bool err;
+  bool err = false;
   edm::Timestamp tstamp = fillFEDRawDataCollection(eview, *rawData, tcdsInRange, tcds_pointer, err, errmsg);
   ec->setRawData(rawData);
 
@@ -213,6 +213,7 @@ void DataModeFRDPreUnpack::unpackFile(RawInputFile* currentFile) {
   while (true) { //loop while there is file/events to read
 
     unsigned char* dataPosition;
+    bool chunkEnd;
 
     if (currentFile->bufferPosition_ == 0 && currentFile->rawHeaderSize_ > 0) {
       if (currentFile->fileSize_ <= currentFile->rawHeaderSize_) {
@@ -220,7 +221,8 @@ void DataModeFRDPreUnpack::unpackFile(RawInputFile* currentFile) {
         return;
       }
       //advance buffer position to skip file header (chunk will be acquired later)
-      currentFile->advanceSimple(dataPosition, currentFile->rawHeaderSize_);
+      chunkEnd = currentFile->advanceSimple(dataPosition, currentFile->rawHeaderSize_);
+      assert(!chunkEnd);
     }
 
     //file is too short to fit event header (handle in the main thread)
@@ -230,7 +232,6 @@ void DataModeFRDPreUnpack::unpackFile(RawInputFile* currentFile) {
       return;
     }
 
-    bool chunkEnd;
     //read event header, copy it to a single chunk if necessary
     chunkEnd = currentFile->advanceSimple(dataPosition, headerSize());
     assert(!chunkEnd);
@@ -266,11 +267,10 @@ void DataModeFRDPreUnpack::unpackFile(RawInputFile* currentFile) {
       currentFile->resetPos();
       return;
     }
-
     //again build (reset) event object
     eview = std::make_unique<FRDEventMsgView>(dataBlockAddr);
     //check again that it fits
-    if (event_->size() > dataBlockMax) {
+    if (eview->size() > dataBlockMax) {
       currentFile->resetPos();
       return;
     }
@@ -379,7 +379,7 @@ bool DataModeFRDPreUnpack::nextEventView(RawInputFile *currentFile) {
 }
 
 bool DataModeFRDPreUnpack::checksumValid() {
-  return ec_->checksumError();
+  return !ec_->checksumError();
 }
 
 std::string DataModeFRDPreUnpack::getChecksumError() const {
