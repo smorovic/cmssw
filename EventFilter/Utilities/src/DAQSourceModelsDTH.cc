@@ -96,14 +96,20 @@ std::vector<std::shared_ptr<const edm::DaqProvenanceHelper>>& DataModeDTH::makeD
 
 void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) {
 
+    addrsEnd_.clear();
+    addrsStart_.clear();
     constexpr size_t hsize = sizeof(evf::DTHOrbitHeader_v1);
-    evf::DTHOrbitHeader_v1* firstOrbitHeader = nullptr;
 
+    LogDebug("DataModeDTH::makeDataBlockView") << "BLOCK addr: " << std::hex << (uint64_t) addr << " chunkOffset:" << std::hex << (uint64_t)(addr - rawFile->chunks_[0]->buf_)<< std::endl;
+
+    //intial orbit header was advanced over by source
     size_t maxAllowedSize = rawFile->fileSizeLeft() + headerSize();
     auto nextAddr = addr;
     checksumValid_ = true;
     if (checksumError_.size())
       checksumError_ == std::string();
+
+    firstOrbitHeader_ = nullptr;
     while (nextAddr < addr + maxAllowedSize) {
 
       //ensure header fits
@@ -112,12 +118,14 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
       auto orbitHeader = (evf::DTHOrbitHeader_v1*)(nextAddr);
       if (!orbitHeader->verifyMarker())
         throw cms::Exception("DAQSource::DAQSourceModelsDTH") << "Invalid DTH orbit marker";
-      if (!firstOrbitHeader_)
-        firstOrbitHeader = orbitHeader;
+      if (!firstOrbitHeader_) {
+        firstOrbitHeader_ = orbitHeader;
+      }
       else {
-        assert(orbitHeader->run_number() == firstOrbitHeader->run_number());
+        assert(orbitHeader->run_number() == firstOrbitHeader_->run_number());
         if (orbitHeader->orbit_number() != firstOrbitHeader_->orbit_number()) {
-          //next orbit reached, this will be another block
+          firstOrbitHeader_ = orbitHeader;
+          //next orbit ID reached, do not include this orbit in this block
           break;
         }
       }
@@ -125,6 +133,21 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
       auto srcOrbitSize = orbitHeader->total_size();
       auto nextEnd = nextAddr + srcOrbitSize;
       assert(nextEnd <= addr + maxAllowedSize);//boundary check
+
+      //DEBUG
+      /*
+      unsigned char* endPlus = nextEnd;
+      int count = 0;
+      while (endPlus > nextAddr + hsize) {
+        evf::DTHFragmentTrailer* tr = (evf::DTHFragmentTrailer*)(endPlus - sizeof(evf::DTHFragmentTrailer));
+
+        if (!tr->verifyMarker())
+          throw cms::Exception("DAQSource::DAQSourceModelsDTH") << "Invalid DTH trailer marker";
+
+        endPlus -=  (sizeof(evf::DTHFragmentTrailer) + tr->payload_size());
+        assert (endPlus >=  nextAddr + hsize);
+        count++;
+     }*/
 
       if (verifyChecksum_) {
         auto crc = crc32c(0U, (const unsigned char*)orbitHeader->payload(), orbitHeader->payload_size());
@@ -142,7 +165,6 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
     }
     dataBlockSize_ = nextAddr - addr;
 
-
     eventCached_ = false;
     nextEventView(rawFile);
     eventCached_ = true;
@@ -159,7 +181,7 @@ bool DataModeDTH::nextEventView(RawInputFile*) {
   eventFragments_.clear();
   size_t last_eID = 0;
   for (size_t i=0; i<addrsEnd_.size(); i++) {
-    evf::DTHFragmentTrailer* trailer = (evf::DTHFragmentTrailer*)(addrsEnd_[i] -  sizeof(evf::DTHFragmentTrailerView));
+    evf::DTHFragmentTrailer* trailer = (evf::DTHFragmentTrailer*)(addrsEnd_[i] -  sizeof(evf::DTHFragmentTrailer));
 
     if (!trailer->verifyMarker())
       throw cms::Exception("DAQSource::DAQSourceModelsDTH") << "Invalid DTH trailer marker";
@@ -171,7 +193,6 @@ bool DataModeDTH::nextEventView(RawInputFile*) {
     auto payload_size = trailer->payload_size();
     assert(payload_size < 1000000000); //1GB sanity check
 
-    //TODO: check CRC
     if (i==0) {
       nextEventID_ = eID;
       last_eID = eID;
@@ -179,7 +200,7 @@ bool DataModeDTH::nextEventView(RawInputFile*) {
     else assert(last_eID == nextEventID_);
 
     //update address array
-    addrsEnd_[i] -= sizeof(evf::DTHFragmentTrailerView) + payload_size;
+    addrsEnd_[i] -= sizeof(evf::DTHFragmentTrailer) + payload_size;
 
     //TODO: print error if flags is not 0 (error detected according to first spec)
 
@@ -191,7 +212,9 @@ bool DataModeDTH::nextEventView(RawInputFile*) {
       blockCompletedAll = false;
     }
   }
-  assert(blockCompletedAny == blockCompletedAll);
+  if (blockCompletedAny != blockCompletedAll)
+    throw cms::Exception("DAQSource::DAQSourceModelsDTH") << "Some orbit sources have inconsistent number of event fragments.";
+
   if (blockCompletedAll) {
     blockCompleted_ = blockCompletedAll;
     firstOrbitHeader_ = nullptr;

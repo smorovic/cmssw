@@ -92,7 +92,7 @@ ram_dir_path=options.buBaseDir+"/run"+str(options.runNumber).zfill(6)+"/"
 process.source = cms.Source("DAQSource",
     testing = cms.untracked.bool(True),
     dataMode = cms.untracked.string(options.daqSourceMode),
-    verifyChecksum = cms.untracked.bool(True),
+    verifyChecksum = cms.untracked.bool(False if options.daqSourceMode == "DTH" else True),
     useL1EventID = cms.untracked.bool(False),
     eventChunkBlock = cms.untracked.uint32(2),
     eventChunkSize = cms.untracked.uint32(3),
@@ -130,9 +130,13 @@ process.filter2 = cms.EDFilter("HLTPrescaler",
                                L1GtReadoutRecordTag = cms.InputTag( "hltGtDigis" )
                                )
 
+if options.daqSourceMode == "DTH":
+    sleepTime = 0
+else:
+    sleepTime = 58
 process.a = cms.EDAnalyzer("ExceptionGenerator",
     defaultAction = cms.untracked.int32(0),
-    defaultQualifier = cms.untracked.int32(58))
+    defaultQualifier = cms.untracked.int32(sleepTime))
 
 process.b = cms.EDAnalyzer("ExceptionGenerator",
     defaultAction = cms.untracked.int32(0),
@@ -142,7 +146,14 @@ process.tcdsRawToDigi = cms.EDProducer("TcdsRawToDigi",
     InputLabel = cms.InputTag("rawDataCollector")
 )
 
-process.p1 = cms.Path(process.a*process.tcdsRawToDigi*process.filter1)
+if options.daqSourceMode == "DTH":
+
+    process.p1 = cms.Path(process.a*process.filter1)
+    sleepTime = 5
+else:
+    process.p1 = cms.Path(process.a*process.tcdsRawToDigi*process.filter1)
+    sleepTime = 50
+
 process.p2 = cms.Path(process.b*process.filter2)
 
 process.streamA = cms.OutputModule("GlobalEvFOutputModule",
