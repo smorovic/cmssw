@@ -16,10 +16,17 @@
  * */
 
 namespace evf {
-  constexpr std::array<unsigned char, 2> DTHOrbitMarker{{0x4f, 0x48}};
-  constexpr std::array<unsigned char, 2> DTHFragmentTrailerMarker{{0x46, 0x54}};
+  constexpr std::array<uint8_t, 2> DTHOrbitMarker{{0x4f, 0x48}};
+  constexpr std::array<uint8_t, 2> DTHFragmentTrailerMarker{{0x46, 0x54}};
   constexpr uint32_t word_num_bytes = 16;
   constexpr uint32_t word_num_bytes_shift = 4;
+
+  constexpr uint64_t convert(std::array<uint8_t, 6> v) {
+    //LSB first
+    uint64_t a = v[0], b = v[1], c = v[2], d = v[3], e = v[4], f=v[5];
+    return a | (b << 8) | (c << 16) | (d << 24) | (e << 32) | (f << 40);
+  }
+
 
   constexpr uint32_t convert(std::array<uint8_t, 4> v) {
     //LSB first
@@ -31,6 +38,10 @@ namespace evf {
     //LSB first
     uint16_t a = v[0], b = v[1];
     return a | (b << 8);
+  }
+
+  constexpr std::array<uint8_t, 6> convert48(uint64_t i) {
+    return std::array<uint8_t, 6> {{uint8_t(i & 0xff), uint8_t((i >> 8) & 0xff), uint8_t((i >> 16) & 0xff), uint8_t((i >> 24) & 0xff),  uint8_t((i >> 32) & 0xff), uint8_t((i >> 40) & 0xff)}};
   }
 
   constexpr std::array<uint8_t, 4> convert(uint32_t i) {
@@ -136,8 +147,7 @@ namespace evf {
       flags_(trailer_->flags()),
       crc_(trailer_->crc()),
       eventID_(trailer_->eventID())
-    {
-    }
+    {}
 
     uint8_t* startAddress() const { return (uint8_t*)trailer_; }
     const void* payload() const { return trailer_->payload(); }
@@ -154,6 +164,78 @@ namespace evf {
     uint16_t crc_;
     uint64_t eventID_;
   };
+
+
+  //SLinkExpress classes
+
+  //begin and end event
+  constexpr uint8_t BOE = 0x55;
+  constexpr uint8_t EOE = 0xaa;
+
+
+  //minimal SLinkRocket format version version overlay 
+  class SLinkRocketHeader_version {
+  public:
+    SLinkRocketHeader_version(uint8_t version, uint8_t trail=0): v_and_r_(version << 4 | (trail & 0xf)) {}
+    uint8_t version() const { return v_and_r_ >> 4; }
+    bool verifyMarker() const { return boe_ == BOE; }
+  private:
+    uint8_t boe_ = BOE;
+    uint8_t v_and_r_;
+  };
+
+
+  //TODO: better define ContentID class https://edms.cern.ch/ui/file/2502737/2/cms_phase2_slinkrocket.pdf
+  class SLinkRocketHeader_v3 {
+  public:
+    SLinkRocketHeader_v3(uint8_t version, uint64_t glob_event_id, uint32_t content_id, uint32_t source_id)
+      : r_and_eid_(convert48(glob_event_id & 0x0fffffffffff)),          //44 used, 4 reserved
+        r_and_content_id_(convert(uint32_t(content_id & 0x03ffffff))),   //26 used, 6 reserved
+        source_id_(convert(source_id))
+      {}
+
+    uint8_t version() const { return version_and_r_ >> 4; }
+    uint64_t globalEventID() const { return convert(r_and_eid_) & 0x0fffffffffff; }
+    uint32_t contentID() const { return convert(r_and_content_id_) & 0x03ffffff; }
+    uint32_t sourceID() const { return convert(source_id_); }
+    bool verifyMarker() const { return boe_ == BOE; }
+  private:
+    uint8_t boe_ = BOE;
+    uint8_t version_and_r_ = 3 << 4;
+    std::array<uint8_t, 6> r_and_eid_;
+    std::array<uint8_t, 4> r_and_content_id_;
+    std::array<uint8_t, 4> source_id_;
+  };
+
+  class SLinkRocketTrailer_v3 {
+  public:
+    SLinkRocketTrailer_v3(uint16_t daq_crc, uint32_t evtlen, uint16_t bxid, uint32_t orbit_id, uint16_t crc, uint16_t status)
+      : daq_crc_(convert(daq_crc)),
+        evtlen_and_bxid_(convert((evtlen << 12) | uint32_t(bxid))),
+        orbit_id_(convert(orbit_id)),
+        crc_(convert(crc)),
+        status_(convert(status))
+      {}
+
+    uint16_t daqCRC() const { return convert(daq_crc_); }
+    uint32_t eventLength() const { return (convert(evtlen_and_bxid_) >> 12) & 0x0fffff; }
+    uint16_t bxID() const { return convert(evtlen_and_bxid_) & 0x0fff; }
+    uint32_t orbitID() const { return convert(orbit_id_); }
+    uint16_t crc() const { return convert(crc_); }
+    uint16_t status() const { return convert(status_); }
+    bool verifyMarker() const { return eoe_ == EOE; }
+
+  private:
+    uint8_t eoe_ = EOE;
+    std::array<uint8_t, 2> daq_crc_;
+    uint8_t reserved_ = 0;
+    std::array<uint8_t, 4> evtlen_and_bxid_;
+    std::array<uint8_t, 4> orbit_id_;
+    std::array<uint8_t, 2> crc_;
+    std::array<uint8_t, 2> status_;
+  };
+
+
 }  // namespace ecf
 
 #endif
