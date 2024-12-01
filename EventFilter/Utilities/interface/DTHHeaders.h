@@ -188,22 +188,38 @@ namespace evf {
   //TODO: better define ContentID class https://edms.cern.ch/ui/file/2502737/2/cms_phase2_slinkrocket.pdf
   class SLinkRocketHeader_v3 {
   public:
-    SLinkRocketHeader_v3(uint8_t version, uint64_t glob_event_id, uint32_t content_id, uint32_t source_id)
-      : r_and_eid_(convert48(glob_event_id & 0x0fffffffffff)),          //44 used, 4 reserved
-        r_and_content_id_(convert(uint32_t(content_id & 0x03ffffff))),   //26 used, 6 reserved
+    SLinkRocketHeader_v3(uint64_t glob_event_id, uint32_t content_id, uint32_t source_id)
+      : r_and_eid_(convert48(glob_event_id & 0x0fffffffffff)), //44 used, 4 reserved
+        r_and_e_(uint8_t((content_id >> 24) & 0x03)),          //2 used, 6 reserved
+        l1a_subtype_(uint8_t((content_id >> 16) & 0xff)),
+        l1a_t_fc_(convert(uint16_t(content_id & 0xffff))),
         source_id_(convert(source_id))
       {}
 
+    SLinkRocketHeader_v3(uint64_t glob_event_id, uint8_t emu_status, uint8_t l1a_subtype, uint16_t l1a_types_fragcont, uint32_t source_id)
+      : r_and_eid_(convert48(glob_event_id & 0x0fffffffffff)),
+        r_and_e_(emu_status & 0x03),
+        l1a_subtype_(l1a_subtype),
+        l1a_t_fc_(convert(l1a_types_fragcont)),
+        source_id_(convert(source_id))
+      {}
+
+
     uint8_t version() const { return version_and_r_ >> 4; }
     uint64_t globalEventID() const { return convert(r_and_eid_) & 0x0fffffffffff; }
-    uint32_t contentID() const { return convert(r_and_content_id_) & 0x03ffffff; }
+    uint32_t contentID() const { return (uint32_t(convert(l1a_t_fc_)) << 16) |  (uint32_t(l1a_subtype_) << 8) | (r_and_e_ & 0x3); }
+    uint8_t emuStatus() const { return r_and_e_ & 0x03; }
+    uint8_t l1aSubtype() const { return l1a_subtype_; }
+    uint16_t l1aTypeAndFragmentContent() const { return convert(l1a_t_fc_); }
     uint32_t sourceID() const { return convert(source_id_); }
     bool verifyMarker() const { return boe_ == BOE; }
   private:
     uint8_t boe_ = BOE;
     uint8_t version_and_r_ = 3 << 4;
     std::array<uint8_t, 6> r_and_eid_;
-    std::array<uint8_t, 4> r_and_content_id_;
+    uint8_t r_and_e_;
+    uint8_t l1a_subtype_;
+    std::array<uint8_t, 2> l1a_t_fc_;
     std::array<uint8_t, 4> source_id_;
   };
 
@@ -211,15 +227,15 @@ namespace evf {
   public:
     SLinkRocketTrailer_v3(uint16_t daq_crc, uint32_t evtlen, uint16_t bxid, uint32_t orbit_id, uint16_t crc, uint16_t status)
       : daq_crc_(convert(daq_crc)),
-        evtlen_and_bxid_(convert((evtlen << 12) | uint32_t(bxid))),
+        evtlen128_and_bxid_(convert(((evtlen >> 4) << 12) | uint32_t(bxid))),
         orbit_id_(convert(orbit_id)),
         crc_(convert(crc)),
         status_(convert(status))
       {}
 
     uint16_t daqCRC() const { return convert(daq_crc_); }
-    uint32_t eventLength() const { return (convert(evtlen_and_bxid_) >> 12) & 0x0fffff; }
-    uint16_t bxID() const { return convert(evtlen_and_bxid_) & 0x0fff; }
+    uint32_t eventLength() const { return (convert(evtlen128_and_bxid_) >> 12) & 0x0fffff; }
+    uint16_t bxID() const { return convert(evtlen128_and_bxid_) & 0x0fff; }
     uint32_t orbitID() const { return convert(orbit_id_); }
     uint16_t crc() const { return convert(crc_); }
     uint16_t status() const { return convert(status_); }
@@ -229,7 +245,7 @@ namespace evf {
     uint8_t eoe_ = EOE;
     std::array<uint8_t, 2> daq_crc_;
     uint8_t reserved_ = 0;
-    std::array<uint8_t, 4> evtlen_and_bxid_;
+    std::array<uint8_t, 4> evtlen128_and_bxid_; //event 128-bit word length includes header and trailer
     std::array<uint8_t, 4> orbit_id_;
     std::array<uint8_t, 2> crc_;
     std::array<uint8_t, 2> status_;
