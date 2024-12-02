@@ -69,16 +69,16 @@ namespace evf {
     uint32_t sourceID() const { return convert(source_id_); }
     //this should be 1 but can be used for autodetection or consistency check
     uint16_t version() const { return convert(version_); }
-    uint32_t orbit_number() const { return convert(orbit_number_); }
-    uint32_t run_number() const { return convert(run_number_); }
+    uint32_t orbitNumber() const { return convert(orbit_number_); }
+    uint32_t runNumber() const { return convert(run_number_); }
     uint32_t packed_word_count() const { return convert(packed_word_count_); }
-    uint64_t total_size() const { return (word_num_bytes * packed_word_count()); } //128-bit words
-    uint64_t payload_size() const { return total_size() - sizeof(DTHOrbitHeader_v1); }
-    uint64_t header_size() const { return sizeof(DTHOrbitHeader_v1);}
-    uint16_t event_count() const { return convert(event_count_);}
+    uint64_t totalSize() const { return (word_num_bytes * packed_word_count()); } //128-bit words
+    uint64_t payloadSizeBytes() const { return totalSize() - sizeof(DTHOrbitHeader_v1); }
+    uint64_t headerSize() const { return sizeof(DTHOrbitHeader_v1);}
+    uint16_t eventCount() const { return convert(event_count_);}
     uint32_t crc() const { return convert(crc32c_);}
     uint32_t flags() const { return convert(flags_);}
-    const void* payload() const { return this + sizeof(DTHOrbitHeader_v1); }
+    const void* payload() const { return (uint8_t*)this + sizeof(DTHOrbitHeader_v1); }
     bool verifyMarker() const {
       for (size_t i=0;i < DTHOrbitMarker.size(); i++) {
         if (marker_[i] != DTHOrbitMarker[i]) return false;
@@ -100,10 +100,11 @@ namespace evf {
     std::array<uint8_t, 4> flags_;
   };
 
+  //TODO: change init to use packed word count
   class DTHFragmentTrailer {
   public:
-    DTHFragmentTrailer(uint32_t payload_size, uint16_t flags, uint16_t crc, uint64_t event_id)
-      : payload_size_w128_(convert(payload_size >> word_num_bytes_shift)),
+    DTHFragmentTrailer(uint32_t payload_word_count, uint16_t flags, uint16_t crc, uint64_t event_id)
+      : payload_word_count_(convert(payload_word_count)),
         flags_(convert(flags)),
         crc_(convert(crc)),
         res_and_eid_({{uint8_t((event_id & 0x0f0000000000) >> 40),
@@ -117,11 +118,11 @@ namespace evf {
     uint64_t eventID() const {
       return (uint64_t(res_and_eid_[0]&0xf) << 40) + (uint64_t(res_and_eid_[1]) << 32) + (uint32_t(res_and_eid_[2]) << 24) + (uint32_t(res_and_eid_[3]) << 16) + (uint16_t(res_and_eid_[4]) << 8) + res_and_eid_[5];
     }
-    uint32_t payload_size_w128() const { return convert(payload_size_w128_); }
-    uint32_t payload_size() const { return (convert(payload_size_w128_) * word_num_bytes); }
+    uint32_t payloadWordCount() const { return convert(payload_word_count_); }
+    uint32_t payloadSizeBytes() const { return (convert(payload_word_count_) * word_num_bytes); }
     uint16_t flags() const { return convert(flags_); }
     uint16_t crc() const { return convert(crc_); }
-    const void* payload() const { return this - payload_size(); }
+    const void* payload() const { return (uint8_t*)this - payloadSizeBytes(); }
     bool verifyMarker() const {
       for (size_t i=0;i < DTHFragmentTrailerMarker.size(); i++) {
         if (marker_[i] != DTHFragmentTrailerMarker[i])
@@ -130,7 +131,7 @@ namespace evf {
       return true;
     }
   private:
-    std::array<uint8_t, 4> payload_size_w128_;
+    std::array<uint8_t, 4> payload_word_count_;
     std::array<uint8_t, 2> flags_;
     std::array<uint8_t, 2> marker_ = DTHFragmentTrailerMarker;
     std::array<uint8_t, 2> crc_;
@@ -143,7 +144,7 @@ namespace evf {
     DTHFragmentTrailerView(void* buf)
 
     : trailer_((DTHFragmentTrailer*) buf),
-      payload_size_(trailer_->payload_size()),
+      payload_size_(trailer_->payloadSizeBytes()),
       flags_(trailer_->flags()),
       crc_(trailer_->crc()),
       eventID_(trailer_->eventID())
@@ -151,7 +152,7 @@ namespace evf {
 
     uint8_t* startAddress() const { return (uint8_t*)trailer_; }
     const void* payload() const { return trailer_->payload(); }
-    uint32_t payload_size() const { return payload_size_; }
+    uint32_t payloadSizeBytes() const { return payload_size_; }
     uint16_t flags() const { return flags_; }
     uint16_t crc() const { return crc_; }
     uint64_t eventID() const { return eventID_; }
@@ -185,7 +186,6 @@ namespace evf {
   };
 
 
-  //TODO: better define ContentID class https://edms.cern.ch/ui/file/2502737/2/cms_phase2_slinkrocket.pdf
   class SLinkRocketHeader_v3 {
   public:
     SLinkRocketHeader_v3(uint64_t glob_event_id, uint32_t content_id, uint32_t source_id)
@@ -225,17 +225,17 @@ namespace evf {
 
   class SLinkRocketTrailer_v3 {
   public:
-    SLinkRocketTrailer_v3(uint16_t daq_crc, uint32_t evtlen, uint16_t bxid, uint32_t orbit_id, uint16_t crc, uint16_t status)
+    SLinkRocketTrailer_v3(uint16_t daq_crc, uint32_t evtlen_word_count, uint16_t bxid, uint32_t orbit_id, uint16_t crc, uint16_t status)
       : daq_crc_(convert(daq_crc)),
-        evtlen128_and_bxid_(convert(((evtlen >> 4) << 12) | uint32_t(bxid))),
+        evtlen_w_count_and_bxid_(convert((evtlen_word_count << 12) | uint32_t(bxid & 0x0fff))),
         orbit_id_(convert(orbit_id)),
         crc_(convert(crc)),
         status_(convert(status))
       {}
 
     uint16_t daqCRC() const { return convert(daq_crc_); }
-    uint32_t eventLength() const { return (convert(evtlen128_and_bxid_) >> 12) & 0x0fffff; }
-    uint16_t bxID() const { return convert(evtlen128_and_bxid_) & 0x0fff; }
+    uint32_t eventLenBytes() const { return ((convert(evtlen_w_count_and_bxid_) >> 12) & 0x0fffff) * word_num_bytes; }
+    uint16_t bxID() const { return convert(evtlen_w_count_and_bxid_) & 0x0fff; }
     uint32_t orbitID() const { return convert(orbit_id_); }
     uint16_t crc() const { return convert(crc_); }
     uint16_t status() const { return convert(status_); }
@@ -245,7 +245,7 @@ namespace evf {
     uint8_t eoe_ = EOE;
     std::array<uint8_t, 2> daq_crc_;
     uint8_t reserved_ = 0;
-    std::array<uint8_t, 4> evtlen128_and_bxid_; //event 128-bit word length includes header and trailer
+    std::array<uint8_t, 4> evtlen_w_count_and_bxid_; //event 128-bit word length includes header and trailer
     std::array<uint8_t, 4> orbit_id_;
     std::array<uint8_t, 2> crc_;
     std::array<uint8_t, 2> status_;

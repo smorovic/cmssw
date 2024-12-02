@@ -57,14 +57,34 @@ edm::Timestamp DataModeDTH::fillFEDRawDataCollection(FEDRawDataCollection& rawDa
   edm::Timestamp tstamp(time);
 
   for (size_t i=0; i<eventFragments_.size(); i++) {
-    auto fragTrailer = eventFragments_[i];
-    unsigned char* payload = (unsigned char*)fragTrailer->payload();
-    auto fragSize = fragTrailer->payload_size();
 
+    auto fragTrailer = eventFragments_[i];
+    uint8_t* payload = (uint8_t*)fragTrailer->payload();
+    auto fragSize = fragTrailer->payloadSizeBytes();
+/*
+    //Slink header and trailer
     assert(fragSize >= (FEDTrailer::length + FEDHeader::length));
-    const FEDTrailer fedTrailer((unsigned char*)fragTrailer - FEDTrailer::length);
     const FEDHeader fedHeader(payload);
+    const FEDTrailer fedTrailer((uint8_t*)fragTrailer - FEDTrailer::length);
     const uint32_t fedSize = fedTrailer.fragmentLength() << 3;  //trailer length counts in 8 bytes
+    const uint16_t fedId = fedHeader.sourceID();
+*/
+
+    //SLinkRocket header and trailer
+    if (fragSize < sizeof(SLinkRocketTrailer_v3) + sizeof(SLinkRocketHeader_v3))
+      throw cms::Exception("DAQSource::DAQSourceModelsDTH") << "Invalid fragment size: " << fragSize;
+
+    const SLinkRocketHeader_v3* fedHeader = (const SLinkRocketHeader_v3*) payload;
+    const SLinkRocketTrailer_v3* fedTrailer = (const SLinkRocketTrailer_v3*) ((uint8_t*)fragTrailer - sizeof(SLinkRocketTrailer_v3));
+
+    //check SLR trailer first as it comes just before fragmen trailer
+    if (!fedTrailer->verifyMarker())
+      throw cms::Exception("DAQSource::DAQSourceModelsDTH") << "Invalid SLinkRocket trailer";
+    if (!fedHeader->verifyMarker())
+      throw cms::Exception("DAQSource::DAQSourceModelsDTH") << "Invalid SLinkRocket header";
+
+    const uint32_t fedSize = fedTrailer->eventLenBytes();
+    const uint16_t fedId = fedHeader->sourceID();
 
     /*  
      *  @SM: CRC16 in trailer was not checked up to Run3, no need to do production check.
@@ -74,13 +94,13 @@ edm::Timestamp DataModeDTH::fillFEDRawDataCollection(FEDRawDataCollection& rawDa
      *  See also optimized pclmulqdq implementation in XDAQ.
      *  Note: check if for phase-2 crc16 is still based on 8-byte words
     */
-    //const uint32_t crc16 = fedTrailer.crc();
+    //const uint32_t crc16 = fedTrailer->crc();
 
-    assert(fedSize == fragSize);
-    const uint16_t fedId = fedHeader.sourceID();
+    if (fedSize != fragSize)
+      throw cms::Exception("DAQSource::DAQSourceModelsDTH") << "Fragment size mismatch. From DTHTrailer: " << fragSize << " and from SLinkRocket trailer: " << fedSize;
     FEDRawData& fedData = rawData.FEDData(fedId);
     fedData.resize(fedSize);
-    memcpy(fedData.data(), payload, fedSize);//copy with header and trailer
+    memcpy(fedData.data(), payload, fedSize); //copy with header and trailer
   }
   return tstamp;
 }
@@ -100,7 +120,7 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
     addrsStart_.clear();
     constexpr size_t hsize = sizeof(evf::DTHOrbitHeader_v1);
 
-    LogDebug("DataModeDTH::makeDataBlockView") << "BLOCK addr: " << std::hex << (uint64_t) addr << " chunkOffset:" << std::hex << (uint64_t)(addr - rawFile->chunks_[0]->buf_)<< std::endl;
+    LogDebug("DataModeDTH::makeDataBlockView") << "blockAddr: 0x" << std::hex << (uint64_t) addr << " chunkOffset: 0x" << std::hex << (uint64_t)(addr - rawFile->chunks_[0]->buf_);
 
     //intial orbit header was advanced over by source
     size_t maxAllowedSize = rawFile->fileSizeLeft() + headerSize();
@@ -122,21 +142,21 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
         firstOrbitHeader_ = orbitHeader;
       }
       else {
-        assert(orbitHeader->run_number() == firstOrbitHeader_->run_number());
-        if (orbitHeader->orbit_number() != firstOrbitHeader_->orbit_number()) {
+        assert(orbitHeader->runNumber() == firstOrbitHeader_->runNumber());
+        if (orbitHeader->orbitNumber() != firstOrbitHeader_->orbitNumber()) {
           firstOrbitHeader_ = orbitHeader;
           //next orbit ID reached, do not include this orbit in this block
           break;
         }
       }
       
-      auto srcOrbitSize = orbitHeader->total_size();
+      auto srcOrbitSize = orbitHeader->totalSize();
       auto nextEnd = nextAddr + srcOrbitSize;
       assert(nextEnd <= addr + maxAllowedSize);//boundary check
 
       //DEBUG
       /*
-      unsigned char* endPlus = nextEnd;
+      uint8_t* endPlus = nextEnd;
       int count = 0;
       while (endPlus > nextAddr + hsize) {
         evf::DTHFragmentTrailer* tr = (evf::DTHFragmentTrailer*)(endPlus - sizeof(evf::DTHFragmentTrailer));
@@ -150,12 +170,12 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
      }*/
 
       if (verifyChecksum_) {
-        auto crc = crc32c(0U, (const unsigned char*)orbitHeader->payload(), orbitHeader->payload_size());
+        auto crc = crc32c(0U, (const uint8_t*)orbitHeader->payload(), orbitHeader->payloadSizeBytes());
         if (crc != orbitHeader->crc()) {
           checksumValid_ = false;
           if (checksumError_.size()) checksumError_ += "\n";
           checksumError_ += fmt::format("Found a wrong crc32c checksum in orbit: {} sourceID: {}. Expected {:x} but calculated {:x}",
-                                        orbitHeader->orbit_number(), orbitHeader->sourceID(), orbitHeader->crc(), crc);
+                                        orbitHeader->orbitNumber(), orbitHeader->sourceID(), orbitHeader->crc(), crc);
         }
       }
 
@@ -180,17 +200,18 @@ bool DataModeDTH::nextEventView(RawInputFile*) {
   bool blockCompletedAny = false;
   eventFragments_.clear();
   size_t last_eID = 0;
+
   for (size_t i=0; i<addrsEnd_.size(); i++) {
     evf::DTHFragmentTrailer* trailer = (evf::DTHFragmentTrailer*)(addrsEnd_[i] -  sizeof(evf::DTHFragmentTrailer));
 
     if (!trailer->verifyMarker())
       throw cms::Exception("DAQSource::DAQSourceModelsDTH") << "Invalid DTH trailer marker";
 
-    assert((unsigned char*)trailer >= addrsStart_[i]);
-    //inside DTH envelope is FED header+payload+trailer:
+    assert((uint8_t*)trailer >= addrsStart_[i]);
+
     uint64_t eID = trailer->eventID();
     eventFragments_.push_back(trailer);
-    auto payload_size = trailer->payload_size();
+    auto payload_size = trailer->payloadSizeBytes();
     assert(payload_size < 1000000000); //1GB sanity check
 
     if (i==0) {
@@ -202,7 +223,7 @@ bool DataModeDTH::nextEventView(RawInputFile*) {
     //update address array
     addrsEnd_[i] -= sizeof(evf::DTHFragmentTrailer) + payload_size;
 
-    //TODO: print error if flags is not 0 (error detected according to first spec)
+    //FIXME: print error if flags is not 0 (error detected according to first spec)
 
     if (addrsEnd_[i] == addrsStart_[i]) {
       blockCompletedAny = true;

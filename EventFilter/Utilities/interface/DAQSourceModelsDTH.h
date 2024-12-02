@@ -43,7 +43,7 @@ public:
 
   bool isRealData() const { return true; } //this flag could be added to RU/BU-generated index
 
-  uint32_t run() const override { return firstOrbitHeader_->run_number(); }
+  uint32_t run() const override { return firstOrbitHeader_->runNumber(); }
 
   bool dataBlockCompleted() const override { return blockCompleted_; }
 
@@ -77,8 +77,8 @@ private:
   bool dataBlockInitialized_ = false;
   bool blockCompleted_ = true;
 
-  std::vector<unsigned char*> addrsStart_;//start of orbit payloads per source
-  std::vector<unsigned char*> addrsEnd_; //dth trailers per source (go through events from the end)
+  std::vector<uint8_t*> addrsStart_;//start of orbit payloads per source
+  std::vector<uint8_t*> addrsEnd_; //dth trailers per source (go through events from the end)
 
   bool checksumValid_ = false;
   std::string checksumError_;

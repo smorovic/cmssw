@@ -34,6 +34,8 @@ namespace evf {
   private:
     // Generate and fill FED raw data for a full event
     void fillRawData(edm::Event& e, FEDRawDataCollection*& data);
+
+    uint32_t fillSLRFED(unsigned char* buf, const uint32_t sourceId, edm::EventNumber_t eventId, const uint32_t orbitId, uint32_t size, uint32_t &crc32c);
     uint32_t fillFED(unsigned char* buf, const int sourceId, edm::EventNumber_t eventId, uint32_t size, uint32_t &crc32c);
     //void fillTCDSFED(edm::EventID& eID, FEDRawDataCollection& data, uint32_t ls, timeval* now);
     virtual void beginLuminosityBlock(edm::LuminosityBlock const& iL, edm::EventSetup const& iE);
