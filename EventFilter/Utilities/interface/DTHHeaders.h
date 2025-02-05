@@ -60,6 +60,7 @@ namespace evf {
     return std::array<uint8_t, 2>{{uint8_t(i & 0xff), uint8_t((i >> 8) & 0xff)}};
   }
 
+
   class DTHOrbitHeader_v1 {
   public:
     DTHOrbitHeader_v1(uint32_t source_id,
@@ -71,12 +72,12 @@ namespace evf {
                       uint32_t flags)
         :  //convert numbers into binary representation
           source_id_(convert(source_id)),
-          orbit_number_(convert(orbit_number)),
           run_number_(convert(run_number)),
+          orbit_number_(convert(orbit_number)),
+          event_count_(convert(uint16_t(event_count << 4))),
           packed_word_count_(convert(packed_word_count)),
-          event_count_(convert(event_count)),
-          crc32c_(convert(crc)),
-          flags_(convert(flags)) {}
+          flags_(convert(flags)),
+          crc32c_(convert(crc)) {}
 
     uint32_t sourceID() const { return convert(source_id_); }
     //this should be 1 but can be used for autodetection or consistency check
@@ -87,7 +88,7 @@ namespace evf {
     uint64_t totalSize() const { return (DTH_WORD_NUM_BYTES * uint64_t(packed_word_count())); }
     uint64_t payloadSizeBytes() const { return totalSize() - sizeof(DTHOrbitHeader_v1); }
     uint64_t headerSize() const { return sizeof(DTHOrbitHeader_v1); }
-    uint16_t eventCount() const { return convert(event_count_); }
+    uint16_t eventCount() const { return convert(event_count_) >> 4; }
     uint32_t crc() const { return convert(crc32c_); }
     uint32_t flags() const { return convert(flags_); }
     const void* payload() const { return (uint8_t*)this + sizeof(DTHOrbitHeader_v1); }
@@ -102,37 +103,32 @@ namespace evf {
     bool verifyChecksum() const;
 
   private:
-    std::array<uint8_t, 4> source_id_;
-    std::array<uint8_t, 2> version_ = {{0, 1}};
     std::array<uint8_t, 2> marker_ = DTHOrbitMarker;
-    std::array<uint8_t, 4> orbit_number_;
+    std::array<uint8_t, 2> version_ = {{0, 1}};
+    std::array<uint8_t, 4> source_id_;
+
     std::array<uint8_t, 4> run_number_;
-    std::array<uint8_t, 4> packed_word_count_;  //128-bit-words
-    std::array<uint8_t, 2> reserved_ = {{0, 0}};
+    std::array<uint8_t, 4> orbit_number_;
+
     std::array<uint8_t, 2> event_count_;
-    std::array<uint8_t, 4> crc32c_;
+    std::array<uint8_t, 2> reserved_ = {{0, 0}};
+    std::array<uint8_t, 4> packed_word_count_;  //128-bit-words
+
     std::array<uint8_t, 4> flags_;
+    std::array<uint8_t, 4> crc32c_;
   };
+
 
   //TODO: change init to use packed word count
   class DTHFragmentTrailer_v1 {
   public:
     DTHFragmentTrailer_v1(uint32_t payload_word_count, uint16_t flags, uint16_t crc, uint64_t event_id)
-        : payload_word_count_(convert(payload_word_count)),
-          flags_(convert(flags)),
-          crc_(convert(crc)),
-          res_and_eid_({{uint8_t((event_id & 0x0f0000000000) >> 40),
-                         uint8_t((event_id & 0xff00000000) >> 32),
-                         uint8_t((event_id & 0xff000000) >> 24),
-                         uint8_t((event_id & 0xff0000) >> 16),
-                         uint8_t((event_id & 0xff00) >> 8),
-                         uint8_t(event_id & 0xff)}}) {}
+        : flags_(convert(flags)),
+          payload_word_count_(convert(payload_word_count)),
+          eid_and_res_(convert48(event_id << 4)),
+          crc_(convert(crc)) {}
 
-    uint64_t eventID() const {
-      return (uint64_t(res_and_eid_[0] & 0xf) << 40) + (uint64_t(res_and_eid_[1]) << 32) +
-             (uint32_t(res_and_eid_[2]) << 24) + (uint32_t(res_and_eid_[3]) << 16) + (uint16_t(res_and_eid_[4]) << 8) +
-             res_and_eid_[5];
-    }
+    uint64_t eventID() const { return convert(eid_and_res_) >> 4; }
     uint32_t payloadWordCount() const { return convert(payload_word_count_); }
     uint64_t payloadSizeBytes() const { return uint64_t(convert(payload_word_count_)) * DTH_WORD_NUM_BYTES; }
     uint16_t flags() const { return convert(flags_); }
@@ -147,13 +143,14 @@ namespace evf {
     }
 
   private:
-    std::array<uint8_t, 4> payload_word_count_;
-    std::array<uint8_t, 2> flags_;
     std::array<uint8_t, 2> marker_ = DTHFragmentTrailerMarker;
+    std::array<uint8_t, 2> flags_;
+    std::array<uint8_t, 4> payload_word_count_;
+    std::array<uint8_t, 6> eid_and_res_;
     std::array<uint8_t, 2> crc_;
-    std::array<uint8_t, 6> res_and_eid_;
   };
 
+  //TODO
   class DTHFragmentTrailerView {
   public:
     DTHFragmentTrailerView(void* buf)
@@ -194,79 +191,79 @@ namespace evf {
     bool verifyMarker() const { return boe_ == SLR_BOE; }
 
   private:
-    uint8_t boe_ = SLR_BOE;
     uint8_t v_and_r_;
+    uint8_t boe_ = SLR_BOE;
   };
 
   class SLinkRocketHeader_v3 {
   public:
-    SLinkRocketHeader_v3(uint64_t glob_event_id, uint32_t content_id, uint32_t source_id)
-        : r_and_eid_(convert48(glob_event_id & 0x0fffffffffff)),  //44 used, 4 reserved
-          r_and_e_(uint8_t((content_id >> 24) & 0x03)),           //2 used, 6 reserved
-          l1a_subtype_(uint8_t((content_id >> 16) & 0xff)),
-          l1a_t_fc_(convert(uint16_t(content_id & 0xffff))),
-          source_id_(convert(source_id)) {}
+    //SLinkRocketHeader_v3(uint64_t glob_event_id, uint32_t content_id, uint32_t source_id)
+    //    : source_id_(convert(source_id)),
+    //      l1a_t_fc_(convert(uint16_t((content_id >> 16) & 0xffff))), //ok
+    //      l1a_subtype_(uint8_t((content_id >> 8) & 0xff)),
+    //      e_and_r_(uint8_t(content_id & 0x30)),           //2 used, 6 reserved
+    //      eid_and_r_(convert48((glob_event_id << 4) & 0xfffffffffff0)) {} //44 used, 4 reserved
 
     SLinkRocketHeader_v3(uint64_t glob_event_id,
                          uint8_t emu_status,
                          uint8_t l1a_subtype,
                          uint16_t l1a_types_fragcont,
                          uint32_t source_id)
-        : r_and_eid_(convert48(glob_event_id & 0x0fffffffffff)),
-          r_and_e_(emu_status & 0x03),
-          l1a_subtype_(l1a_subtype),
+        : source_id_(convert(source_id)),
           l1a_t_fc_(convert(l1a_types_fragcont)),
-          source_id_(convert(source_id)) {}
+          l1a_subtype_(l1a_subtype),
+          e_and_r_(emu_status & 0x30),
+          eid_and_r_(convert48((glob_event_id << 4) & 0xfffffffffff0)) {}
 
-    uint8_t version() const { return version_and_r_ >> 4; }
-    uint64_t globalEventID() const { return convert(r_and_eid_) & 0x0fffffffffff; }
-    uint32_t contentID() const {
-      return (uint32_t(convert(l1a_t_fc_)) << 16) | (uint32_t(l1a_subtype_) << 8) | (r_and_e_ & 0x3);
-    }
-    uint8_t emuStatus() const { return r_and_e_ & 0x03; }
+    uint8_t version() const { return r_and_version_ >> 4; }
+    uint64_t globalEventID() const { return (convert(eid_and_r_) & 0xfffffffffff0) >> 4; }
+    //uint32_t contentID() const {
+    //  return (uint32_t(convert(l1a_t_fc_)) << 16) | (uint32_t(l1a_subtype_) << 8) | (e_and_r_ & 0x30);
+    //}
+    uint8_t emuStatus() const { return (e_and_r_ & 0x030) >> 4; }
     uint8_t l1aSubtype() const { return l1a_subtype_; }
     uint16_t l1aTypeAndFragmentContent() const { return convert(l1a_t_fc_); }
     uint32_t sourceID() const { return convert(source_id_); }
     bool verifyMarker() const { return boe_ == SLR_BOE; }
 
   private:
-    uint8_t boe_ = SLR_BOE;
-    uint8_t version_and_r_ = 3 << 4;
-    std::array<uint8_t, 6> r_and_eid_;
-    uint8_t r_and_e_;
-    uint8_t l1a_subtype_;
-    std::array<uint8_t, 2> l1a_t_fc_;
     std::array<uint8_t, 4> source_id_;
+    std::array<uint8_t, 2> l1a_t_fc_;
+    uint8_t l1a_subtype_;
+    uint8_t e_and_r_;
+    std::array<uint8_t, 6> eid_and_r_;
+    uint8_t r_and_version_ = 3;
+    uint8_t boe_ = SLR_BOE;
   };
 
   class SLinkRocketTrailer_v3 {
   public:
     SLinkRocketTrailer_v3(
         uint16_t daq_crc, uint32_t evtlen_word_count, uint16_t bxid, uint32_t orbit_id, uint16_t crc, uint16_t status)
-        : daq_crc_(convert(daq_crc)),
-          evtlen_w_count_and_bxid_(convert((evtlen_word_count << 12) | uint32_t(bxid & 0x0fff))),
-          orbit_id_(convert(orbit_id)),
+        : status_(convert(status)),
           crc_(convert(crc)),
-          status_(convert(status)) {}
+          orbit_id_(convert(orbit_id)),
+          bxid_and_evtlen_w_count_(convert(((evtlen_word_count && 0xfffff) << 8) | (uint32_t(bxid) << 20))),
+          daq_crc_(convert(daq_crc)) {}
 
     uint16_t daqCRC() const { return convert(daq_crc_); }
     uint32_t eventLenBytes() const {
-      return ((convert(evtlen_w_count_and_bxid_) >> 12) & 0x0fffff) * SLR_WORD_NUM_BYTES;
+      return ((convert(bxid_and_evtlen_w_count_) >> 8) & 0xfffff) * SLR_WORD_NUM_BYTES;
     }
-    uint16_t bxID() const { return convert(evtlen_w_count_and_bxid_) & 0x0fff; }
+    uint16_t bxID() const { return (convert(bxid_and_evtlen_w_count_) >> 20); }
     uint32_t orbitID() const { return convert(orbit_id_); }
     uint16_t crc() const { return convert(crc_); }
     uint16_t status() const { return convert(status_); }
     bool verifyMarker() const { return eoe_ == SLR_EOE; }
 
   private:
-    uint8_t eoe_ = SLR_EOE;
-    std::array<uint8_t, 2> daq_crc_;
-    uint8_t reserved_ = 0;
-    std::array<uint8_t, 4> evtlen_w_count_and_bxid_;  //event 128-bit word length includes header and trailer
-    std::array<uint8_t, 4> orbit_id_;
-    std::array<uint8_t, 2> crc_;
     std::array<uint8_t, 2> status_;
+    std::array<uint8_t, 2> crc_;
+    std::array<uint8_t, 4> orbit_id_;
+    std::array<uint8_t, 4> bxid_and_evtlen_w_count_;  //event 128-bit word length includes header and trailer
+    uint8_t reserved_ = 0;
+    std::array<uint8_t, 2> daq_crc_;
+    uint8_t eoe_ = SLR_EOE;
   };
 
 }  // namespace evf
