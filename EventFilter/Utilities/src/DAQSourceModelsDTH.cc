@@ -137,6 +137,7 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
     assert(nextAddr + hsize < addr + maxAllowedSize);
 
     auto orbitHeader = (evf::DTHOrbitHeader_v1*)(nextAddr);
+
     if (!orbitHeader->verifyMarker())
       throw cms::Exception("DAQSource::DAQSourceModelsDTH") << "Invalid DTH orbit marker";
     if (!firstOrbitHeader_) {
@@ -161,9 +162,14 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
         if (!checksumError_.empty())
           checksumError_ += "\n";
         checksumError_ +=
-            fmt::format("Found a wrong crc32c checksum in orbit: {} sourceID: {}. Expected {:x} but calculated {:x}",
+            fmt::format("Found a wrong crc32c checksum in orbit header v{} run: {} orbit: {} sourceID: {} wcount: {} events: {} flags: {}. Expected {:x} but calculated {:x}",
+                        orbitHeader->version(),
+                        orbitHeader->runNumber(),
                         orbitHeader->orbitNumber(),
                         orbitHeader->sourceID(),
+                        orbitHeader->packed_word_count(),
+                        orbitHeader->eventCount(),
+                        orbitHeader->flags(),
                         orbitHeader->crc(),
                         crc);
       }
@@ -176,14 +182,16 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
   dataBlockSize_ = nextAddr - addr;
 
   eventCached_ = false;
+  blockCompleted_ = false;
   nextEventView(rawFile);
   eventCached_ = true;
 }
 
 bool DataModeDTH::nextEventView(RawInputFile*) {
-  blockCompleted_ = false;
   if (eventCached_)
     return true;
+
+  blockCompleted_ = false;
 
   bool blockCompletedAll = !addrsEnd_.empty() ? true : false;
   bool blockCompletedAny = false;
@@ -212,13 +220,13 @@ bool DataModeDTH::nextEventView(RawInputFile*) {
     } else if (last_eID != nextEventID_)
       throw cms::Exception("DAQSource::DAQSourceModelsDTH") << "Inconsistent event number between fragments";
 
-    //update address array
-    addrsEnd_[i] -= sizeof(evf::DTHFragmentTrailer_v1) + payload_size;
-
     if (trailer->flags())
       throw cms::Exception("DAQSource::DAQSourceModelsDTH")
           << "Detected error condition in DTH trailer of event " << trailer->eventID()
           << " flags: " << std::bitset<16>(trailer->flags());
+
+    //update address array
+    addrsEnd_[i] -= sizeof(evf::DTHFragmentTrailer_v1) + payload_size;
 
     if (addrsEnd_[i] == addrsStart_[i]) {
       blockCompletedAny = true;
