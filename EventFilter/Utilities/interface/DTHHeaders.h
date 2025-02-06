@@ -5,14 +5,12 @@
 #include <cstddef>
 #include <cstdint>
 
-//#include "IOPool/Streamer/interface/MsgTools.h"
 /*
- * DTH Orbit header and event fragment trailer accompanying slink payload.
- * In this version, big-endian number format is assumed to be written
- * by DTH and requires byte swapping on low-endian platforms when converting
- * to numerical representation
+ * DTH Orbit header, event fragment trailer and SlinkRocket Header and Trailer accompanying
+ * slink payload. Format that is sent is is low-endian for multi-byte fields
  *
- * Version 1 Format defined
+ * Version 1 DTH and Version 3 SLinkRocket
+ *
  * */
 
 namespace evf {
@@ -25,22 +23,23 @@ namespace evf {
 
   class DTHOrbitHeader_v1 {
   public:
+
     DTHOrbitHeader_v1(uint32_t source_id,
-                      uint32_t orbit_number,
                       uint32_t run_number,
-                      uint32_t packed_word_count,
+                      uint32_t orbit_number,
                       uint16_t event_count,
-                      uint32_t crc,
-                      uint32_t flags)
-        :  //numbers are low-endian, no byte reshuffling in le architectures
-          source_id_(source_id),
+                      uint32_t packed_word_count,
+                      uint32_t flags,
+                      uint32_t crc)
+        : source_id_(source_id),
           run_number_(run_number),
           orbit_number_(orbit_number),
           event_count_(event_count),
           packed_word_count_(packed_word_count),
           crc32c_(crc) {
             flags_.all_ = flags;
-          }
+    }
+
 
     uint16_t version() const { return version_; }
     uint32_t sourceID() const { return source_id_; }
@@ -67,14 +66,13 @@ namespace evf {
 
   private:
     std::array<uint8_t, 2> marker_ = DTHOrbitMarker;
-    //this is 1 initially but can be used for autodetection or consistency check
-    uint16_t version_ = 1; // bytes: 01 00
+    uint16_t version_ = 1; //bytes: 01 00
     uint32_t source_id_;
     uint32_t run_number_;
     uint32_t orbit_number_;
     uint32_t event_count_:12,
 	     res_:20;
-    uint32_t packed_word_count_;
+    uint32_t packed_word_count_; //Total size encoded in multiples of 128 bits (16 bytes)
     union {
 	struct {
 	uint32_t error_flag_:1,
@@ -85,15 +83,21 @@ namespace evf {
     uint32_t crc32c_;
   };
 
-  //TODO: change init to use packed word count
+
   class DTHFragmentTrailer_v1 {
   public:
-    DTHFragmentTrailer_v1(uint32_t payload_word_count, uint16_t flags, uint16_t crc, uint64_t event_id)
+
+    DTHFragmentTrailer_v1(
+                          uint16_t flags,
+                          uint32_t payload_word_count,
+                          uint64_t event_id,
+                          uint16_t crc)
         : payload_word_count_(payload_word_count),
           event_id_(event_id),
           crc_(crc) {
       flags_.all_ = flags;
     }
+
 
     uint64_t eventID() const { return event_id_; }
     uint32_t payloadWordCount() const { return payload_word_count_; }
@@ -133,11 +137,11 @@ namespace evf {
 
   //SLinkExpress classes
 
-  //begin and end event
+  //begin and end event markers
   constexpr uint8_t SLR_BOE = 0x55;
   constexpr uint8_t SLR_EOE = 0xaa;
 
-  //minimal SLinkRocket format version version overlay
+  //minimal SLinkRocket version overlay
   class SLinkRocketHeader_version {
   public:
     SLinkRocketHeader_version(uint8_t version, uint8_t res = 0) : res_(res), version_(version) {}
@@ -153,16 +157,18 @@ namespace evf {
 
   class SLinkRocketHeader_v3 {
   public:
-    SLinkRocketHeader_v3(uint64_t glob_event_id,
-                         uint8_t emu_status,
-                         uint8_t l1a_phys,
+
+    SLinkRocketHeader_v3(uint32_t source_id,
                          uint16_t l1a_types,
-                         uint32_t source_id)
+                         uint8_t l1a_phys,
+                         uint8_t emu_status,
+                         uint64_t event_id)
         : source_id_(source_id),
           l1a_types_(l1a_types),
           phys_type_(l1a_phys),
           emu_status_(emu_status),
-          event_id_(glob_event_id) {}
+          event_id_(event_id) {}
+
 
     uint32_t sourceID() const { return source_id_; }
     uint16_t l1aTypes() const { return l1a_types_; }
@@ -187,16 +193,22 @@ namespace evf {
 
   class SLinkRocketTrailer_v3 {
   public:
+
     SLinkRocketTrailer_v3(
-        uint16_t daq_crc, uint32_t evtlen_word_count, uint16_t bx_id, uint32_t orbit_id, uint16_t crc, uint16_t status)
-        : //status_.all_(status),
-          crc_(crc),
+        uint16_t status,
+        uint16_t crc,
+        uint32_t orbit_id,
+        uint16_t bx_id,
+        uint32_t evtlen_word_count,
+        uint16_t daq_crc)
+        : crc_(crc),
           orbit_id_(orbit_id),
           bx_id_(bx_id),
           event_length_wcount_(evtlen_word_count),
           daq_crc_(daq_crc) {
      status_.all_ = status;
    }
+
 
     uint16_t status() const { return status_.all_; }
     uint16_t crc() const { return crc_; }

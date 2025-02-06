@@ -88,8 +88,8 @@ edm::Timestamp DataModeDTH::fillFEDRawDataCollection(FEDRawDataCollection& rawDa
     const uint16_t fedId = fedHeader->sourceID();
 
     /*
-     *  @SM: CRC16 in trailer was not checked up to Run3, no need to do production check.
-     *  if we already check orbit CRC32.If CRC16 check is to be added,
+     *  @SM: CRC16 in trailer was not checked up to Run3, no need to do production check
+     *  if we already check orbit CRC32. If CRC16 check is to be added,
      *  in phase1 crc16 was calculated on sequential 64-byte little-endian words
      *  (see FWCore/Utilities/interface/CRC16.h).
      *  See also optimized pclmulqdq implementation in XDAQ.
@@ -108,7 +108,7 @@ edm::Timestamp DataModeDTH::fillFEDRawDataCollection(FEDRawDataCollection& rawDa
 }
 
 std::vector<std::shared_ptr<const edm::DaqProvenanceHelper>>& DataModeDTH::makeDaqProvenanceHelpers() {
-  //set FRD data collection
+  //use also FRD data collection
   daqProvenanceHelpers_.clear();
   daqProvenanceHelpers_.emplace_back(std::make_shared<const edm::DaqProvenanceHelper>(
       edm::TypeID(typeid(FEDRawDataCollection)), "FEDRawDataCollection", "FEDRawDataCollection", "DAQSource"));
@@ -116,7 +116,7 @@ std::vector<std::shared_ptr<const edm::DaqProvenanceHelper>>& DataModeDTH::makeD
 }
 
 void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) {
-  //TODO: optimize by merging into a pair or tuple and reserve size
+  //could be merged into a pair or tuple and reserve size
   addrsEnd_.clear();
   addrsStart_.clear();
   constexpr size_t hsize = sizeof(evf::DTHOrbitHeader_v1);
