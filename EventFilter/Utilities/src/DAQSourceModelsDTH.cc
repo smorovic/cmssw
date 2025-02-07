@@ -116,53 +116,87 @@ std::vector<std::shared_ptr<const edm::DaqProvenanceHelper>>& DataModeDTH::makeD
 }
 
 void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) {
-  //could be merged into a pair or tuple and reserve size
+
+  //addr points to beginning of the main file orbit block
+
+  //get file array info
+  auto numFiles = rawFile->fileSizes_.size();
+
+  //initialize address tracking for files in the buffer: add primary file
+
+  auto buf = rawFile->chunks_[0]->buf_;
+
+  //all fragment addresses could be merged into a pair or tuple and reserve size
   addrsEnd_.clear();
   addrsStart_.clear();
   constexpr size_t hsize = sizeof(evf::DTHOrbitHeader_v1);
-
-  LogDebug("DataModeDTH::makeDataBlockView") << "blockAddr: 0x" << std::hex << (uint64_t)addr << " chunkOffset: 0x"
-                                             << std::hex << (uint64_t)(addr - rawFile->chunks_[0]->buf_);
-
-  //intial orbit header was advanced over by source
-  size_t maxAllowedSize = rawFile->fileSizeLeft() + headerSize();
-  auto nextAddr = addr;
-  checksumValid_ = true;
-  if (!checksumError_.empty())
-    checksumError_ = std::string();
-
+  unsigned char* nextEnd = nullptr;
   firstOrbitHeader_ = nullptr;
-  while (nextAddr < addr + maxAllowedSize) {
-    //ensure header fits
-    assert(nextAddr + hsize < addr + maxAllowedSize);
 
-    auto orbitHeader = (evf::DTHOrbitHeader_v1*)(nextAddr);
+  for (unsigned i = 0; i < numFiles; i++) {
 
-    if (!orbitHeader->verifyMarker())
-      throw cms::Exception("DAQSource::DAQSourceModelsDTH") << "Invalid DTH orbit marker";
-    if (!firstOrbitHeader_) {
-      firstOrbitHeader_ = orbitHeader;
-    } else {
-      assert(orbitHeader->runNumber() == firstOrbitHeader_->runNumber());
-      if (orbitHeader->orbitNumber() != firstOrbitHeader_->orbitNumber()) {
-        firstOrbitHeader_ = orbitHeader;
-        //next orbit ID reached, do not include this orbit in this block
-        break;
+    bool ohThisFile = false;
+    //intial orbit header was advanced over by source (first file only)
+    auto nextAddr = buf + rawFile->bufferOffsets_[i];
+    auto startAddr = nextAddr;//save start position of the orbit
+    auto maxAddr = buf + rawFile->bufferEnds_[i];//end of stripe / file
+
+
+    LogDebug("DataModeDTH::makeDataBlockView") << "blockAddr: 0x" << std::hex << (uint64_t)nextAddr << " chunkOffset: 0x"
+                                               << std::hex << (uint64_t)(nextAddr - buf);
+
+    checksumValid_ = true;
+    if (!checksumError_.empty())
+      checksumError_ = std::string();
+
+    while (nextAddr < maxAddr) {
+      //ensure header fits
+      assert(nextAddr + hsize < maxAddr);
+
+      auto orbitHeader = (evf::DTHOrbitHeader_v1*)(nextAddr);
+
+      if (!orbitHeader->verifyMarker())
+        throw cms::Exception("DAQSource::DAQSourceModelsDTH") << "Invalid DTH orbit marker";
+      if (i == 0) {
+        //get initial orbit number and find all subsequent orbits with the same nr in this file
+        ohThisFile = true;
+        if (!firstOrbitHeader_)
+          firstOrbitHeader_ = orbitHeader;
+        else {
+          assert(orbitHeader->runNumber() == firstOrbitHeader_->runNumber());
+          assert(orbitHeader->eventCount() == firstOrbitHeader_->eventCount());
+          if (orbitHeader->orbitNumber() != firstOrbitHeader_->orbitNumber())
+            //nextOrbitHeader_ = orbitHeader;
+            break;
+        }
+      } else {
+        //check that orbit headers in all files are consistent with first
+        assert(firstOrbitHeader_);
+        assert(orbitHeader->runNumber() == firstOrbitHeader_->runNumber());
+        assert(orbitHeader->eventCount() == firstOrbitHeader_->eventCount());
+
+        if (!ohThisFile) {
+          //each file must contain at least one orbit nf of the first file
+          assert(orbitHeader->orbitNumber() == firstOrbitHeader_->orbitNumber());
+          ohThisFile = true;
+        } else
+          if (orbitHeader->orbitNumber() != firstOrbitHeader_->orbitNumber())
+            break;
       }
-    }
 
-    auto srcOrbitSize = orbitHeader->totalSize();
-    auto nextEnd = nextAddr + srcOrbitSize;
-    assert(nextEnd <= addr + maxAllowedSize);  //boundary check
 
-    if (verifyChecksum_) {
-      auto crc = crc32c(0U, (const uint8_t*)orbitHeader->payload(), orbitHeader->payloadSizeBytes());
-      if (crc != orbitHeader->crc()) {
-        checksumValid_ = false;
-        if (!checksumError_.empty())
-          checksumError_ += "\n";
-        checksumError_ +=
-            fmt::format("Found a wrong crc32c checksum in orbit header v{} run: {} orbit: {} sourceID: {} wcount: {} events: {} flags: {}. Expected {:x} but calculated {:x}",
+      auto srcOrbitSize = orbitHeader->totalSize();
+      nextEnd = nextAddr + srcOrbitSize;
+      assert(nextEnd <= maxAddr);  //boundary check
+
+      if (verifyChecksum_) {
+        auto crc = crc32c(0U, (const uint8_t*)orbitHeader->payload(), orbitHeader->payloadSizeBytes());
+        if (crc != orbitHeader->crc()) {
+          checksumValid_ = false;
+          if (!checksumError_.empty())
+            checksumError_ += "\n";
+          checksumError_ +=
+            fmt::format("Found a wrong crc32c checksum in orbit header v{} run: {} orbit: {} sourceId: {} wcount: {} events: {} flags: {}. Expected {:x} but calculated {:x}",
                         orbitHeader->version(),
                         orbitHeader->runNumber(),
                         orbitHeader->orbitNumber(),
@@ -172,14 +206,28 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
                         orbitHeader->flags(),
                         orbitHeader->crc(),
                         crc);
+        }
       }
+
+      addrsStart_.push_back(nextAddr + hsize);
+      addrsEnd_.push_back(nextAddr + srcOrbitSize);
+      nextAddr += srcOrbitSize;
+
     }
 
-    addrsStart_.push_back(nextAddr + hsize);
-    addrsEnd_.push_back(nextAddr + srcOrbitSize);
-    nextAddr += srcOrbitSize;
+    //require orbit header in each file
+    assert(ohThisFile);
+
+    //report first file block size
+    if (i == 0)
+      dataBlockSize_ = nextEnd - nextAddr;
+
+    //advance buffer position to next orbit
+    //rawFile->bufferOffsets_[i] += nextAddr - startAddr;
+    rawFile->advanceBuffer(nextAddr - startAddr, i);
   }
-  dataBlockSize_ = nextAddr - addr;
+  //update next pointer
+  //firstOrbitHeader_ = nextOrbitHeader;
 
   eventCached_ = false;
   blockCompleted_ = false;
@@ -246,3 +294,40 @@ bool DataModeDTH::nextEventView(RawInputFile*) {
   }
   return true;
 }
+
+//striped mode functions
+void DataModeDTH::makeDirectoryEntries(std::vector<std::string> const& baseDirs,
+                                              std::vector<int> const& numSources,
+                                              std::string const& runDir) {
+  std::filesystem::path runDirP(runDir);
+  for (auto& baseDir : baseDirs) {
+    std::filesystem::path baseDirP(baseDir);
+    buPaths_.emplace_back(baseDirP / runDirP);
+  }
+}
+
+
+std::pair<bool, std::vector<std::string>> DataModeDTH::defineAdditionalFiles(std::string const& primaryName,
+                                                                                    bool fileListMode) const {
+  //non-striped mode
+  if (!buPaths_.size())
+    return std::make_pair(false, std::vector<std::string>());
+
+  std::vector<std::string> additionalFiles;
+
+  if (fileListMode) {
+    //additional file for the unit test
+    additionalFiles.push_back(primaryName + "_1");
+    return std::make_pair(true, additionalFiles);
+  }
+
+  auto fullpath = std::filesystem::path(primaryName);
+  auto fullname = fullpath.filename();
+
+  for (size_t i = 1; i < buPaths_.size(); i++) {
+    std::filesystem::path newPath = buPaths_[i] / fullname;
+    additionalFiles.push_back(newPath.generic_string());
+  }
+  return std::make_pair(true, additionalFiles);
+}
+

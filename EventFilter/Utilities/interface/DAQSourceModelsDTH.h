@@ -48,6 +48,8 @@ public:
 
   bool fitToBuffer() const override { return true; }
 
+  bool isMultiDir() const override { return true; }
+
   void unpackFile(RawInputFile*) override {}
 
   bool dataBlockInitialized() const override { return dataBlockInitialized_; }
@@ -58,19 +60,19 @@ public:
 
   void makeDirectoryEntries(std::vector<std::string> const& baseDirs,
                             std::vector<int> const& numSources,
-                            std::string const& runDir) override {}
+                            std::string const& runDir) override;
 
-  std::pair<bool, std::vector<std::string>> defineAdditionalFiles(std::string const& primaryName, bool) const override {
-    return std::make_pair(true, std::vector<std::string>());
-  }
+  std::pair<bool, std::vector<std::string>> defineAdditionalFiles(std::string const& primaryName, bool) const override;
 
 private:
   bool verifyChecksum_;
   std::vector<std::shared_ptr<const edm::DaqProvenanceHelper>> daqProvenanceHelpers_;
+  std::vector<std::filesystem::path> buPaths_;
   uint16_t detectedDTHversion_ = 0;
   evf::DTHOrbitHeader_v1* firstOrbitHeader_ = nullptr;
   uint64_t nextEventID_ = 0;
   std::vector<evf::DTHFragmentTrailer_v1*> eventFragments_;  //events in block (DTH trailer)
+  //numFiles_ = 0;
   bool dataBlockInitialized_ = false;
   bool blockCompleted_ = true;
 
@@ -84,6 +86,7 @@ private:
   //uint16_t MINTCDSuTCAFEDID_ = FEDNumbering::MINTCDSuTCAFEDID;
   //uint16_t MAXTCDSuTCAFEDID_ = FEDNumbering::MAXTCDSuTCAFEDID;
   bool eventCached_ = false;
+
 };
 
 #endif  // EventFilter_Utilities_DAQSourceModelsDTH_h
