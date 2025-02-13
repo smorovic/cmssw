@@ -298,14 +298,33 @@ bool DataModeDTH::nextEventView(RawInputFile*) {
 //striped mode functions
 void DataModeDTH::makeDirectoryEntries(std::vector<std::string> const& baseDirs,
                                               std::vector<int> const& numSources,
+                                              std::vector<int> const& sourceIDs,
+                                              std::string const& sourceIdentifier,
                                               std::string const& runDir) {
   std::filesystem::path runDirP(runDir);
   for (auto& baseDir : baseDirs) {
     std::filesystem::path baseDirP(baseDir);
     buPaths_.emplace_back(baseDirP / runDirP);
   }
-}
+  if (!sourceIdentifier.empty()) {
+    sid_pattern_ = std::regex("_" + sourceIdentifier + R"(\d+_)");
 
+    for (auto sourceID : sourceIDs)
+      buSourceStrings_.push_back("_" + sourceIdentifier + std::to_string(sourceID) + "_");
+
+    if (baseDirs.size() != numSources.size())
+      throw cms::Exception("DataModeDTH::makeDirectoryEntries") << "Number of defined directories not compatible with numSources list length";
+
+    unsigned int sum = 0;
+    for (auto numSource: numSources) {
+      buNumSources_.push_back(numSource);
+      sum += numSource;
+    }
+
+    if (sum != sourceIDs.size())
+      throw cms::Exception("DataModeDTH::makeDirectoryEntries") << "Number of defined sources not consistent with the list of sourceIDs";
+  }
+}
 
 std::pair<bool, std::vector<std::string>> DataModeDTH::defineAdditionalFiles(std::string const& primaryName,
                                                                                     bool fileListMode) const {
@@ -315,18 +334,26 @@ std::pair<bool, std::vector<std::string>> DataModeDTH::defineAdditionalFiles(std
 
   std::vector<std::string> additionalFiles;
 
-  if (fileListMode) {
-    //additional file for the unit test
-    additionalFiles.push_back(primaryName + "_1");
-    return std::make_pair(true, additionalFiles);
-  }
-
+  //not touching primary file name as found by input mechanism
   auto fullpath = std::filesystem::path(primaryName);
   auto fullname = fullpath.filename();
 
-  for (size_t i = 1; i < buPaths_.size(); i++) {
-    std::filesystem::path newPath = buPaths_[i] / fullname;
-    additionalFiles.push_back(newPath.generic_string());
+  if (!buSourceStrings_.empty()) {
+    int counter = 0;
+    for (size_t i = 1; i < buPaths_.size(); i++) {
+      for (size_t j = 1; j < (size_t) buNumSources_[i]; j++) {
+        auto replacement = buSourceStrings_[counter];
+        std::filesystem::path newPath = buPaths_[i] / std::regex_replace(primaryName, sid_pattern_, replacement);
+        additionalFiles.push_back(newPath.generic_string());
+        counter++;
+      }
+    }
+  }
+  else {
+    for (size_t i = 1; i < buPaths_.size(); i++) {
+      std::filesystem::path newPath = buPaths_[i] / fullname;
+      additionalFiles.push_back(newPath.generic_string());
+    }
   }
   return std::make_pair(true, additionalFiles);
 }

@@ -128,10 +128,6 @@ namespace evf {
     void lockFULocal2();
     void unlockFULocal2();
     void createBoLSFile(const uint32_t lumiSection, bool checkIfExists) const;
-    void createLumiSectionFiles(const uint32_t lumiSection,
-                                const uint32_t currentLumiSection,
-                                bool doCreateBoLS,
-                                bool doCreateEoLS);
     static int parseFRDFileHeader(std::string const& rawSourcePath,
                                   int& rawFd,
                                   uint16_t& rawHeaderSize,
@@ -142,7 +138,6 @@ namespace evf {
                                   bool requireHeader,
                                   bool retry,
                                   bool closeFile);
-    bool rawFileHasHeader(std::string const& rawSourcePath, uint16_t& rawHeaderSize);
     int grabNextJsonFromRaw(std::string const& rawSourcePath,
                             int& rawFd,
                             uint16_t& rawHeaderSize,
@@ -156,15 +151,6 @@ namespace evf {
                          int64_t& fileSizeFromJson,
                          bool& fileFound);
     int grabNextJsonFileAndUnlock(std::filesystem::path const& jsonSourcePath);
-
-    EvFDaqDirector::FileStatus contactFileBroker(unsigned int& serverHttpStatus,
-                                                 bool& serverState,
-                                                 uint32_t& serverLS,
-                                                 uint32_t& closedServerLS,
-                                                 std::string& nextFileJson,
-                                                 std::string& nextFileRaw,
-                                                 bool& rawHeader,
-                                                 int maxLS);
 
     FileStatus getNextFromFileBroker(const unsigned int currentLumiSection,
                                      unsigned int& ls,
@@ -189,12 +175,31 @@ namespace evf {
     bool inputThrottled();
     bool lumisectionDiscarded(unsigned int ls);
     std::vector<std::string> const& getBUBaseDirs() const { return bu_base_dirs_all_; }
-    std::vector<int> const& getBUBaseDirsNSources() const { return bu_base_dirs_nSources_; }
+    std::vector<int> const& getBUBaseDirsNSources() const { return bu_base_dirs_n_sources_; }
+    std::vector<int> const& getBUBaseDirsSourceIDs() const { return bu_base_dirs_source_ids_; }
+    std::string const& getSourceIdentifier() const { return source_identifier_; }
     void setFileListMode() { fileListMode_ = true; }
     bool fileListMode() const { return fileListMode_; }
     unsigned int lsWithFilesOpen(unsigned int ls) const;
 
   private:
+
+    void createLumiSectionFiles(const uint32_t lumiSection,
+                                const uint32_t currentLumiSection,
+                                bool doCreateBoLS,
+                                bool doCreateEoLS);
+
+    bool rawFileHasHeader(std::string const& rawSourcePath, uint16_t& rawHeaderSize);
+
+    EvFDaqDirector::FileStatus contactFileBroker(unsigned int& serverHttpStatus,
+                                                 bool& serverState,
+                                                 uint32_t& serverLS,
+                                                 uint32_t& closedServerLS,
+                                                 std::string& nextFileJson,
+                                                 std::string& nextFileRaw,
+                                                 bool& rawHeader,
+                                                 int maxLS);
+
     bool bumpFile(unsigned int& ls,
                   unsigned int& index,
                   std::string& nextFile,
@@ -215,7 +220,9 @@ namespace evf {
     std::string base_dir_;
     std::string bu_base_dir_;
     std::vector<std::string> bu_base_dirs_all_;
-    std::vector<int> bu_base_dirs_nSources_;
+    std::vector<int> bu_base_dirs_n_sources_;
+    std::vector<int> bu_base_dirs_source_ids_;
+    std::string source_identifier_;
     unsigned int run_;
     bool useFileBroker_;
     bool fileBrokerHostFromCfg_;

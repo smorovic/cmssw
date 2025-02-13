@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <queue>
+#include <regex>
 
 #include "EventFilter/Utilities/interface/DAQSourceModels.h"
 #include "DataFormats/FEDRawData/interface/FEDRawDataCollection.h"
@@ -60,14 +61,20 @@ public:
 
   void makeDirectoryEntries(std::vector<std::string> const& baseDirs,
                             std::vector<int> const& numSources,
+                            std::vector<int> const& sourceIDs,
+                            std::string const& sourceIdentifier,
                             std::string const& runDir) override;
 
-  std::pair<bool, std::vector<std::string>> defineAdditionalFiles(std::string const& primaryName, bool) const override;
+  std::pair<bool, std::vector<std::string>> defineAdditionalFiles(std::string const& primaryName,
+                                                                  bool fileListMode) const override;
 
 private:
   bool verifyChecksum_;
   std::vector<std::shared_ptr<const edm::DaqProvenanceHelper>> daqProvenanceHelpers_;
   std::vector<std::filesystem::path> buPaths_;
+  std::vector<int> buNumSources_;
+  std::vector<std::string> buSourceStrings_;
+  std::regex sid_pattern_;
   uint16_t detectedDTHversion_ = 0;
   evf::DTHOrbitHeader_v1* firstOrbitHeader_ = nullptr;
   uint64_t nextEventID_ = 0;

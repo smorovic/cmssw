@@ -63,6 +63,8 @@ public:
   virtual bool isMultiDir() const { return false; }
   virtual void makeDirectoryEntries(std::vector<std::string> const& baseDirs,
                                     std::vector<int> const& numSources,
+                                    std::vector<int> const& sourceIDs,
+                                    std::string const& sourceIdentifier,
                                     std::string const& runDir) = 0;
   void setTesting(bool testing) { testing_ = testing; }
 
