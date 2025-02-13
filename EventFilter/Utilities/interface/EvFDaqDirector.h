@@ -160,7 +160,9 @@ namespace evf {
                                      int32_t& serverEventsInNewFile_,
                                      int64_t& fileSize,
                                      uint64_t& thisLockWaitTimeUs,
-                                     bool requireHeader = true);
+                                     bool requireHeader = true,
+                                     bool fsDiscovery = false);
+
     void createRunOpendirMaybe();
     void createProcessingNotificationMaybe() const;
     int readLastLSEntry(std::string const& file);
@@ -199,6 +201,15 @@ namespace evf {
                                                  std::string& nextFileRaw,
                                                  bool& rawHeader,
                                                  int maxLS);
+
+    EvFDaqDirector::FileStatus discoverFile(unsigned int& serverHttpStatus,
+                                            bool& serverState,
+                                            uint32_t& serverLS,
+                                            uint32_t& closedServerLS,
+                                            std::string& nextFileJson,
+                                            std::string& nextFileRaw,
+                                            bool& rawHeader,
+                                            int maxLS);
 
     bool bumpFile(unsigned int& ls,
                   unsigned int& index,
@@ -299,6 +310,7 @@ namespace evf {
     std::string input_throttled_file_;
     std::string discard_ls_filestem_;
     bool fileListMode_ = false;
+    std::pair<unsigned, int> lastFileIdx_ = std::make_pair<unsigned, int>(0, -1);
   };
 }  // namespace evf
 

@@ -47,6 +47,7 @@ DAQSource::DAQSource(edm::ParameterSet const& pset, edm::InputSourceDescription 
       testTCDSFEDRange_(pset.getUntrackedParameter<std::vector<unsigned int>>("testTCDSFEDRange")),
       listFileNames_(pset.getUntrackedParameter<std::vector<std::string>>("fileNames")),
       fileListMode_(pset.getUntrackedParameter<bool>("fileListMode")),
+      fileDiscoveryMode_(pset.getUntrackedParameter<bool>("fileDiscoveryMode", false)),
       fileListLoopMode_(pset.getUntrackedParameter<bool>("fileListLoopMode", false)),
       runNumber_(edm::Service<evf::EvFDaqDirector>()->getRunNumber()),
       processHistoryID_(),
@@ -265,6 +266,8 @@ void DAQSource::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
       ->setComment("[min, max] range to search for TCDS FED ID in test setup");
   desc.addUntracked<bool>("fileListMode", false)
       ->setComment("Use fileNames parameter to directly specify raw files to open");
+  desc.addUntracked<bool>("fileDiscoveryMode", false)
+      ->setComment("Use filesystem discovery and assignment of files by renaming");
   desc.addUntracked<std::vector<std::string>>("fileNames", std::vector<std::string>())
       ->setComment("file list used when fileListMode is enabled");
   desc.setAllowAnything();
@@ -834,7 +837,8 @@ void DAQSource::readSupervisor() {
                                                      serverEventsInNewFile,
                                                      fileSizeFromMetadata,
                                                      thisLockWaitTimeUs,
-                                                     requireHeader);
+                                                     requireHeader,
+                                                     fileDiscoveryMode_);
       }
 
       setMonStateSup(inSupBusy);

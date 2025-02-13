@@ -23,6 +23,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <cstdio>
+#include <regex>
 #include <boost/algorithm/string.hpp>
 #include <fmt/printf.h>
 
@@ -103,19 +104,9 @@ namespace evf {
       }
     }
     if (useFileBroker_) {
-      if (fileBrokerHostFromCfg_) {
-        //find BU data address from hltd configuration
-        fileBrokerHost_ = std::string();
-        struct stat buf;
-        if (stat("/etc/appliance/bus.config", &buf) == 0) {
-          std::ifstream busconfig("/etc/appliance/bus.config", std::ifstream::in);
-          std::getline(busconfig, fileBrokerHost_);
-        }
-        if (fileBrokerHost_.empty())
-          throw cms::Exception("EvFDaqDirector") << "No file service or BU data address information";
-      } else if (fileBrokerHost_.empty() || fileBrokerHost_ == "InValid")
+      if (fileBrokerHost_.empty() || fileBrokerHost_ == "InValid")
         throw cms::Exception("EvFDaqDirector")
-            << "fileBrokerHostFromCfg must be set to true if fileBrokerHost parameter is not valid or empty";
+            << "fileBrokerHost parameter is not valid or empty";
 
       resolver_ = std::make_unique<boost::asio::ip::tcp::resolver>(io_service_);
       query_ = std::make_unique<boost::asio::ip::tcp::resolver::query>(fileBrokerHost_, fileBrokerPort_);
@@ -399,7 +390,7 @@ namespace evf {
     desc.addUntracked<bool>("useFileBroker", false)
         ->setComment("Use BU file service to grab input data instead of NFS file locking");
     desc.addUntracked<bool>("fileBrokerHostFromCfg", true)
-        ->setComment("Allow service to discover BU address from hltd configuration");
+        ->setComment("Kept for compatibility with scripts");
     desc.addUntracked<std::string>("fileBrokerHost", "InValid")->setComment("BU file service host.");
     desc.addUntracked<std::string>("fileBrokerPort", "8080")->setComment("BU file service port");
     desc.addUntracked<bool>("fileBrokerKeepAlive", true)
@@ -1793,6 +1784,156 @@ namespace evf {
     return fileStatus;
   }
 
+  EvFDaqDirector::FileStatus EvFDaqDirector::discoverFile(unsigned int& fakeHttpStatus,
+                                                               bool& fakeServerError,
+                                                               uint32_t& serverLS,
+                                                               uint32_t& closedServerLS,
+                                                               std::string& nextFileJson,
+                                                               std::string& nextFileRaw,
+                                                               bool& rawHeader,
+                                                               int maxLS) {
+    fakeHttpStatus = 200;
+    fakeServerError = false;
+    std::string dest = fmt::sprintf(" using filesystem discovery mode");
+    std::regex regex_ls("_ls([0-9]+)");  // Match _ls followed by digits
+    std::regex regex_index("_index([0-9]+)");  // Match _ls followed by digits
+
+    // Lambda function to extract the number after _ls
+    auto extractIndexNumber = [&regex_index](const std::string& filename) -> int {
+        std::smatch match;
+        if (std::regex_search(filename, match, regex_index)) {
+            return std::stoi(match[1].str()); // Convert the matched number to an integer
+        }
+        return -1; // Return -1 if no match is found
+    };
+
+
+    // Lambda function to extract the number after _ls
+    auto extractLumiSectionNumber = [&regex_ls](const std::string& filename) -> int {
+        std::smatch match;
+        if (std::regex_search(filename, match, regex_ls)) {
+            return std::stoi(match[1].str()); // Convert the matched number to an integer
+        }
+        return -1; // Return -1 if no match is found
+    };
+
+    //TODO: path!
+    int maxClosedLS = 0;
+
+    // Lambda to list and sort files by the number after _ls
+    auto listSortedFilesByLS = [&](std::string const& path) -> std::vector<std::string> {
+        std::vector<std::string> filenames;
+        std::regex regex_source("_" + source_identifier_);  // Match _ls followed by digits
+
+        // Collect filenames
+        try {
+          for (const auto& entry : std::filesystem::directory_iterator(path)) {
+            if (std::filesystem::is_regular_file(entry.path())) { // Only files, not directories
+              auto fname = entry.path().filename().string();
+              if (fname.find("_EOR") == std::string::npos) {
+                filenames.push_back(entry.path().filename().string());
+                continue;
+              }
+              auto lumi = extractLumiSectionNumber(fname);
+              if (fname.find("_EOLS") == std::string::npos) {
+                if (lumi > (int)maxClosedLS) maxClosedLS = lumi;
+                if (lumi >= (int)lastFileIdx_.first)
+                  filenames.push_back(entry.path().filename().string());
+                continue;
+              } else {
+                if (lumi >= (int)lastFileIdx_.first)
+                  if (extractIndexNumber(fname) >= lastFileIdx_.second)
+                    filenames.push_back(entry.path().filename().string());
+              }
+            }
+          }
+
+          // Sort filenames based on the extracted number after _ls
+          std::sort(filenames.begin(), filenames.end(), [&](const std::string& a, const std::string& b) {
+            if (a.find("_EOR") == std::string::npos) return false;
+            if (b.find("_EOR") == std::string::npos) return true;
+            auto ls_a = extractLumiSectionNumber(a);
+            auto ls_b = extractLumiSectionNumber(b);
+            if (ls_a == ls_b) {
+              if (a.find("_EOLS") == std::string::npos) return false;
+              if (b.find("_EOLS") == std::string::npos) return true;
+              return extractIndexNumber(a) < extractIndexNumber(b);
+            }
+            return extractLumiSectionNumber(a) < extractLumiSectionNumber(b);
+          });
+
+        } catch (const std::filesystem::filesystem_error& e) {
+            edm::LogWarning("EvFDaqDirector") << "Error accessing directory: " << e.what();
+            fakeServerError = true;
+        }
+
+        return filenames;
+    };
+
+    std::function<EvFDaqDirector::FileStatus(bool)> findNextFile = [&](bool recheck) -> EvFDaqDirector::FileStatus {
+      // Call the lambda and print the sorted filenames
+      std::vector<std::string> files = listSortedFilesByLS(bu_run_dir_);
+
+      if (!files.size())
+        return noFile;
+
+      for (auto const& name: files) {
+        auto nextLS = extractLumiSectionNumber(name);
+        assert(nextLS >= 0);
+        if (nextLS == 0) {
+          //EOR
+          //TODO: rescan
+          if (recheck)
+              return findNextFile(false);
+          closedServerLS = maxClosedLS;
+          return runEnded;
+        }
+        auto nextIndex = extractIndexNumber(name);
+        if (nextIndex == -1) {
+          //received EOLS, open next LS
+          //TODO: rescan
+          if (recheck)
+              return findNextFile(false);
+          assert((int)serverLS <= nextLS);
+          serverLS = nextLS + 1;
+          closedServerLS = nextLS;
+          return noFile;
+        }
+        //new file!
+        std::string fileprefix = "/fu/";
+        std::string rawpath = bu_run_dir_ + "/" + name;  //filestem should be raw
+        //make destination dir
+        if (!std::filesystem::exists(bu_run_dir_ + fileprefix)) {
+          std::filesystem::create_directory(bu_run_dir_ + fileprefix);
+        }
+        std::filesystem::path p = name;
+        auto nextFileRawTmp = fmt::format("{}{}{}_{}_pid{}.{}", bu_run_dir_, fileprefix, p.stem().string(), hostname_, getpid(), p.extension().string());
+        try {
+          //grab file if possible
+          std::filesystem::rename(rawpath, nextFileRaw);
+          //apply changes
+          nextFileRaw = nextFileRawTmp;
+          serverLS = nextLS;//if changed
+          closedServerLS = nextLS - 1;
+          nextFileJson = "";
+          return newFile;
+        } catch (const std::filesystem::filesystem_error& e) {
+          if (e.code() == std::errc::no_such_file_or_directory) //return, or maybe go to next file; but should rescan filesystem for more files
+            if (recheck)
+              return findNextFile(false);
+          // Handle filesystem-specific errors
+          edm::LogWarning("EvFDaqDirector") << "Filesystem error: " << e.what();
+          fakeServerError = true;
+          return noFile;
+        }
+        break;
+      }
+      return noFile;
+    };
+
+    return findNextFile(true);
+  }
+
   EvFDaqDirector::FileStatus EvFDaqDirector::getNextFromFileBroker(const unsigned int currentLumiSection,
                                                                    unsigned int& ls,
                                                                    std::string& nextFileRaw,
@@ -1801,7 +1942,8 @@ namespace evf {
                                                                    int32_t& serverEventsInNewFile,
                                                                    int64_t& fileSizeFromMetadata,
                                                                    uint64_t& thisLockWaitTimeUs,
-                                                                   bool requireHeader) {
+                                                                   bool requireHeader,
+                                                                   bool fsDiscovery) {
     EvFDaqDirector::FileStatus fileStatus = noFile;
 
     //int retval = -1;
@@ -1851,8 +1993,12 @@ namespace evf {
 
     int maxLS = stopFileLS < 0 ? -1 : std::max(stopFileLS, (int)currentLumiSection);
     bool rawHeader = false;
-    fileStatus = contactFileBroker(
-        serverHttpStatus, serverError, serverLS, closedServerLS, nextFileJson, nextFileRaw, rawHeader, maxLS);
+    if (fsDiscovery)
+      fileStatus = discoverFile(
+          serverHttpStatus, serverError, serverLS, closedServerLS, nextFileJson, nextFileRaw, rawHeader, maxLS);
+    else
+      fileStatus = contactFileBroker(
+          serverHttpStatus, serverError, serverLS, closedServerLS, nextFileJson, nextFileRaw, rawHeader, maxLS);
 
     if (serverError) {
       //do not update anything
