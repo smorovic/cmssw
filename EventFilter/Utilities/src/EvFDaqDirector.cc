@@ -1925,11 +1925,14 @@ namespace evf {
           nextFileJson = "";
           return newFile;
         } catch (const std::filesystem::filesystem_error& e) {
-          if (e.code() == std::errc::no_such_file_or_directory) //return, or maybe go to next file; but should rescan filesystem for more files
+          if (e.code().value() == ESTALE)
+             edm::LogWarning("EvFDaqDirector") << "Filesystem ESTALE error:" << e.what() << " for source file:" << rawpath;
+          else if (e.code() == std::errc::no_such_file_or_directory) {//return, or maybe go to next file; but should rescan filesystem for more files
             if (recheck)
               return findNextFile(false);
-          // Handle filesystem-specific errors
-          edm::LogWarning("EvFDaqDirector") << "Filesystem error: " << e.what();
+          } else
+             edm::LogWarning("EvFDaqDirector") << "Filesystem error: " << e.what();
+
           fakeServerError = true;
           return noFile;
         }
