@@ -164,10 +164,10 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
           firstOrbitHeader_ = orbitHeader;
         else {
           assert(orbitHeader->runNumber() == firstOrbitHeader_->runNumber());
-          assert(orbitHeader->eventCount() == firstOrbitHeader_->eventCount());
-          if (orbitHeader->orbitNumber() != firstOrbitHeader_->orbitNumber())
-            //nextOrbitHeader_ = orbitHeader;
+          if (orbitHeader->orbitNumber() != firstOrbitHeader_->orbitNumber()) {
             break;
+          }
+          assert(orbitHeader->eventCount() == firstOrbitHeader_->eventCount());
         }
       } else {
         //check that orbit headers in all files are consistent with first
@@ -176,18 +176,13 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
         assert(orbitHeader->eventCount() == firstOrbitHeader_->eventCount());
 
         if (!ohThisFile) {
-          //each file must contain at least one orbit nf of the first file
+          //each file must contain at least one orbit nr of the first file
           assert(orbitHeader->orbitNumber() == firstOrbitHeader_->orbitNumber());
           ohThisFile = true;
         } else
           if (orbitHeader->orbitNumber() != firstOrbitHeader_->orbitNumber())
             break;
       }
-
-
-      auto srcOrbitSize = orbitHeader->totalSize();
-      nextEnd = nextAddr + srcOrbitSize;
-      assert(nextEnd <= maxAddr);  //boundary check
 
       if (verifyChecksum_) {
         auto crc = crc32c(0U, (const uint8_t*)orbitHeader->payload(), orbitHeader->payloadSizeBytes());
@@ -208,23 +203,29 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
                         crc);
         }
       }
-
+      //push current orbit to the list of orbits
+      auto srcOrbitSize = orbitHeader->totalSize();
       addrsStart_.push_back(nextAddr + hsize);
       addrsEnd_.push_back(nextAddr + srcOrbitSize);
-      nextAddr += srcOrbitSize;
 
+      //update position in the buffer
+      nextAddr += srcOrbitSize;
+      nextEnd = nextAddr;
+      assert(nextEnd <= maxAddr);  //boundary check
     }
 
     //require orbit header in each file
     assert(ohThisFile);
 
     //report first file block size
-    if (i == 0)
-      dataBlockSize_ = nextEnd - nextAddr;
+    if (i == 0) {
+      //assert(nextEnd > nextAddr);
+      dataBlockSize_ = nextEnd - startAddr;
+    }
 
     //advance buffer position to next orbit
     //rawFile->bufferOffsets_[i] += nextAddr - startAddr;
-    rawFile->advanceBuffer(nextAddr - startAddr, i);
+    rawFile->advanceBuffer(nextEnd - startAddr, i);
   }
   //update next pointer
   //firstOrbitHeader_ = nextOrbitHeader;
@@ -247,6 +248,16 @@ bool DataModeDTH::nextEventView(RawInputFile*) {
   size_t last_eID = 0;
 
   for (size_t i = 0; i < addrsEnd_.size(); i++) {
+
+    if (addrsEnd_[i] == addrsStart_[i]) {
+      blockCompletedAny = true;
+      continue;
+    } else {
+      assert(addrsEnd_[i] > addrsStart_[i]);
+      blockCompletedAll = false;
+      if (blockCompletedAny) continue;
+    }
+
     evf::DTHFragmentTrailer_v1* trailer =
         (evf::DTHFragmentTrailer_v1*)(addrsEnd_[i] - sizeof(evf::DTHFragmentTrailer_v1));
 
@@ -275,13 +286,6 @@ bool DataModeDTH::nextEventView(RawInputFile*) {
 
     //update address array
     addrsEnd_[i] -= sizeof(evf::DTHFragmentTrailer_v1) + payload_size;
-
-    if (addrsEnd_[i] == addrsStart_[i]) {
-      blockCompletedAny = true;
-    } else {
-      assert(addrsEnd_[i] > addrsStart_[i]);
-      blockCompletedAll = false;
-    }
   }
   if (blockCompletedAny != blockCompletedAll)
     throw cms::Exception("DAQSource::DAQSourceModelsDTH")
@@ -330,7 +334,7 @@ std::pair<bool, std::vector<std::string>> DataModeDTH::defineAdditionalFiles(std
                                                                                     bool fileListMode) const {
   //non-striped mode
   if (!buPaths_.size())
-    return std::make_pair(false, std::vector<std::string>());
+    return std::make_pair(true, std::vector<std::string>());
 
   std::vector<std::string> additionalFiles;
 
@@ -358,3 +362,116 @@ std::pair<bool, std::vector<std::string>> DataModeDTH::defineAdditionalFiles(std
   return std::make_pair(true, additionalFiles);
 }
 
+//count events in raw file (in absence of file header) and return open file descriptor
+int DataModeDTH::eventCounterCallback(std::string const& name, int& rawFd, int64_t& totalSize, uint32_t sLS, bool& found) const {
+
+  uint32_t orbit_count = 0;
+  uint32_t event_count = 0;
+
+  auto fileClose = [&]() -> int {
+    if (rawFd != -1) {
+      close(rawFd);
+      rawFd = -1;
+    }
+    return -1;
+  };
+
+  if ((rawFd = ::open(name.c_str(), O_RDONLY)) < 0) {
+    assert(rawFd == -1);
+    found = false;
+    edm::LogError("EvFDaqDirector")
+      << "parseFRDFileHeader - failed to open input file -: " << name << " : " << strerror(errno);
+    return -1;
+  }
+  found = true;
+
+  struct stat st;
+  if (fstat(rawFd, &st) == -1) {
+    edm::LogError("DAQSourceModelsDTH") << "rawCounter - unable to stat " << name << " : " << strerror(errno);
+    return fileClose();
+  }
+
+  int firstSourceId = -1;
+  unsigned char hdr[sizeof(DTHOrbitHeader_v1)];
+
+  totalSize = 0;
+  while (true) {
+    auto buf_sz = sizeof(DTHOrbitHeader_v1);
+    ssize_t sz_read = ::read(rawFd, hdr, buf_sz);
+    if (sz_read < 0) {
+      edm::LogError("DAQSourceModelsDTH") << "unable to read header of " << name << " : " << strerror(errno);
+      return fileClose();
+    }
+    if ((size_t)sz_read < buf_sz) {
+      edm::LogError("EvFDaqDirector") << "DTH header larger than the the remaining file size: " << name;
+      return fileClose();
+    }
+    totalSize += sz_read;
+
+    DTHOrbitHeader_v1* oh = (DTHOrbitHeader_v1*)hdr;
+    LogDebug("EvFDaqDirector") << "orbit check: orbit:" << oh->orbitNumber() << " source:" << oh->sourceID()
+                               << " eventCount:" << oh->eventCount();
+
+    if (!oh->verifyMarker()) {
+      edm::LogError("EvFDaqDirector") << "Invalid DTH header encountered";
+      return fileClose();
+    }
+    if (!oh->verifyMarker() || oh->version() != 1) {
+      edm::LogError("EvFDaqDirector") << "Unexpected DTH header version " << oh->version();
+      return fileClose();
+    }
+
+    /* for debugging: count fragment trailers
+    {
+      //
+      unsigned int_cnt = 0;
+      unsigned char* tmpbuf = new unsigned char[oh->totalSize()];
+      ::read(rawFd, tmpbuf, oh->totalSize() - sizeof(DTHOrbitHeader_v1));
+      unsigned char *cur = tmpbuf + oh->totalSize() - sizeof(DTHOrbitHeader_v1) - sizeof(DTHFragmentTrailer_v1);//point to first FT
+      //reset
+      lseek(rawFd, totalSize, SEEK_SET);
+      while (true) {
+        DTHFragmentTrailer_v1* ft = (DTHFragmentTrailer_v1*)cur;
+        assert(ft->verifyMarker());
+        assert(cur >= tmpbuf + ft->payloadSizeBytes());
+        cur = cur - ft->payloadSizeBytes();//point to payload start
+        int_cnt++;
+        if (cur == tmpbuf) break;
+        assert(cur >= tmpbuf + sizeof(DTHFragmentTrailer_v1));
+        cur = cur - sizeof(DTHFragmentTrailer_v1);//point to next FT
+        //
+      }
+      assert(int_cnt == oh->eventCount());
+      delete [] tmpbuf;
+    }
+    */
+
+    if (firstSourceId == -1)
+      firstSourceId = oh->sourceID();
+    if (oh->sourceID() == (unsigned)firstSourceId) {
+      orbit_count++;
+      event_count += oh->eventCount();
+    }
+    //else skip counting events from all source IDs in the file (assume they are same)
+    auto payloadSize = oh->totalSize() - sizeof(DTHOrbitHeader_v1);
+    totalSize += payloadSize;
+    if (totalSize > st.st_size) {
+      edm::LogError("EvFDaqDirector") << "DTH header can not be beyond file size: " << name;
+      return fileClose();
+    }
+    //seek to the next orbit header
+    auto new_offset = lseek(rawFd, payloadSize, SEEK_CUR);
+
+    //if (new_offset < st.st_size) {
+    if (new_offset < totalSize) {
+      edm::LogError("EvFDaqDirector") << "Unexpected end of file: " << name;
+      return fileClose();
+    }
+
+    if (new_offset == st.st_size) {
+      lseek(rawFd, 0, SEEK_SET);
+      break;
+    }
+  }
+  return event_count;
+}

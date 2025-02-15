@@ -17,6 +17,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <functional>
 
 //system headers
 #include <sys/stat.h>
@@ -28,6 +29,8 @@
 
 #include <boost/asio.hpp>
 #include <oneapi/tbb/concurrent_hash_map.h>
+
+typedef std::function<int(std::string const&, int&, int64_t&, uint32_t, bool&)> RawFileEvtCounter;
 
 class SystemBounds;
 class GlobalContext;
@@ -161,7 +164,8 @@ namespace evf {
                                      int64_t& fileSize,
                                      uint64_t& thisLockWaitTimeUs,
                                      bool requireHeader = true,
-                                     bool fsDiscovery = false);
+                                     bool fsDiscovery = false,
+                                     RawFileEvtCounter eventCounter = nullptr);
 
     void createRunOpendirMaybe();
     void createProcessingNotificationMaybe() const;

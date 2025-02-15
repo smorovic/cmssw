@@ -829,6 +829,11 @@ void DAQSource::readSupervisor() {
           }
         }
       } else {
+
+        RawFileEvtCounter countFunc = [&](std::string const& name, int& fd, int64_t& fsize, uint32_t sLS, bool& found) -> unsigned int {
+          return dataMode_->eventCounterCallback(name, fd, fsize, sLS, found);
+        };
+
         status = daqDirector_->getNextFromFileBroker(currentLumiSection,
                                                      ls,
                                                      nextFile,
@@ -838,7 +843,8 @@ void DAQSource::readSupervisor() {
                                                      fileSizeFromMetadata,
                                                      thisLockWaitTimeUs,
                                                      requireHeader,
-                                                     fileDiscoveryMode_);
+                                                     fileDiscoveryMode_,
+                                                     dataMode_->hasEventCounterCallback() ? countFunc : nullptr);
       }
 
       setMonStateSup(inSupBusy);

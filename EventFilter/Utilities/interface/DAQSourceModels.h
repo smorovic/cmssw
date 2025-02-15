@@ -70,6 +70,10 @@ public:
 
   bool errorDetected() { return errorDetected_; }
 
+  //pre-parse file to count events
+  virtual bool hasEventCounterCallback() const { return false; }
+  virtual int eventCounterCallback(std::string const& name, int& fd, int64_t& fsize, uint32_t sLS, bool& found) const { return -1;}
+
 protected:
   DAQSource* daqSource_;
   bool testing_ = false;

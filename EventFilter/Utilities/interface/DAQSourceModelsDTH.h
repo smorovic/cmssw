@@ -68,6 +68,9 @@ public:
   std::pair<bool, std::vector<std::string>> defineAdditionalFiles(std::string const& primaryName,
                                                                   bool fileListMode) const override;
 
+  bool hasEventCounterCallback() const { return true; }
+  int eventCounterCallback(std::string const& name, int& fd, int64_t& fsize, uint32_t sLS, bool& found) const;
+
 private:
   bool verifyChecksum_;
   std::vector<std::shared_ptr<const edm::DaqProvenanceHelper>> daqProvenanceHelpers_;

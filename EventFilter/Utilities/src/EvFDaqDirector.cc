@@ -1794,7 +1794,7 @@ namespace evf {
                                                                int maxLS) {
     fakeHttpStatus = 200;
     fakeServerError = false;
-    std::string dest = fmt::sprintf(" using filesystem discovery mode");
+    rawHeader = false; //TODO: currently not supported for files with header, but will be added
     std::regex regex_ls("_ls([0-9]+)");  // Match _ls followed by digits
     std::regex regex_index("_index([0-9]+)");  // Match _ls followed by digits
 
@@ -1817,7 +1817,6 @@ namespace evf {
         return -1; // Return -1 if no match is found
     };
 
-    //TODO: path!
     int maxClosedLS = 0;
 
     // Lambda to list and sort files by the number after _ls
@@ -1901,8 +1900,10 @@ namespace evf {
           //TODO: rescan
           if (recheck)
               return findNextFile(false);
-          assert((int)serverLS <= nextLS);
+          //assert((int)serverLS <= nextLS);
           serverLS = nextLS + 1;
+          lastFileIdx_.first = serverLS;
+          lastFileIdx_.second = -1;
           closedServerLS = nextLS;
           return noFile;
         }
@@ -1922,14 +1923,23 @@ namespace evf {
           nextFileRaw = nextFileRawTmp;
           serverLS = nextLS;//if changed
           closedServerLS = nextLS - 1;
+
+          //update last info
+          lastFileIdx_.first = serverLS;
+          lastFileIdx_.second = nextIndex;
+
           nextFileJson = "";
           return newFile;
         } catch (const std::filesystem::filesystem_error& e) {
-          if (e.code().value() == ESTALE)
+          if (e.code().value() == ESTALE) {
              edm::LogWarning("EvFDaqDirector") << "Filesystem ESTALE error:" << e.what() << " for source file:" << rawpath;
-          else if (e.code() == std::errc::no_such_file_or_directory) {//return, or maybe go to next file; but should rescan filesystem for more files
-            if (recheck)
-              return findNextFile(false);
+             continue; //grabbed? try next file
+          }
+          else if (e.code() == std::errc::no_such_file_or_directory) {
+            //try next raw file in case other process grabbed it
+            continue;
+            //if (recheck)
+            //  return findNextFile(false);
           } else
              edm::LogWarning("EvFDaqDirector") << "Filesystem error: " << e.what();
 
@@ -1953,7 +1963,8 @@ namespace evf {
                                                                    int64_t& fileSizeFromMetadata,
                                                                    uint64_t& thisLockWaitTimeUs,
                                                                    bool requireHeader,
-                                                                   bool fsDiscovery) {
+                                                                   bool fsDiscovery,
+                                                                   RawFileEvtCounter eventCounter) {
     EvFDaqDirector::FileStatus fileStatus = noFile;
 
     //int retval = -1;
@@ -1993,9 +2004,9 @@ namespace evf {
     gettimeofday(&ts_lockbegin, nullptr);
 
     std::string nextFileJson;
-    uint32_t serverLS, closedServerLS;
-    unsigned int serverHttpStatus;
-    bool serverError;
+    uint32_t serverLS = 0, closedServerLS = 0;
+    unsigned int serverHttpStatus = 0;
+    bool serverError = false;
 
     //local lock to force index json and EoLS files to appear in order
     if (fileBrokerUseLocalLock_)
@@ -2037,6 +2048,8 @@ namespace evf {
       if (rawHeader > 0)
         serverEventsInNewFile = grabNextJsonFromRaw(
             nextFileRaw, rawFd, rawHeaderSize, fileSizeFromMetadata, fileFound, serverLS, false, requireHeader);
+      else if (eventCounter)
+        serverEventsInNewFile = eventCounter(nextFileRaw, rawFd, fileSizeFromMetadata, serverLS, fileFound);
       else
         serverEventsInNewFile = grabNextJsonFile(nextFileJson, nextFileRaw, fileSizeFromMetadata, fileFound);
     }
