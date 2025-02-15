@@ -514,6 +514,8 @@ evf::EvFDaqDirector::FileStatus DAQSource::getNextDataBlock() {
     currentFile_->advance(currentFile_->rawHeaderSize_);
     currentFile_->advanceBuffers(currentFile_->rawHeaderSize_);
   }
+  //edm::LogError("DAQSource") << " DEBUG: chunkBufPos: " << currentFile_->bufferPosition_ << " fileSizeLeft:" << currentFile_->fileSizeLeft() << " sum: "
+  //<< (currentFile_->bufferPosition_+currentFile_->fileSizeLeft());
 
   //file is too short to fit event (or event block, orbit...) header
   if (currentFile_->fileSizeLeft() < dataMode_->headerSize())
@@ -848,6 +850,7 @@ void DAQSource::readSupervisor() {
       }
 
       setMonStateSup(inSupBusy);
+      //edm::LogError("DAQSource") << "DEBUG: condition test "<< (currentLumiSection != ls && status == evf::EvFDaqDirector::runEnded);
 
       //cycle through all remaining LS even if no files get assigned
       if (currentLumiSection != ls && status == evf::EvFDaqDirector::runEnded)
@@ -869,12 +872,14 @@ void DAQSource::readSupervisor() {
       if (status == evf::EvFDaqDirector::runEnded) {
         fileQueue_.push(std::make_unique<RawInputFile>(evf::EvFDaqDirector::runEnded));
         stop = true;
+        //edm::LogError("DAQSource") << "DEBUG: end...";
         break;
       }
 
       //error from filelocking function
       if (status == evf::EvFDaqDirector::runAbort) {
         fileQueue_.push(std::make_unique<RawInputFile>(evf::EvFDaqDirector::runAbort, 0));
+        //edm::LogError("DAQSource") << "DEBUG: abort...";
         stop = true;
         break;
       }
@@ -891,8 +896,10 @@ void DAQSource::readSupervisor() {
                 rawFd = -1;
               }
               status = evf::EvFDaqDirector::noFile;
+              //edm::LogError("DAQSource") << "DEBUG: noFile...";
               continue;
             } else {
+              //edm::LogError("DAQSource") << "DEBUG: PUSH newLumi(1)";
               fileQueue_.push(std::make_unique<RawInputFile>(evf::EvFDaqDirector::newLumi, ls));
             }
           } else if (ls < 100) {
@@ -900,15 +907,18 @@ void DAQSource::readSupervisor() {
             unsigned int lsToStart = daqDirector_->getLumisectionToStart();
 
             for (unsigned int nextLS = std::min(lsToStart, ls); nextLS <= ls; nextLS++) {
+              //edm::LogError("DAQSource") << "DEBUG: PUSH newLumi(2)";
               fileQueue_.push(std::make_unique<RawInputFile>(evf::EvFDaqDirector::newLumi, nextLS));
             }
           } else {
             //start from current LS
+            //edm::LogError("DAQSource") << "DEBUG: PUSH newLumi(3)";
             fileQueue_.push(std::make_unique<RawInputFile>(evf::EvFDaqDirector::newLumi, ls));
           }
         } else {
           //queue all lumisections after last one seen to avoid gaps
           for (unsigned int nextLS = currentLumiSection + 1; nextLS <= ls; nextLS++) {
+            //edm::LogError("DAQSource") << "DEBUG: PUSH newLumi(4)";
             fileQueue_.push(std::make_unique<RawInputFile>(evf::EvFDaqDirector::newLumi, nextLS));
           }
         }
@@ -933,6 +943,7 @@ void DAQSource::readSupervisor() {
 
       int dbgcount = 0;
       if (status == evf::EvFDaqDirector::noFile) {
+        //edm::LogError("DAQSource") << "DEBUG: nofile2...";
         setMonStateSup(inSupNoFile);
         dbgcount++;
         if (!(dbgcount % 20))
@@ -949,6 +960,7 @@ void DAQSource::readSupervisor() {
     //end of file grab loop, parse result
     if (status == evf::EvFDaqDirector::newFile) {
       setMonStateSup(inSupNewFile);
+      //edm::LogError("DAQSource") << "DEBUG: GRAB: " << nextFile;
       LogDebug("DAQSource") << "The director says to grab -: " << nextFile;
 
       std::string rawFile;
@@ -991,6 +1003,7 @@ void DAQSource::readSupervisor() {
         continue;
       }
 
+      //edm::LogError("DAQSource") << "DEBUG: makeRawFile ";
       std::unique_ptr<RawInputFile> newInputFile(new RawInputFile(evf::EvFDaqDirector::FileStatus::newFile,
                                                                   ls,
                                                                   rawFile,

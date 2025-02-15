@@ -1884,6 +1884,7 @@ namespace evf {
 
       for (auto const& name: files) {
         auto nextLS = extractLumiSectionNumber(name);
+        edm::LogWarning("EvFDaqDirector") << " DEBUG: next file is:" << name << " serverLS:" << serverLS << " closedSrvLS:" << closedServerLS << " next LS: " << nextLS;
 
         assert(nextLS >= 0);
         if (nextLS == 0) {
@@ -1904,6 +1905,7 @@ namespace evf {
           serverLS = nextLS + 1;
           lastFileIdx_.first = serverLS;
           lastFileIdx_.second = -1;
+          edm::LogWarning("EvFDaqDirector") << "DEBUG: next serverLS (EOLS) is :" << serverLS;
           closedServerLS = nextLS;
           return noFile;
         }
@@ -1929,6 +1931,7 @@ namespace evf {
           lastFileIdx_.second = nextIndex;
 
           nextFileJson = "";
+          edm::LogWarning("EvFDaqDirector") << " DEBUG: return newFile";
           return newFile;
         } catch (const std::filesystem::filesystem_error& e) {
           if (e.code().value() == ESTALE) {

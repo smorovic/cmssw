@@ -97,6 +97,7 @@ private:
   //uint16_t MAXTCDSuTCAFEDID_ = FEDNumbering::MAXTCDSuTCAFEDID;
   bool eventCached_ = false;
 
+  //unsigned currentDbgCnt_ = 0;
 };
 
 #endif  // EventFilter_Utilities_DAQSourceModelsDTH_h
