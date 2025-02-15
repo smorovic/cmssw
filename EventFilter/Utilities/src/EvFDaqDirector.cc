@@ -537,6 +537,7 @@ namespace evf {
                                       << ". error = " << strerror(errno);
   }
 
+  //deprecated (file locking mode)
   EvFDaqDirector::FileStatus EvFDaqDirector::updateFuLock(unsigned int& ls,
                                                           std::string& nextFile,
                                                           uint32_t& fsize,
@@ -805,6 +806,7 @@ namespace evf {
     return std::stoi(data);
   }
 
+  //deprecated (file locking mode)
   bool EvFDaqDirector::bumpFile(unsigned int& ls,
                                 unsigned int& index,
                                 std::string& nextFile,
@@ -904,6 +906,7 @@ namespace evf {
     return false;
   }
 
+  //deprecated (file locking mode)
   void EvFDaqDirector::tryInitializeFuLockFile() {
     if (fu_rw_lock_stream == nullptr)
       edm::LogError("EvFDaqDirector") << "Error creating fu read/write lock stream " << strerror(errno);
@@ -1001,7 +1004,8 @@ namespace evf {
                                          bool closeFile) {
     int infile;
 
-    if ((infile = ::open(rawSourcePath.c_str(), O_RDONLY)) < 0) {
+    //skip opening file if rawFd is already intiialized
+    if (rawFd == -1 && (infile = ::open(rawSourcePath.c_str(), O_RDONLY)) < 0) {
       if (retry) {
         edm::LogWarning("EvFDaqDirector")
             << "parseFRDFileHeader - failed to open input file -: " << rawSourcePath << " : " << strerror(errno);
@@ -1097,16 +1101,93 @@ namespace evf {
     return 0;  //OK
   }
 
-  bool EvFDaqDirector::checkFileRead(char* buf, int infile, std::size_t buf_sz, std::string const& path) {
+  bool EvFDaqDirector::hasFRDFileHeader(std::string const& rawPath, int& rawFd, bool &hasErr, bool closeFile) const {
+
+    auto retOK = [&](bool found=false, bool err=true) -> bool {
+      if (rawFd != -1) {
+        if (closeFile || !found) {//do not pass rawFd if not found
+          close(rawFd);
+          rawFd = -1;
+        } else
+          lseek(rawFd, 0, SEEK_SET); //reset position
+      }
+      return found;
+    };
+
+    auto retErr = [&]() -> bool {
+      if (rawFd != -1) {
+        close(rawFd);
+        rawFd = -1;
+      }
+      hasErr = true;
+      return false;
+    };
+
+    size_t readOff = 0;
+    //open or inherit fd
+    if (rawFd == -1)
+      if ((rawFd = ::open(rawPath.c_str(), O_RDONLY)) < 0) {
+        edm::LogWarning("EvFDaqDirector")
+            << "parseFRDFileHeader - failed to open input file -: " << rawPath << " : " << strerror(errno);
+        return retErr();
+      }
+
+    //v2 is the largest possible read
+    char hdr[sizeof(FRDFileHeader_v2)];
+    if (!checkFileRead(hdr, rawFd, sizeof(FRDFileHeaderIdentifier), rawPath))
+      return retErr();
+    readOff += sizeof(FRDFileHeaderIdentifier);
+
+    FRDFileHeaderIdentifier* fileId = (FRDFileHeaderIdentifier*)hdr;
+    uint16_t frd_version = getFRDFileHeaderVersion(fileId->id_, fileId->version_);
+
+    if (frd_version == 0) {
+        //no header detected or unsupported version
+        return retOK(false);
+    } else if (frd_version == 1) {
+      //version 1 header
+      if (!checkFileRead(hdr, rawFd, sizeof(FRDFileHeaderContent_v1), rawPath))
+        return retErr();
+      readOff += sizeof(FRDFileHeaderContent_v1);
+      FRDFileHeaderContent_v1* fhContent = (FRDFileHeaderContent_v1*)hdr;
+      uint32_t headerSizeRaw = fhContent->headerSize_;
+      if (headerSizeRaw != sizeof(FRDFileHeader_v1)) {
+        edm::LogError("EvFDaqDirector") << "inconsistent header size: " << rawPath << " size: " << headerSizeRaw
+                                        << " v:" << frd_version;
+        return retErr();
+      }
+      return retOK(true);
+    } else if (frd_version == 2) {
+      //version 2 heade
+      if (!checkFileRead(hdr, rawFd, sizeof(FRDFileHeaderContent_v2), rawPath))
+        return retErr();
+      readOff += sizeof(FRDFileHeaderContent_v2);
+      FRDFileHeaderContent_v2* fhContent = (FRDFileHeaderContent_v2*)hdr;
+      uint32_t headerSizeRaw = fhContent->headerSize_;
+      if (headerSizeRaw != sizeof(FRDFileHeader_v2)) {
+        edm::LogError("EvFDaqDirector") << "inconsistent header size: " << rawPath << " size: " << headerSizeRaw
+                                        << " v:" << frd_version;
+        return retErr();
+      }
+      return retOK(true);
+    }
+
+    edm::LogError("EvFDaqDirector") << "unsupported FRD file header version " << frd_version;
+    return retErr();
+  }
+
+
+  //TODO: sjould it be int& intfile ?
+  bool EvFDaqDirector::checkFileRead(char* buf, int& infile, std::size_t buf_sz, std::string const& path) {
     ssize_t sz_read = ::read(infile, buf, buf_sz);
     if (sz_read < 0) {
-      edm::LogError("EvFDaqDirector") << "rawFileHasHeader - unable to read " << path << " : " << strerror(errno);
+      edm::LogError("EvFDaqDirector") << "checkFileRead - unable to read " << path << " : " << strerror(errno);
       if (infile != -1)
         close(infile);
       return false;
     }
     if ((size_t)sz_read < buf_sz) {
-      edm::LogError("EvFDaqDirector") << "rawFileHasHeader - file smaller than header: " << path;
+      edm::LogError("EvFDaqDirector") << "checkFileRead - file smaller than header: " << path;
       if (infile != -1)
         close(infile);
       return false;
@@ -1114,6 +1195,7 @@ namespace evf {
     return true;
   }
 
+  //deprecated (file locking mode)
   bool EvFDaqDirector::rawFileHasHeader(std::string const& rawSourcePath, uint16_t& rawHeaderSize) {
     int infile;
     if ((infile = ::open(rawSourcePath.c_str(), O_RDONLY)) < 0) {
@@ -1242,6 +1324,7 @@ namespace evf {
     return nbEventsWrittenRaw;
   }
 
+  //old deprecated format with supporting JSON files
   int EvFDaqDirector::grabNextJsonFile(std::string const& jsonSourcePath,
                                        std::string const& rawSourcePath,
                                        int64_t& fileSizeFromJson,
@@ -1425,6 +1508,7 @@ namespace evf {
     return -1;
   }
 
+  //deprecated (old format with json files)
   int EvFDaqDirector::grabNextJsonFileAndUnlock(std::filesystem::path const& jsonSourcePath) {
     std::string data;
     try {
@@ -1794,7 +1878,8 @@ namespace evf {
                                                                int maxLS) {
     fakeHttpStatus = 200;
     fakeServerError = false;
-    rawHeader = false; //TODO: currently not supported for files with header, but will be added
+    //rawHeader = true; //assume header, let check be done and fallback to discover files if not
+    rawHeader = false; //assume header, let check be done and fallback to discover files if not
     std::regex regex_ls("_ls([0-9]+)");  // Match _ls followed by digits
     std::regex regex_index("_index([0-9]+)");  // Match _ls followed by digits
 
@@ -2048,13 +2133,26 @@ namespace evf {
     bool fileFound = true;
 
     if (fileStatus == newFile) {
-      if (rawHeader > 0)
+      bool hasErrHdr = false;
+      //either file broker API reports raw file header of we try to detect ift by reading fi
+      //note: hasFRDFileHeader and grabNextJsonFromRaw could also be unified
+      //assert(rawFd == -1); //checked by caller
+      if (!rawHeader)
+        rawHeader = hasFRDFileHeader(nextFileRaw, rawFd, hasErrHdr, false);
+
+      if (hasErrHdr) {
+        //error reading header, set to -1 and trigger error downstream
+        serverEventsInNewFile = -1;
+      } else if (rawHeader) {
         serverEventsInNewFile = grabNextJsonFromRaw(
             nextFileRaw, rawFd, rawHeaderSize, fileSizeFromMetadata, fileFound, serverLS, false, requireHeader);
-      else if (eventCounter)
+      } else if (eventCounter) {
+        //there is no header: then try to use model to count events
         serverEventsInNewFile = eventCounter(nextFileRaw, rawFd, fileSizeFromMetadata, serverLS, fileFound);
-      else
+      }else {
+        //or look for json file (deprecated)
         serverEventsInNewFile = grabNextJsonFile(nextFileJson, nextFileRaw, fileSizeFromMetadata, fileFound);
+      }
     }
     //closing file in case of any error
     if (serverEventsInNewFile < 0 && rawFd != -1) {
