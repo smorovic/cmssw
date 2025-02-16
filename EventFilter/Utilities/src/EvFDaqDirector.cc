@@ -1001,7 +1001,6 @@ namespace evf {
                                          bool requireHeader,
                                          bool retry,
                                          bool closeFile) {
-    int infile;
 
     //skip opening file if rawFd is already intiialized
     if (rawFd == -1 && (rawFd = ::open(rawSourcePath.c_str(), O_RDONLY)) < 0) {
@@ -1914,7 +1913,8 @@ namespace evf {
     // Lambda to list and sort files by the number after _ls
     auto listSortedFilesByLS = [&](std::string const& path) -> std::vector<std::string> {
         std::vector<std::string> filenames;
-        std::regex regex_source("_" + source_identifier_);  // Match _ls followed by digits
+        //use always first sourceID (any would work)
+        std::string sidstring(source_identifier_.empty() ? "" : "_" + source_identifier_ + std::to_string(bu_base_dirs_source_ids_.at(0)));
 
         // Collect filenames
         try {
@@ -1934,26 +1934,42 @@ namespace evf {
                 if (lumi >= (int)lastFileIdx_.first)
                   filenames.push_back(entry.path().filename().string());
                 continue;
-              } else {
-                //exclude json and similar, only raw file is parsed
-                if (fname.size() < 4 || fname.substr(fname.size()-4) != std::string(".raw"))
+              }
+              if (!source_identifier_.empty()) {
+                if (fname.rfind(sidstring) == std::string::npos)
                   continue;
-                if (lumi >= (int)lastFileIdx_.first)
-                  if (extractIndexNumber(fname) >= lastFileIdx_.second)
+                //repeat search for EoR and EOLS with sourceid
+                if (fname.find("_EoR") != std::string::npos) {
+                  filenames.push_back(entry.path().filename().string());
+                  continue;
+                }
+                if (fname.find("_EoLS") != std::string::npos) {
+                  if (lumi > (int)maxClosedLS) maxClosedLS = lumi;
+                  if (lumi >= (int)lastFileIdx_.first)
                     filenames.push_back(entry.path().filename().string());
+                  continue;
+                }
+              }
+                //exclude json and similar, only raw file is parsed
+              if (fname.size() < 4 || fname.substr(fname.size()-4) != std::string(".raw"))
+                continue;
+              if (lumi >= (int)lastFileIdx_.first) {
+                if (extractIndexNumber(fname) >= lastFileIdx_.second) {
+                  filenames.push_back(entry.path().filename().string());
+                }
               }
             }
           }
 
           // Sort filenames based on the extracted number after _ls
           std::sort(filenames.begin(), filenames.end(), [&](const std::string& a, const std::string& b) {
-            if (a.find("_EOR") == std::string::npos) return false;
-            if (b.find("_EOR") == std::string::npos) return true;
+            if (a.find("_EoR") != std::string::npos) return false;
+            if (b.find("_EoR") != std::string::npos) return true;
             auto ls_a = extractLumiSectionNumber(a);
             auto ls_b = extractLumiSectionNumber(b);
             if (ls_a == ls_b) {
-              if (a.find("_EOLS") == std::string::npos) return false;
-              if (b.find("_EOLS") == std::string::npos) return true;
+              if (a.find("_EoLS") != std::string::npos) return false;
+              if (b.find("_EoLS") != std::string::npos) return true;
               return extractIndexNumber(a) < extractIndexNumber(b);
             }
             return extractLumiSectionNumber(a) < extractLumiSectionNumber(b);
