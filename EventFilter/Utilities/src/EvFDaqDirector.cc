@@ -171,7 +171,6 @@ namespace evf {
   }
 
   void EvFDaqDirector::initRun() {
-    std::cout << " init Run " << std::endl;
     // check if base dir exists or create it accordingly
     int retval = mkdir(base_dir_.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (retval != 0 && errno != EEXIST) {
@@ -1005,7 +1004,8 @@ namespace evf {
     int infile;
 
     //skip opening file if rawFd is already intiialized
-    if (rawFd == -1 && (infile = ::open(rawSourcePath.c_str(), O_RDONLY)) < 0) {
+    if (rawFd == -1 && (rawFd = ::open(rawSourcePath.c_str(), O_RDONLY)) < 0) {
+
       if (retry) {
         edm::LogWarning("EvFDaqDirector")
             << "parseFRDFileHeader - failed to open input file -: " << rawSourcePath << " : " << strerror(errno);
@@ -1020,7 +1020,8 @@ namespace evf {
                                   false,
                                   closeFile);
       } else {
-        if ((infile = ::open(rawSourcePath.c_str(), O_RDONLY)) < 0) {
+        //check again (even if retry = false?)
+        if ((rawFd = ::open(rawSourcePath.c_str(), O_RDONLY)) < 0) {
           edm::LogError("EvFDaqDirector")
               << "parseFRDFileHeader - failed to open input file -: " << rawSourcePath << " : " << strerror(errno);
           if (errno == ENOENT)
@@ -1033,7 +1034,7 @@ namespace evf {
 
     //v2 is the largest possible read
     char hdr[sizeof(FRDFileHeader_v2)];
-    if (!checkFileRead(hdr, infile, sizeof(FRDFileHeaderIdentifier), rawSourcePath))
+    if (!checkFileRead(hdr, rawFd, sizeof(FRDFileHeaderIdentifier), rawSourcePath))
       return -1;
 
     FRDFileHeaderIdentifier* fileId = (FRDFileHeaderIdentifier*)hdr;
@@ -1043,11 +1044,11 @@ namespace evf {
       //no header (specific sequence not detected)
       if (requireHeader) {
         edm::LogError("EvFDaqDirector") << "no header or invalid version string found in:" << rawSourcePath;
-        close(infile);
+        close(rawFd);
         return -1;
       } else {
         //no header, but valid file
-        lseek(infile, 0, SEEK_SET);
+        lseek(rawFd, 0, SEEK_SET);
         rawHeaderSize = 0;
         lsFromHeader = 0;
         eventsFromHeader = -1;
@@ -1055,14 +1056,14 @@ namespace evf {
       }
     } else if (frd_version == 1) {
       //version 1 header
-      if (!checkFileRead(hdr, infile, sizeof(FRDFileHeaderContent_v1), rawSourcePath))
+      if (!checkFileRead(hdr, rawFd, sizeof(FRDFileHeaderContent_v1), rawSourcePath))
         return -1;
       FRDFileHeaderContent_v1* fhContent = (FRDFileHeaderContent_v1*)hdr;
       uint32_t headerSizeRaw = fhContent->headerSize_;
       if (headerSizeRaw != sizeof(FRDFileHeader_v1)) {
         edm::LogError("EvFDaqDirector") << "inconsistent header size: " << rawSourcePath << " size: " << headerSizeRaw
                                         << " v:" << frd_version;
-        close(infile);
+        close(rawFd);
         return -1;
       }
       //allow header size to exceed read size. Future header versions will not break this, but the size can change.
@@ -1074,14 +1075,14 @@ namespace evf {
 
     } else if (frd_version == 2) {
       //version 2 heade
-      if (!checkFileRead(hdr, infile, sizeof(FRDFileHeaderContent_v2), rawSourcePath))
+      if (!checkFileRead(hdr, rawFd, sizeof(FRDFileHeaderContent_v2), rawSourcePath))
         return -1;
       FRDFileHeaderContent_v2* fhContent = (FRDFileHeaderContent_v2*)hdr;
       uint32_t headerSizeRaw = fhContent->headerSize_;
       if (headerSizeRaw != sizeof(FRDFileHeader_v2)) {
         edm::LogError("EvFDaqDirector") << "inconsistent header size: " << rawSourcePath << " size: " << headerSizeRaw
                                         << " v:" << frd_version;
-        close(infile);
+        close(rawFd);
         return -1;
       }
       //allow header size to exceed read size. Future header versions will not break this, but the size can change.
@@ -1093,11 +1094,11 @@ namespace evf {
     }
 
     if (closeFile) {
-      close(infile);
-      infile = -1;
+      close(rawFd);
+      rawFd = -1;
     }
 
-    rawFd = infile;
+    rawFd = rawFd;
     return 0;  //OK
   }
 
@@ -1108,8 +1109,9 @@ namespace evf {
         if (closeFile || !found) {//do not pass rawFd if not found
           close(rawFd);
           rawFd = -1;
-        } else
+        } else {
           lseek(rawFd, 0, SEEK_SET); //reset position
+        }
       }
       return found;
     };
@@ -1125,12 +1127,13 @@ namespace evf {
 
     size_t readOff = 0;
     //open or inherit fd
-    if (rawFd == -1)
+    if (rawFd == -1) {
       if ((rawFd = ::open(rawPath.c_str(), O_RDONLY)) < 0) {
         edm::LogWarning("EvFDaqDirector")
             << "parseFRDFileHeader - failed to open input file -: " << rawPath << " : " << strerror(errno);
         return retErr();
       }
+    }
 
     //v2 is the largest possible read
     char hdr[sizeof(FRDFileHeader_v2)];
@@ -1179,6 +1182,10 @@ namespace evf {
 
   //TODO: sjould it be int& intfile ?
   bool EvFDaqDirector::checkFileRead(char* buf, int& infile, std::size_t buf_sz, std::string const& path) {
+    if (infile == -1) {
+      edm::LogError("EvFDaqDirector") << "file:" << path << " not open ";
+      return false;
+    }
     ssize_t sz_read = ::read(infile, buf, buf_sz);
     if (sz_read < 0) {
       edm::LogError("EvFDaqDirector") << "checkFileRead - unable to read " << path << " : " << strerror(errno);
