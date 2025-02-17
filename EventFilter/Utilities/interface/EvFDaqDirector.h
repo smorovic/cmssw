@@ -239,6 +239,7 @@ namespace evf {
     std::vector<int> bu_base_dirs_n_sources_;
     std::vector<int> bu_base_dirs_source_ids_;
     std::string source_identifier_;
+    std::string sourceid_first_;
     unsigned int run_;
     bool useFileBroker_;
     bool fileBrokerHostFromCfg_;

@@ -178,7 +178,6 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
         //check that orbit headers in all files are consistent with first
         assert(firstOrbitHeader_);
         assert(orbitHeader->runNumber() == firstOrbitHeader_->runNumber());
-        assert(orbitHeader->eventCount() == firstOrbitHeader_->eventCount());
 
         if (!ohThisFile) {
           //each file must contain at least one orbit nr of the first file
@@ -187,6 +186,7 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
         } else
           if (orbitHeader->orbitNumber() != firstOrbitHeader_->orbitNumber())
             break;
+        assert(orbitHeader->eventCount() == firstOrbitHeader_->eventCount());
       }
 
       if (verifyChecksum_) {
@@ -330,8 +330,11 @@ void DataModeDTH::makeDirectoryEntries(std::vector<std::string> const& baseDirs,
   if (!sourceIdentifier.empty()) {
     sid_pattern_ = std::regex("_" + sourceIdentifier + R"(\d+_)");
 
-    for (auto sourceID : sourceIDs)
-      buSourceStrings_.push_back("_" + sourceIdentifier + std::to_string(sourceID) + "_");
+    for (auto sourceID : sourceIDs) {
+      std::stringstream ss;
+      ss << "_" + sourceIdentifier << std::setfill('0') << std::setw(4) <<  std::to_string(sourceID);
+      buSourceStrings_.push_back(ss.str());
+    }
 
     if (baseDirs.size() != numSources.size())
       throw cms::Exception("DataModeDTH::makeDirectoryEntries") << "Number of defined directories not compatible with numSources list length";
@@ -355,22 +358,32 @@ std::pair<bool, std::vector<std::string>> DataModeDTH::defineAdditionalFiles(std
 
   std::vector<std::string> additionalFiles;
 
-  //not touching primary file name as found by input mechanism
-  auto fullpath = std::filesystem::path(primaryName);
-  auto fullname = fullpath.filename();
+  //not touching primary file name as found by input mechanism. Format assumes source is last parameter in the filename
+  auto extpos = primaryName.rfind(".");
+  auto indexpos = primaryName.find("_index");
+  assert(indexpos != std::string::npos);
+  auto cutoff = primaryName.find("_", indexpos + 1); //search after index
+  if (cutoff == std::string::npos) cutoff = extpos; //no source
+  auto slashpos = primaryName.rfind("/", indexpos);
+  auto startoff = slashpos == std::string::npos ? 0 : slashpos + 1;//determine if directory path is returned
+
+  std::string primStem = primaryName.substr(startoff, cutoff - startoff);
+  std::string ext = primaryName.substr(extpos);
 
   if (!buSourceStrings_.empty()) {
     int counter = 0;
-    for (size_t i = 1; i < buPaths_.size(); i++) {
-      for (size_t j = 1; j < (size_t) buNumSources_[i]; j++) {
-        auto replacement = buSourceStrings_[counter];
-        std::filesystem::path newPath = buPaths_[i] / std::regex_replace(primaryName, sid_pattern_, replacement);
-        additionalFiles.push_back(newPath.generic_string());
+    for (size_t i = 0; i < buPaths_.size(); i++) {
+      for (size_t j = 0; j < (size_t) buNumSources_[i]; j++) {
+        std::string replacement = buPaths_[i].generic_string() + ("/" + primStem + buSourceStrings_[counter] + ext);
         counter++;
+        if (i==0 && j==0) continue;
+        additionalFiles.push_back(replacement);
       }
     }
   }
   else {
+    auto fullpath = std::filesystem::path(primStem + ext);
+    auto fullname = fullpath.filename();
     for (size_t i = 1; i < buPaths_.size(); i++) {
       std::filesystem::path newPath = buPaths_[i] / fullname;
       additionalFiles.push_back(newPath.generic_string());
@@ -438,31 +451,6 @@ int DataModeDTH::eventCounterCallback(std::string const& name, int& rawFd, int64
       edm::LogError("EvFDaqDirector") << "Unexpected DTH header version " << oh->version();
       return fileClose();
     }
-
-    /* for debugging: count fragment trailers
-    {
-      //
-      unsigned int_cnt = 0;
-      unsigned char* tmpbuf = new unsigned char[oh->totalSize()];
-      ::read(rawFd, tmpbuf, oh->totalSize() - sizeof(DTHOrbitHeader_v1));
-      unsigned char *cur = tmpbuf + oh->totalSize() - sizeof(DTHOrbitHeader_v1) - sizeof(DTHFragmentTrailer_v1);//point to first FT
-      //reset
-      lseek(rawFd, totalSize, SEEK_SET);
-      while (true) {
-        DTHFragmentTrailer_v1* ft = (DTHFragmentTrailer_v1*)cur;
-        assert(ft->verifyMarker());
-        assert(cur >= tmpbuf + ft->payloadSizeBytes());
-        cur = cur - ft->payloadSizeBytes();//point to payload start
-        int_cnt++;
-        if (cur == tmpbuf) break;
-        assert(cur >= tmpbuf + sizeof(DTHFragmentTrailer_v1));
-        cur = cur - sizeof(DTHFragmentTrailer_v1);//point to next FT
-        //
-      }
-      assert(int_cnt == oh->eventCount());
-      delete [] tmpbuf;
-    }
-    */
 
     if (firstSourceId == -1)
       firstSourceId = oh->sourceID();

@@ -8,7 +8,7 @@ function dieecal { echo Failure $1: status $2 ; echo "" ; echo "----- Error ----
 
 copy_index_files() {
   directory=$1
-  fbid=$2
+  sourceid=$2
   del_orig=$3
   shopt -s nullglob
   for file in "$directory"/*_index*.raw; do
@@ -16,7 +16,7 @@ copy_index_files() {
     if [[ "$filename" =~ ^(.*)_index([0-9]+)\.raw$ ]]; then
         base="${BASH_REMATCH[1]}"
         x="${BASH_REMATCH[2]}"
-        new_name="${base}_index${x}_fb${fbid}.raw"
+        new_name="${base}_index${x}_source${sourceid}.raw"
         cp -- "$file" "$directory/$new_name"
         echo "Copied: $filename -> $new_name"
         if [ $del_orig -eq 1 ]; then
@@ -29,20 +29,20 @@ copy_index_files() {
 
 copy_json_files() {
   directory=$1
-  fbid=$2
+  sourceid=$2
   shopt -s nullglob
   for file in "$directory"/*.jsn; do
     filename=$(basename "$file")
     if [[ "$filename" =~ ^(.*)_EoR.jsn$ ]]; then
         base="${BASH_REMATCH[1]}"
         x="${BASH_REMATCH[2]}"
-        new_name="${base}_EoR_fb${fbid}.jsn"
+        new_name="${base}_EoR_source${sourceid}.jsn"
         mv "$file" "$directory/$new_name"
     fi
     if [[ "$filename" =~ ^(.*)_EoLS.jsn$ ]]; then
         base="${BASH_REMATCH[1]}"
         x="${BASH_REMATCH[2]}"
-        new_name="${base}_EoLS_fb${fbid}.jsn"
+        new_name="${base}_EoLS_source${sourceid}.jsn"
         mv "$file" "$directory/$new_name"
     fi
   done

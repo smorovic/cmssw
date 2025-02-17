@@ -996,14 +996,15 @@ void DAQSource::readSupervisor() {
 
       std::pair<bool, std::vector<std::string>> additionalFiles =
           dataMode_->defineAdditionalFiles(rawFile, fileListMode_);
+      /*
       if (!additionalFiles.first) {
         //skip secondary files from file broker
         if (rawFd > -1)
           close(rawFd);
         continue;
-      }
+      }*/
 
-      //edm::LogError("DAQSource") << "DEBUG: makeRawFile ";
+      edm::LogError("DAQSource") << "DEBUG: makeRawFile ";
       std::unique_ptr<RawInputFile> newInputFile(new RawInputFile(evf::EvFDaqDirector::FileStatus::newFile,
                                                                   ls,
                                                                   rawFile,

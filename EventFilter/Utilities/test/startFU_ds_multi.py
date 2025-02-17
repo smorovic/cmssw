@@ -81,7 +81,7 @@ process.EvFDaqDirector = cms.Service("EvFDaqDirector",
     buBaseDirsAll = cms.untracked.vstring(options.fffBaseDir+"/"+options.buBaseDir),
     buBaseDirsNumStreams = cms.untracked.vint32(2),
     buBaseDirsStreamIDs = cms.untracked.vint32(111,222),
-    sourceIdentifier = cms.untracked.string("fb")
+    sourceIdentifier = cms.untracked.string("source")
 )
 
 try:

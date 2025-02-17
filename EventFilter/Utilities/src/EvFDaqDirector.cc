@@ -156,6 +156,14 @@ namespace evf {
     std::stringstream ss;
     ss << getpid();
     pid_ = ss.str();
+
+    if (!source_identifier_.empty()) {
+      if (!bu_base_dirs_source_ids_.size())
+        throw cms::Exception("EvFDaqDirector") << "buBaseDirsStreamIDs should not be empty with sourceIdentifier set";
+      std::stringstream ss2;
+      ss2 << "_" << source_identifier_ << std::setfill('0') << std::setw(4) << bu_base_dirs_source_ids_[0];
+      sourceid_first_ = ss2.str();
+    }
   }
 
   void EvFDaqDirector::updateRunParams() {
@@ -1913,9 +1921,6 @@ namespace evf {
     // Lambda to list and sort files by the number after _ls
     auto listSortedFilesByLS = [&](std::string const& path) -> std::vector<std::string> {
         std::vector<std::string> filenames;
-        //use always first sourceID (any would work)
-        std::string sidstring(source_identifier_.empty() ? "" : "_" + source_identifier_ + std::to_string(bu_base_dirs_source_ids_.at(0)));
-
         // Collect filenames
         try {
           for (const auto& entry : std::filesystem::directory_iterator(path)) {
@@ -1936,7 +1941,7 @@ namespace evf {
                 continue;
               }
               if (!source_identifier_.empty()) {
-                if (fname.rfind(sidstring) == std::string::npos)
+                if (fname.rfind(sourceid_first_) == std::string::npos)
                   continue;
                 //repeat search for EoR and EOLS with sourceid
                 if (fname.find("_EoR") != std::string::npos) {

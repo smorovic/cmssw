@@ -199,7 +199,7 @@ public:
   bool buffersComplete() const {
     unsigned complete = 0;
     for (size_t fidx=0; fidx < bufferOffsets_.size() ; fidx++) {
-      if ((int64_t)diskFileSizes_[fidx] - (int64_t)bufferOffsets_[fidx] == 0) complete++;
+      if ((int64_t)bufferEnds_[fidx] - (int64_t)bufferOffsets_[fidx] == 0) complete++;
     }
     if (complete && complete < bufferOffsets_.size())
         throw cms::Exception("InputFile") << "buffers are inconsistent for input files with primary " << fileName_;
