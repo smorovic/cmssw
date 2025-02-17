@@ -30,6 +30,7 @@
 #include "DataFormats/Provenance/interface/Timestamp.h"
 #include "EventFilter/Utilities/interface/crc32c.h"
 
+
 using namespace evf;
 
 void DataModeDTH::readEvent(edm::EventPrincipal& eventPrincipal) {
@@ -117,7 +118,6 @@ std::vector<std::shared_ptr<const edm::DaqProvenanceHelper>>& DataModeDTH::makeD
 
 void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) {
 
-  //currentDbgCnt_ = 0;
   //addr points to beginning of the main file orbit block
 
   //get file array info
@@ -135,7 +135,6 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
   firstOrbitHeader_ = nullptr;
 
   for (unsigned i = 0; i < numFiles; i++) {
-    edm::LogError("DataModeDTH") << " starting with buffer offset " << rawFile->bufferOffsets_[i] << " bufferEnd: " << rawFile->bufferEnds_[i];
     bool ohThisFile = false;
     //intial orbit header was advanced over by source (first file only)
     auto nextAddr = buf + rawFile->bufferOffsets_[i];
@@ -143,10 +142,9 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
     auto maxAddr = buf + rawFile->bufferEnds_[i];//end of stripe / file
 
 
-    //edm::LogError("DataModeDTH::makeDataBlockView") << "blockAddr: 0x" << std::hex << (uint64_t)nextAddr << " chunkOffset: 0x"
-    //                                           << std::hex << (uint64_t)(nextAddr - buf);
-    LogDebug("DataModeDTH::makeDataBlockView") << "blockAddr: 0x" << std::hex << (uint64_t)nextAddr << " chunkOffset: 0x"
-                                               << std::hex << (uint64_t)(nextAddr - buf);
+    LogDebug("DataModeDTH") << "make data block view for file " << i << " at offsets: " << rawFile->bufferOffsets_[i] << " to: " << rawFile->bufferEnds_[i]
+                            << " blockAddr: 0x" << std::hex << (uint64_t)nextAddr << " chunkOffset: 0x"
+                            << std::hex << (uint64_t)(nextAddr - buf);
 
     checksumValid_ = true;
     if (!checksumError_.empty())
@@ -157,7 +155,6 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
       assert(nextAddr + hsize < maxAddr);
 
       auto orbitHeader = (evf::DTHOrbitHeader_v1*)(nextAddr);
-      //edm::LogError("EvFDaqDirector") << "DEBUG#2: f:" << i << " orbit:" << orbitHeader->orbitNumber() << " source:" << orbitHeader->sourceID() << " eventCount:"<< orbitHeader->eventCount();
 
       if (!orbitHeader->verifyMarker())
         throw cms::Exception("DAQSource::DAQSourceModelsDTH") << "Invalid DTH orbit marker";
@@ -169,7 +166,6 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
         else {
           assert(orbitHeader->runNumber() == firstOrbitHeader_->runNumber());
           if (orbitHeader->orbitNumber() != firstOrbitHeader_->orbitNumber()) {
-            //edm::LogError("EvFDaqDirector") << "DEBUG#2 - BREAK";
             break;
           }
           assert(orbitHeader->eventCount() == firstOrbitHeader_->eventCount());
@@ -208,6 +204,13 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
                         crc);
         }
       }
+      LogDebug("DataModeDTH") << "DTH orbit block version:"  << orbitHeader->version()
+                              << " sourceID:" << orbitHeader->sourceID()
+                              << " run:" << orbitHeader->runNumber()
+                              << " orbitNr:" << orbitHeader->orbitNumber()
+                              << " evtFragments:" << orbitHeader->eventCount()
+                              << " crc32c:" << orbitHeader->crc()
+                              << " flagMask:" << std::hex << orbitHeader->flags();
       //push current orbit to the list of orbits
       auto srcOrbitSize = orbitHeader->totalSize();
       addrsStart_.push_back(nextAddr + hsize);
@@ -217,7 +220,6 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
       nextAddr += srcOrbitSize;
       nextEnd = nextAddr;
       assert(nextEnd <= maxAddr);  //boundary check
-      //edm::LogError("EvFDaqDirector") << "DEBUG#2 - EndLoop check:" << (nextAddr == maxAddr) << " " << (nextAddr > maxAddr) << " blockViewSize: " << (nextEnd - startAddr);
     }
 
     //require orbit header in each file
@@ -227,7 +229,6 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
     if (i == 0) {
       //assert(nextEnd > nextAddr);
       dataBlockSize_ = nextEnd - startAddr;
-      edm::LogError("DataModeDTH::makeDataBlockView") << i << " lastBlockSize " << (nextEnd - startAddr);
     }
 
     //advance buffer position to next orbit
@@ -283,8 +284,6 @@ bool DataModeDTH::nextEventView(RawInputFile*) {
     if (i == 0) {
       nextEventID_ = eID;
       last_eID = eID;
-      //currentDbgCnt_++;
-      //edm::LogError("DataModeDTH:") << " DEBUG#2 processed next event in this block: " << currentDbgCnt_;
     } else if (last_eID != nextEventID_)
       throw cms::Exception("DAQSource::DAQSourceModelsDTH") << "Inconsistent event number between fragments";
 
@@ -292,6 +291,11 @@ bool DataModeDTH::nextEventView(RawInputFile*) {
       throw cms::Exception("DAQSource::DAQSourceModelsDTH")
           << "Detected error condition in DTH trailer of event " << trailer->eventID()
           << " flags: " << std::bitset<16>(trailer->flags());
+
+    LogDebug("DataModeDTH") << "DTH fragment trailer in block " << i << "eventID: " << trailer->eventID()
+                            << " payloadSizeBytes: " <<  trailer->payloadSizeBytes()
+                            << " crc: " << trailer->crc()
+                            << " flagMask: " << std::hex << trailer->flags();
 
     //update address array
     addrsEnd_[i] -= sizeof(evf::DTHFragmentTrailer_v1) + payload_size;
@@ -441,7 +445,6 @@ int DataModeDTH::eventCounterCallback(std::string const& name, int& rawFd, int64
     DTHOrbitHeader_v1* oh = (DTHOrbitHeader_v1*)hdr;
     LogDebug("EvFDaqDirector") << "orbit check: orbit:" << oh->orbitNumber() << " source:" << oh->sourceID()
                                << " eventCount:" << oh->eventCount();
-                               //<< " at offset: " << lseek(rawFd, 0, SEEK_CUR);
 
     if (!oh->verifyMarker()) {
       edm::LogError("EvFDaqDirector") << "Invalid DTH header encountered";
@@ -475,7 +478,6 @@ int DataModeDTH::eventCounterCallback(std::string const& name, int& rawFd, int64
     }
 
     if (new_offset == st.st_size) {
-      //edm::LogError("EvFDaqDirector") << "DEBUG#1: file end reached eventcount:" << event_count;
       lseek(rawFd, 0, SEEK_SET);
       break;
     }

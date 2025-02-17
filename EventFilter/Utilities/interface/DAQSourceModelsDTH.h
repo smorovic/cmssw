@@ -93,11 +93,7 @@ private:
   std::string checksumError_;
   //total
   size_t dataBlockSize_ = 0;
-  //uint16_t MINTCDSuTCAFEDID_ = FEDNumbering::MINTCDSuTCAFEDID;
-  //uint16_t MAXTCDSuTCAFEDID_ = FEDNumbering::MAXTCDSuTCAFEDID;
   bool eventCached_ = false;
-
-  //unsigned currentDbgCnt_ = 0;
 };
 
 #endif  // EventFilter_Utilities_DAQSourceModelsDTH_h
