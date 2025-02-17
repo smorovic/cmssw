@@ -292,7 +292,7 @@ bool DataModeDTH::nextEventView(RawInputFile*) {
           << "Detected error condition in DTH trailer of event " << trailer->eventID()
           << " flags: " << std::bitset<16>(trailer->flags());
 
-    LogDebug("DataModeDTH") << "DTH fragment trailer in block " << i << "eventID: " << trailer->eventID()
+    LogDebug("DataModeDTH") << "DTH fragment trailer in block " << i << " eventID: " << trailer->eventID()
                             << " payloadSizeBytes: " <<  trailer->payloadSizeBytes()
                             << " crc: " << trailer->crc()
                             << " flagMask: " << std::hex << trailer->flags();
