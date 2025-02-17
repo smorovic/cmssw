@@ -18,8 +18,8 @@ copy_index_files() {
         x="${BASH_REMATCH[2]}"
         new_name="${base}_index${x}_source${sourceid}.raw"
         cp -- "$file" "$directory/$new_name"
-        echo "Copied: $filename -> $new_name"
-        if [ $del_orig -eq 1 ]; then
+        #echo "Copied: $filename -> $new_name"
+        if [[ $del_orig -eq 1 ]]; then
           rm -rf $file
         fi
     fi
@@ -191,7 +191,6 @@ ${CMDLINE_STARTFU}  > out_2_fu.log 2>&1 || diefu "${CMDLINE_STARTFU}" $? $OUTDIR
 #no failures, clean up everything including logs if there are no errors
 rm -rf $OUTDIR/{ramdisk,data,*.log}
 
-
 echo "running DAQSource test with raw DTH orbit payload"
 CMDLINE_STARTBU="cmsRun startBU.py runNumber=${runnumber} fffBaseDir=${OUTDIR} maxLS=2 fedMeanSize=128 eventsPerFile=2 eventsPerLS=3 frdFileVersion=0 dataType=DTH"
 CMDLINE_STARTFU="cmsRun startFU_daqsource.py daqSourceMode=DTH runNumber=${runnumber} fffBaseDir=${OUTDIR}"
@@ -201,6 +200,18 @@ ${CMDLINE_STARTFU}  > out_2_fu.log 2>&1 || diefu "${CMDLINE_STARTFU}" $? $OUTDIR
 #no failures, clean up everything including logs if there are no errors
 rm -rf $OUTDIR/{ramdisk,data,*.log}
 
+echo "running DAQSource test with striped DTH"
+CMDLINE_STARTBU="cmsRun startBU.py runNumber=${runnumber} fffBaseDir=${OUTDIR} maxLS=2 fedMeanSize=128 eventsPerFile=2 eventsPerLS=3 frdFileVersion=0 dataType=DTH"
+CMDLINE_STARTFU="cmsRun startFU_ds_multi.py daqSourceMode=DTH runNumber=${runnumber} fffBaseDir=${OUTDIR}"
+${CMDLINE_STARTBU}  > out_2_bu.log 2>&1 || diebu "${CMDLINE_STARTBU}" $? $OUTDIR
+#duplicate files
+copy_index_files ramdisk/run${runnumber} 0111
+copy_index_files ramdisk/run${runnumber} 0222 1
+copy_json_files ramdisk/run${runnumber} 0111
+#find ramdisk/run${runnumber}
+${CMDLINE_STARTFU}  > out_2_fu.log 2>&1 || diefu "${CMDLINE_STARTFU}" $? $OUTDIR out_2_fu.log
+
+rm -rf $OUTDIR/{ramdisk,data,*.log}
 
 #no failures, clean up everything including logs if there are no errors
 echo "Completed sucessfully"
