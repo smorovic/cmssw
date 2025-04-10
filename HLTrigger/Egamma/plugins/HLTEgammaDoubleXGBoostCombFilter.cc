@@ -35,9 +35,11 @@ private:
   const std::vector<double> subCutHighMass2_;
   const std::vector<double> leadCutHighMass3_;
   const std::vector<double> subCutHighMass3_;
+  const edm::InputTag candTag_;
 
   const edm::EDGetTokenT<reco::RecoEcalCandidateCollection> candToken_;
   const edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> mvaToken_;
+  bool saveTrailingTag_;
 };
 
 HLTEgammaDoubleXGBoostCombFilter::HLTEgammaDoubleXGBoostCombFilter(edm::ParameterSet const& config)
@@ -49,8 +51,10 @@ HLTEgammaDoubleXGBoostCombFilter::HLTEgammaDoubleXGBoostCombFilter(edm::Paramete
       subCutHighMass2_(config.getParameter<std::vector<double>>("subCutHighMass2")),
       leadCutHighMass3_(config.getParameter<std::vector<double>>("leadCutHighMass3")),
       subCutHighMass3_(config.getParameter<std::vector<double>>("subCutHighMass3")),
-      candToken_(consumes<reco::RecoEcalCandidateCollection>(config.getParameter<edm::InputTag>("candTag"))),
-      mvaToken_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("mvaPhotonTag"))) {}
+      candTag_(config.getParameter<edm::InputTag>("candTag")),
+      candToken_(consumes<reco::RecoEcalCandidateCollection>(candTag_)),
+      mvaToken_(consumes<reco::RecoEcalCandidateIsolationMap>(config.getParameter<edm::InputTag>("mvaPhotonTag"))),
+      saveTrailingTag_(config.getParameter<bool>("saveTrailingTag")) {}
 
 void HLTEgammaDoubleXGBoostCombFilter::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
@@ -66,6 +70,7 @@ void HLTEgammaDoubleXGBoostCombFilter::fillDescriptions(edm::ConfigurationDescri
 
   desc.add<edm::InputTag>("candTag", edm::InputTag("hltEgammaCandidatesUnseeded"));
   desc.add<edm::InputTag>("mvaPhotonTag", edm::InputTag("PhotonXGBoostProducer"));
+  desc.add<bool>("mvaPhotonTag", edm::InputTag("PhotonXGBoostProducer"));
 
   descriptions.addWithDefaultLabel(desc);
 }
@@ -73,14 +78,26 @@ void HLTEgammaDoubleXGBoostCombFilter::fillDescriptions(edm::ConfigurationDescri
 bool HLTEgammaDoubleXGBoostCombFilter::hltFilter(edm::Event& event,
                                                  const edm::EventSetup& setup,
                                                  trigger::TriggerFilterObjectWithRefs& filterproduct) const {
+
+  using namespace trigger;
+  if (saveTags()) {
+    filterproduct.addCollectionTag(candTag_);
+  }
+
   const auto& recCollection = event.getHandle(candToken_);
   const auto& mvaMap = event.getHandle(mvaToken_);
 
   // Lambda to evaluate pair cuts
   auto passesHighMassCuts = [&](float leadScore, float subScore, int leadEta, int subEta) {
-    return (leadScore > leadCutHighMass1_[leadEta] && subScore > subCutHighMass1_[subEta]) ||
+    auto result = (leadScore > leadCutHighMass1_[leadEta] && subScore > subCutHighMass1_[subEta]) ||
            (leadScore > leadCutHighMass2_[leadEta] && subScore > subCutHighMass2_[subEta]) ||
            (leadScore > leadCutHighMass3_[leadEta] && subScore > subCutHighMass3_[subEta]);
+    if (result && saveTags()) {
+      filterproduct.addObject(trigger::TriggerPhoton, refi);
+      if (saveTrailingTag_)
+        filterproduct.addObject(trigger::TriggerPhoton, refj);
+    }
+    return result;
   };
 
   // Lambda to evaluate a candidate pair
@@ -97,9 +114,9 @@ bool HLTEgammaDoubleXGBoostCombFilter::hltFilter(edm::Event& event,
       return false;
 
     if (mvaScorei >= mvaScorej) {
-      return passesHighMassCuts(mvaScorei, mvaScorej, etai, etaj);
+      return passesHighMassCuts(mvaScorei, mvaScorej, etai, etaj, refi, refj);
     } else {
-      return passesHighMassCuts(mvaScorej, mvaScorei, etaj, etai);
+      return passesHighMassCuts(mvaScorej, mvaScorei, etaj, etai, refj, refi);
     }
   };
 
