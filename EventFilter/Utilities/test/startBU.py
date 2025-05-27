@@ -11,7 +11,7 @@ import math
 options = VarParsing.VarParsing ('analysis')
 
 options.register ('runNumber',
-                  100, # default value
+                  100101, # default value
                   VarParsing.VarParsing.multiplicity.singleton,
                   VarParsing.VarParsing.varType.int,          # string, int, or float
                   "Run Number")

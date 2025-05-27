@@ -24,7 +24,8 @@ using namespace edm::streamer;
 
 RawEventFileWriterForBU::RawEventFileWriterForBU(edm::ParameterSet const& ps)
     : microSleep_(ps.getParameter<int>("microSleep")),
-      frdFileVersion_(ps.getParameter<unsigned int>("frdFileVersion")) {
+      frdFileVersion_(ps.getParameter<unsigned int>("frdFileVersion")),
+      writeEoR_(ps.getUntrackedParameter<bool>("writeEoR")) {
   if (edm::Service<evf::FastMonitoringService>().isAvailable())
     fms_ = static_cast<evf::FastMonitoringService*>(edm::Service<evf::FastMonitoringService>().operator->());
 
@@ -185,7 +186,6 @@ void RawEventFileWriterForBU::initialize(std::string const& destinationDir,
 void RawEventFileWriterForBU::writeJsds() {
   std::stringstream ss;
   ss << destinationDir_ << "/jsd";
-  mkdir(ss.str().c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
 
   std::string rawJSDName = ss.str() + "/rawData.jsd";
   std::string eolJSDName = ss.str() + "/EoLS.jsd";
@@ -196,6 +196,20 @@ void RawEventFileWriterForBU::writeJsds() {
   runMon_->setDefPath(eorJSDName);
 
   struct stat fstat;
+
+  //only crete JSD definitions from process that created directory
+  std::string outdirpath = ss.str();
+  if (stat(outdirpath.c_str(), &fstat) == 0)
+    return;
+
+  auto retval = mkdir(outdirpath.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+  if ( retval) {
+    if  (errno == EEXIST)
+      return;
+    else
+      throw cms::Exception("RawEventFileWriterForBU", "writeJsds") << "Error creating directory " << outdirpath << " : " << strerror(errno);
+  }
+
   if (stat(rawJSDName.c_str(), &fstat) != 0) {
     std::string content;
     JSONSerializer::serialize(&rawJsonDef_, content);
@@ -301,8 +315,8 @@ void RawEventFileWriterForBU::endOfLS(unsigned int ls) {
 void RawEventFileWriterForBU::stop() {
   if (lumiOpen_ > lumiClosed_)
     endOfLS(lumiOpen_);
-  edm::LogInfo("RawEventFileWriterForBU") << "Writing EOR file!";
-  if (!destinationDir_.empty()) {
+  if (writeEoR_ && !destinationDir_.empty()) {
+    edm::LogInfo("RawEventFileWriterForBU") << "Writing EOR file!";
     // create EoR file
     std::string path = destinationDir_ + "/" + runPrefix_ + "_ls0000_EoR.jsn";
     runMon_->snap(0);
@@ -313,4 +327,5 @@ void RawEventFileWriterForBU::stop() {
 void RawEventFileWriterForBU::extendDescription(edm::ParameterSetDescription& desc) {
   desc.add<int>("microSleep", 0);
   desc.add<unsigned int>("frdFileVersion", 0);
+  desc.addUntracked<bool>("writeEoR", true);
 }
