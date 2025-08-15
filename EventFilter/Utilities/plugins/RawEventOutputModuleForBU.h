@@ -200,6 +200,8 @@ void RawEventOutputModuleForBU<Consumer>::fillDescriptions(edm::ConfigurationDes
   desc.add<unsigned int>("numEventsPerFile", 100);
   desc.add<unsigned int>("frdVersion", 6);
   desc.addUntracked<std::vector<unsigned int>>("sourceIdList", std::vector<unsigned int>());
+  desc.addUntracked<unsigned int>("previousLumiWaitTimeout", 0)
+      ->setComment("Max wait time in seconds for previous LS EoLS file to appear. Check disabled if 0.");
   Consumer::extendDescription(desc);
 
   descriptions.addWithDefaultLabel(desc);

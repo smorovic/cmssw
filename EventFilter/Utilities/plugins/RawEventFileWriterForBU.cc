@@ -14,6 +14,7 @@
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/Utilities/interface/Adler32Calculator.h"
 #include "FWCore/Utilities/interface/Exception.h"
+#include "FWCore/Utilities/interface/UnixSignalHandlers.h"
 #include "IOPool/Streamer/interface/FRDEventMessage.h"
 #include "IOPool/Streamer/interface/FRDFileHeader.h"
 
@@ -25,7 +26,8 @@ using namespace edm::streamer;
 RawEventFileWriterForBU::RawEventFileWriterForBU(edm::ParameterSet const& ps)
     : microSleep_(ps.getParameter<int>("microSleep")),
       frdFileVersion_(ps.getParameter<unsigned int>("frdFileVersion")),
-      writeEoR_(ps.getUntrackedParameter<bool>("writeEoR")) {
+      writeEoR_(ps.getUntrackedParameter<bool>("writeEoR")),
+      previousLumiWaitTimeout_(ps.getUntrackedParameter<unsigned int>("previousLumiWaitTimeout")) {
   if (edm::Service<evf::FastMonitoringService>().isAvailable())
     fms_ = static_cast<evf::FastMonitoringService*>(edm::Service<evf::FastMonitoringService>().operator->());
 
@@ -288,6 +290,30 @@ void RawEventFileWriterForBU::endOfLS(unsigned int ls) {
   }
   lumiMon_->snap(ls);
 
+  if (previousLumiWaitTimeout_ && ls > 1) {
+
+    std::ostringstream ostr_prev;
+
+    ostr_prev << destinationDir_ << "/" << runPrefix_ << "_ls" << std::setfill('0') << std::setw(4) << (ls-1) << "_EoLS"
+         << ".jsn";
+    std::string prev_path = ostr_prev.str();
+
+    auto t0 = std::chrono::high_resolution_clock::now();
+
+    struct stat fstat;
+    //sleep until previous LS is closed in case a parallel job is handling it. Timeout is configurable, disabled if 0
+    while (stat(prev_path.c_str(), &fstat) != 0) {
+      auto t1 = std::chrono::high_resolution_clock::now();
+      auto d_t = std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+      if (d_t > previousLumiWaitTimeout_) {
+        edm::LogWarning("RawEventFileWriterForBU") << "timeout waiting for previous EoLS " << (ls-1) << " to appear";
+        break;
+      }
+      if (edm::shutdown_flag)
+        break;
+      usleep(1000);
+    }
+  }
   std::ostringstream ostr;
 
   ostr << destinationDir_ << "/" << runPrefix_ << "_ls" << std::setfill('0') << std::setw(4) << ls << "_EoLS"
