@@ -513,6 +513,7 @@ namespace evf {
   }
 
   void FastMonitoringService::preGlobalBeginLumi(edm::GlobalContext const& gc) {
+    edm::LogWarning("FastMonitoringService") << "pre Lumi BEGIN. LUMI -: " << gc.luminosityBlockID().luminosityBlock();
     timeval lumiStartTime;
     gettimeofday(&lumiStartTime, nullptr);
     unsigned int newLumi = gc.luminosityBlockID().luminosityBlock();
@@ -529,7 +530,8 @@ namespace evf {
 
   void FastMonitoringService::preGlobalEndLumi(edm::GlobalContext const& gc) {
     unsigned int lumi = gc.luminosityBlockID().luminosityBlock();
-    LogDebug("FastMonitoringService") << "Lumi ended. Writing JSON information. LUMI -: " << lumi;
+    LogDebug("FastMonitoringService") << "Lumi ended PRE. Writing JSON information. LUMI -: " << lumi;
+    edm::LogWarning("FastMonitoringService") << "Lumi ended. Writing JSON information. LUMI -: " << lumi;
     timeval lumiStopTime;
     gettimeofday(&lumiStopTime, nullptr);
 
@@ -595,6 +597,7 @@ namespace evf {
   }
 
   void FastMonitoringService::postGlobalEndLumi(edm::GlobalContext const& gc) {
+    edm::LogWarning("FastMonitoringService") << "Lumi ended POST. LUMI -: " << gc.luminosityBlockID().luminosityBlock();
     std::lock_guard<std::mutex> lock(fmt_->monlock_);
     unsigned int lumi = gc.luminosityBlockID().luminosityBlock();
     //LS monitoring snapshot with input source data has been taken in previous callback
@@ -607,6 +610,7 @@ namespace evf {
   }
 
   void FastMonitoringService::preStreamBeginLumi(edm::StreamContext const& sc) {
+    edm::LogWarning("FMS") << " preStreamBeginLumi " <<  sc.eventID().luminosityBlock();
     std::lock_guard<std::mutex> lock(fmt_->monlock_);
     fmt_->m_data.streamLumi_[sc.streamID().value()] = sc.eventID().luminosityBlock();
 
@@ -621,6 +625,7 @@ namespace evf {
   }
 
   void FastMonitoringService::preStreamEndLumi(edm::StreamContext const& sc) {
+    edm::LogWarning("FMS") << " preStreamBeginLumi " <<  sc.eventID().luminosityBlock();
     std::lock_guard<std::mutex> lock(fmt_->monlock_);
     //update processed count to be complete at this time
     //doStreamEOLSnapshot(sc.eventID().luminosityBlock(), sid);
@@ -630,6 +635,7 @@ namespace evf {
   }
 
   void FastMonitoringService::postStreamEndLumi(edm::StreamContext const& sc) {
+    edm::LogWarning("FMS") << " postStreamBeginLumi " <<  sc.eventID().luminosityBlock();
     microstate_[sc.streamID().value()] = getmFwkEoL();
   }
 
