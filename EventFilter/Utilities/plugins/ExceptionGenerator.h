@@ -29,5 +29,6 @@ namespace evf {
     std::string original_referrer_;
     TH1D* timingHisto_;
     timeval tv_start_;
+    bool firstevent_ = true;
   };
 }  // namespace evf

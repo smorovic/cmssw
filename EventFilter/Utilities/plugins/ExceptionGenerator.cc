@@ -246,6 +246,13 @@ namespace evf {
         case 16: {
           throw cms::Exception("FastMonitoringService") << "Random exception!";
         } break;
+        case 17:
+          //sleep once for every stream that has and event in specified lumisection
+          if (firstevent_ && e.streamID() == 0 && intqualifier_ == e.luminosityBlock()) {
+            firstevent_ = false;
+            ::usleep(qualifier2_ * 1000);
+          }
+          break;
 
         default:
           break;
