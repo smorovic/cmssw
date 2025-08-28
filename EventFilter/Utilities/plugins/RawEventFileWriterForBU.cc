@@ -25,7 +25,8 @@ using namespace edm::streamer;
 RawEventFileWriterForBU::RawEventFileWriterForBU(edm::ParameterSet const& ps)
     : microSleep_(ps.getParameter<int>("microSleep")),
       frdFileVersion_(ps.getParameter<unsigned int>("frdFileVersion")),
-      writeEoR_(ps.getUntrackedParameter<bool>("writeEoR")) {
+      writeEoR_(ps.getUntrackedParameter<bool>("writeEoR")),
+      writeToOpen_(ps.getUntrackedParameter<bool>("writeToOpen")) {
   if (edm::Service<evf::FastMonitoringService>().isAvailable())
     fms_ = static_cast<evf::FastMonitoringService*>(edm::Service<evf::FastMonitoringService>().operator->());
 
@@ -237,7 +238,8 @@ void RawEventFileWriterForBU::finishFileWrite(unsigned int ls) {
     write(outfd_, (char*)&frdFileHeader, sizeof(FRDFileHeader_v1));
     closefd();
     //move raw file from open to run directory
-    rename(fileName_.c_str(), (destinationDir_ + fileName_.substr(fileName_.rfind('/'))).c_str());
+    if (!writeToOpen_)
+      rename(fileName_.c_str(), (destinationDir_ + fileName_.substr(fileName_.rfind('/'))).c_str());
 
     edm::LogInfo("RawEventFileWriterForBU")
         << "Wrote RAW input file: " << fileName_ << " with perFileEventCount = " << perFileEventCount_.value()
@@ -248,14 +250,16 @@ void RawEventFileWriterForBU::finishFileWrite(unsigned int ls) {
     write(outfd_, (char*)&frdFileHeader, sizeof(FRDFileHeader_v2));
     closefd();
     //move raw file from open to run directory
-    rename(fileName_.c_str(), (destinationDir_ + fileName_.substr(fileName_.rfind('/'))).c_str());
+    if (!writeToOpen_)
+      rename(fileName_.c_str(), (destinationDir_ + fileName_.substr(fileName_.rfind('/'))).c_str());
     edm::LogInfo("RawEventFileWriterForBU")
         << "Wrote RAW input file: " << fileName_ << " with perFileEventCount = " << perFileEventCount_.value()
         << " and size " << perFileSize_.value();
   } else {
     closefd();
     //move raw file from open to run directory
-    rename(fileName_.c_str(), (destinationDir_ + fileName_.substr(fileName_.rfind('/'))).c_str());
+    if (!writeToOpen_)
+      rename(fileName_.c_str(), (destinationDir_ + fileName_.substr(fileName_.rfind('/'))).c_str());
     //create equivalent JSON file
     //TODO:fix this to use DaqDirector convention and better extension replace
     std::filesystem::path source(fileName_);
@@ -266,7 +270,8 @@ void RawEventFileWriterForBU::finishFileWrite(unsigned int ls) {
     fileMon_->discardCollected(ls);
 
     //move the json file from open
-    rename(path.c_str(), (destinationDir_ + path.substr(path.rfind('/'))).c_str());
+    if (!writeToOpen_)
+      rename(path.c_str(), (destinationDir_ + path.substr(path.rfind('/'))).c_str());
 
     edm::LogInfo("RawEventFileWriterForBU")
         << "Wrote JSON input file: " << path << " with perFileEventCount = " << perFileEventCount_.value()
@@ -288,16 +293,22 @@ void RawEventFileWriterForBU::endOfLS(unsigned int ls) {
   }
   lumiMon_->snap(ls);
 
+  std::ostringstream ostrOpen;
   std::ostringstream ostr;
 
+  ostrOpen << destinationDir_ << "/open/" << runPrefix_ << "_ls" << std::setfill('0') << std::setw(4) << ls << "_EoLS"
+       << ".jsn";
   ostr << destinationDir_ << "/" << runPrefix_ << "_ls" << std::setfill('0') << std::setw(4) << ls << "_EoLS"
        << ".jsn";
   //outfd_ = open(ostr.str().c_str(), O_WRONLY | O_CREAT,  S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP | S_IWOTH | S_IROTH);
   //closefd();
 
-  std::string path = ostr.str();
-  lumiMon_->outputFullJSON(path, ls);
+  std::string pathOpen = ostrOpen.str();
+  lumiMon_->outputFullJSON(pathOpen, ls);
   lumiMon_->discardCollected(ls);
+
+  if (!writeToOpen_)
+      rename(pathOpen.c_str(), ostr.str().c_str());
 
   perRunEventCount_.value() += perLumiEventCount_.value();
   perRunTotalEventCount_.value() = perRunEventCount_.value();
@@ -318,9 +329,12 @@ void RawEventFileWriterForBU::stop() {
   if (writeEoR_ && !destinationDir_.empty()) {
     edm::LogInfo("RawEventFileWriterForBU") << "Writing EOR file!";
     // create EoR file
+    std::string pathOpen = destinationDir_ + "/open/" + runPrefix_ + "_ls0000_EoR.jsn";
     std::string path = destinationDir_ + "/" + runPrefix_ + "_ls0000_EoR.jsn";
     runMon_->snap(0);
-    runMon_->outputFullJSON(path, 0);
+    runMon_->outputFullJSON(pathOpen, 0);
+    if (!writeToOpen_)
+      rename(pathOpen.c_str(), path.c_str());
   }
 }
 

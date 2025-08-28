@@ -71,6 +71,12 @@ options.register ('subsystems',
                   "List of generated subsystem FEDs. Empty means all.")
 
 
+options.register ('writeToOpen',
+                  0,
+                  VarParsing.VarParsing.multiplicity.singleton,
+                  VarParsing.VarParsing.varType.int,          # string, int, or float
+                  "Write only to open directory")
+
 
 
 options.parseArguments()
@@ -150,6 +156,7 @@ if  options.dataType == "FRD":
         numEventsPerFile = cms.uint32(options.eventsPerFile),
         frdVersion = cms.uint32(6),
         frdFileVersion = cms.uint32(options.frdFileVersion),
+        writeToOpen = cms.untracked.bool(True if options.writeToOpen else False)
         )
 
 elif  options.dataType == "DTH":
@@ -166,7 +173,7 @@ elif  options.dataType == "DTH":
         numEventsPerFile = cms.uint32(options.eventsPerFile),
         frdVersion = cms.uint32(0),
         frdFileVersion = cms.uint32(0),
-        sourceIdList = cms.untracked.vuint32(66,1511)
+        sourceIdList = cms.untracked.vuint32(66,1511),
     )
 
 process.p = cms.Path(process.s+process.a)
