@@ -194,7 +194,7 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
   //all fragment addresses could be merged into a pair or tuple and reserve size
   addrsEnd_.clear();
   addrsStart_.clear();
-  constexpr size_t hsize = sizeof(evf::DTHOrbitHeader_v1);
+  constexpr size_t hsize = sizeof(evf::DTHOrbitHeader_v2);
   unsigned char* nextEnd = nullptr;
   firstOrbitHeader_ = nullptr;
 
@@ -217,7 +217,7 @@ void DataModeDTH::makeDataBlockView(unsigned char* addr, RawInputFile* rawFile) 
       //ensure header fits
       assert(nextAddr + hsize < maxAddr);
 
-      auto orbitHeader = (evf::DTHOrbitHeader_v1*)(nextAddr);
+      auto orbitHeader = (evf::DTHOrbitHeader_v2*)(nextAddr);
 
       if (!orbitHeader->verifyMarker())
         throw cms::Exception("DAQSource::DAQSourceModelsDTH") << "Invalid DTH orbit marker";
@@ -489,11 +489,11 @@ int DataModeDTH::eventCounterCallback(
   }
 
   int firstSourceId = -1;
-  unsigned char hdr[sizeof(DTHOrbitHeader_v1)];
+  unsigned char hdr[sizeof(DTHOrbitHeader_v2)];
 
   totalSize = 0;
   while (true) {
-    auto buf_sz = sizeof(DTHOrbitHeader_v1);
+    auto buf_sz = sizeof(DTHOrbitHeader_v2);
     ssize_t sz_read = ::read(rawFd, hdr, buf_sz);
     if (sz_read < 0) {
       edm::LogError("DAQSourceModelsDTH") << "unable to read header of " << name << " : " << strerror(errno);
@@ -505,7 +505,7 @@ int DataModeDTH::eventCounterCallback(
     }
     totalSize += sz_read;
 
-    DTHOrbitHeader_v1* oh = (DTHOrbitHeader_v1*)hdr;
+    DTHOrbitHeader_v2* oh = (DTHOrbitHeader_v2*)hdr;
     LogDebug("EvFDaqDirector") << "orbit check: orbit:" << oh->orbitNumber() << " source:" << oh->sourceID()
                                << " eventCount:" << oh->eventCount();
 
@@ -517,6 +517,16 @@ int DataModeDTH::eventCounterCallback(
       edm::LogError("EvFDaqDirector") << "Unexpected DTH header version " << oh->version();
       return fileClose();
     }
+    if (oh->version() >= 2) {
+       uint32_t ls = hdr->lumiSection();
+       if (ls == 0) {
+         edm::LogError("EvFDaqDirector") << "DTH header v2 does not have valid lumisection: " << ls;
+         return fileClose();
+       }
+       //for now treat this as low level logging error
+       if (ls != sLS)
+         edm::LogInfo("EvFDaqDirector") << "Lumisection mismatch: data: " << ls << ", framework: " << sLS;
+    }
 
     if (firstSourceId == -1)
       firstSourceId = oh->sourceID();
@@ -524,7 +534,7 @@ int DataModeDTH::eventCounterCallback(
       event_count += oh->eventCount();
     }
     //else skip counting events from all source IDs in the file (assume they are same)
-    auto payloadSize = oh->totalSize() - sizeof(DTHOrbitHeader_v1);
+    auto payloadSize = oh->totalSize() - sizeof(DTHOrbitHeader_v2);
     totalSize += payloadSize;
     if (totalSize > st.st_size) {
       edm::LogError("EvFDaqDirector") << "DTH header can not be beyond file size: " << name;

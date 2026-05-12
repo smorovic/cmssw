@@ -51,9 +51,10 @@ namespace evf {
     produces<RawDataBuffer>();
   }
 
-  void DTHFakeReader::fillRawData(edm::Event& e, RawDataBuffer*& data) {
+  void DTHFakeReader::fillRawData(edm::Event& e, RawDataBuffer*& data, unsigned int ls_) {
     // a null pointer is passed, need to allocate the fed collection (reusing it as container)
-    //auto ls = e.luminosityBlock();
+    uint32_t ls = e.luminosityBlock();
+    //uint32_t ls = e.getLuminosityBlock().luminosityBlock();
     //this will be used as orbit counter
     edm::EventNumber_t orbitId = e.id().event();
 
@@ -83,7 +84,7 @@ namespace evf {
 
     //calculate buffer size and create it
     for (auto sourceId : sourceIdList_) {
-      auto size = sizeof(DTHOrbitHeader_v1);
+      auto size = sizeof(DTHOrbitHeader_v2);
       for (auto eventId : eventIdList_)
         size += randFedSizes[sourceId][eventId] + h_size_ + t_size_ + sizeof(DTHFragmentTrailer_v1);
       totSize += size;
@@ -91,12 +92,12 @@ namespace evf {
     data = new RawDataBuffer(totSize);
 
     for (auto sourceId : sourceIdList_) {
-      auto size = sizeof(DTHOrbitHeader_v1);
+      auto size = sizeof(DTHOrbitHeader_v2);
       for (auto eventId : eventIdList_)
         size += randFedSizes[sourceId][eventId] + h_size_ + t_size_ + sizeof(DTHFragmentTrailer_v1);
       unsigned char* feddata = data->addSource(sourceId, nullptr, size);
 
-      uint64_t fragments_size_bytes = sizeof(DTHOrbitHeader_v1);
+      uint64_t fragments_size_bytes = sizeof(DTHOrbitHeader_v2);
       //uint32_t runningChecksum = 0xffffffffU;
       uint32_t runningChecksum = 0;
       for (auto eventId : eventIdList_) {
@@ -105,10 +106,11 @@ namespace evf {
             fillSLRFED(fedaddr, sourceId, eventId, orbitId, randFedSizes[sourceId][eventId], runningChecksum);
       }
       //in place construction
-      new (static_cast<void*>(feddata)) DTHOrbitHeader_v1(sourceId,
+      new (static_cast<void*>(feddata)) DTHOrbitHeader_v2(sourceId,
                                                           e.id().run(),
                                                           orbitId,
                                                           eventIdList_.size(),
+                                                          ls,
                                                           fragments_size_bytes >> evf::DTH_WORD_NUM_BYTES_SHIFT,
                                                           0,
                                                           runningChecksum);

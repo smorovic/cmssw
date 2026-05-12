@@ -67,7 +67,7 @@ namespace evf {
     uint32_t source_id_;
     uint32_t run_number_;
     uint32_t orbit_number_;
-    uint32_t event_count_ : 12, res_ : 20;
+    uint32_t event_count_ : 12, ls_ : 20;
     uint32_t packed_word_count_;  //Total size encoded in multiples of 128 bits (16 bytes)
     union {
       struct {
@@ -77,6 +77,34 @@ namespace evf {
     } flags_;
     uint32_t crc32c_;
   };
+
+  //ls_ field was added
+  class DTHOrbitHeader_v2 : private DTHOrbitHeader_v1 {
+  public:
+    using DTHOrbitHeader_v1;
+
+    DTHOrbitHeader_v2(uint32_t source_id,
+                      uint32_t run_number,
+                      uint32_t orbit_number,
+                      uint16_t event_count,
+                      uint32_t ls,
+                      uint32_t packed_word_count,
+                      uint32_t flags,
+                      uint32_t crc)
+        : source_id_(source_id),
+          run_number_(run_number),
+          orbit_number_(orbit_number),
+          event_count_(event_count),
+          ls_(ls),
+          packed_word_count_(packed_word_count),
+          crc32c_(crc) {
+      flags_.all_ = flags;
+    }
+
+    uint32_t lumiSection() const { return ls_; }
+
+  };
+
 
   class DTHFragmentTrailer_v1 {
   public:

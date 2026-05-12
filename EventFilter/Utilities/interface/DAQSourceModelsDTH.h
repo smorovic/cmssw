@@ -40,7 +40,7 @@ public:
     detectedDTHversion_ = 1;  //TODO: read version
   }
 
-  uint32_t headerSize() const override { return sizeof(evf::DTHOrbitHeader_v1); }
+  uint32_t headerSize() const override { return sizeof(evf::DTHOrbitHeader_v2); }
 
   bool versionCheck() const override { return detectedDTHversion_ == 1; }
 
@@ -94,7 +94,7 @@ private:
   std::vector<std::string> buSourceStrings_;
   std::regex sid_pattern_;
   uint16_t detectedDTHversion_ = 0;
-  evf::DTHOrbitHeader_v1* firstOrbitHeader_ = nullptr;
+  evf::DTHOrbitHeader_v2* firstOrbitHeader_ = nullptr;
   uint64_t nextEventID_ = 0;
   std::vector<evf::DTHFragmentTrailer_v1*> eventFragments_;  //events in block (DTH trailer)
   uint32_t totalEventSize_ = 0;
